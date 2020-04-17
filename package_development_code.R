@@ -11,3 +11,5 @@ install.packages("styler")
 
 # Install packages that this package depends on
 install.packages("BH")
+
+usethis::create_package(".")
