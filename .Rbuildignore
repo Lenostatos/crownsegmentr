@@ -2,3 +2,5 @@
 ^renv\.lock$
 ^crownsegmentr\.Rproj$
 ^\.Rproj\.user$
+^package_development_code\.R$
+^LICENSE\.md$
