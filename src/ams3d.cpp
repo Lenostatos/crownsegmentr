@@ -57,7 +57,7 @@ namespace ams3d
                 auto end{ std::chrono::steady_clock::now() };
                 mode_calculation_times.push_back(end - begin);
                 
-                if (modes.size() % 1000 == 0)
+                if (modes.size() % 10000 == 0)
                 {
                     log_output << "Calculated " << modes.size() << " of "
                     << point_cloud.size() << " modes...\n";
@@ -95,116 +95,17 @@ namespace ams3d
                 * 1e6 / 1e9 / 60
             };
             
+            auto previous_precision{ std::cout.precision() };
+            std::cout.precision(2);
+            
             log_output << "This scales to about "
                 << estimated_minutes_for_1_mill_points << " minutes "
-                << "(" << estimated_minutes_for_1_mill_points / 60 << " hours) "
                 << "of processing time for 1 Million points.\n\n";
+                
+            std::cout.precision(previous_precision);
         }
         
         return modes;
-    }
-    
-    std::unordered_map<
-        spatial::ptr_to_const_3d_point_t,
-        spatial::ptr_to_const_3d_point_t
-    > calculate_modes(
-        const std::vector<spatial::ptr_to_const_3d_point_t> &point_cloud,
-        const double crown_diameter_2_tree_height,
-        const double crown_height_2_tree_height,
-        std::basic_ostream<char> &log_output
-    ) {
-        // Store the points in a spatial index.
-        // TODO Create an iterator for point_cloud that can be passed directly
-        // when filling the spatial index.
-        std::vector<spatial::point_3d_t> simple_points;
-        simple_points.reserve(point_cloud.size());
-        
-        for (const auto &ptr_to_const_point : point_cloud)
-        {
-            simple_points.push_back(*ptr_to_const_point);
-        }
-        
-        spatial::r_tree_for_3d_points_t spatial_index{
-            simple_points.begin(), simple_points.end()
-        };
-        
-        // Free memory used by the simple_points vector.
-        simple_points.clear();
-        simple_points.shrink_to_fit();
-        
-        // Do some time measurements.
-        std::vector<std::chrono::steady_clock::duration>
-            mode_calculation_times;
-        mode_calculation_times.reserve(point_cloud.size());
-        
-        // Calculate modes for the points.
-        std::unordered_map<
-            spatial::ptr_to_const_3d_point_t,
-            spatial::ptr_to_const_3d_point_t
-        > res_mode_map;
-        
-        log_output << "Start calculating modes.\n" ;
-        
-        for (const auto &ptr_to_const_point : point_cloud)
-        {
-            auto begin{ std::chrono::steady_clock::now() };
-            
-            res_mode_map.emplace(
-                ptr_to_const_point,
-                spatial::make_ptr_to_const_3d_point(
-                    internal::calculate_point_mode(
-                        *ptr_to_const_point, spatial_index,
-                        crown_diameter_2_tree_height,
-                        crown_height_2_tree_height
-                    )
-                )
-            );
-            
-            auto end{ std::chrono::steady_clock::now() };
-            
-            mode_calculation_times.push_back(end - begin);
-            
-            if (res_mode_map.size() % 1000 == 0)
-            {
-                log_output << "Calculated " << res_mode_map.size() << " of "
-                    << point_cloud.size() << " modes...\n";
-            }
-            
-            // TODO Call Rcpp::checkUserInterrupt() in long running loops when
-            // using this code in an R package.
-        }
-        
-        // Evaluate the time measurements.
-        std::chrono::steady_clock::duration mean_duration{
-            std::accumulate(
-                mode_calculation_times.begin(),
-                mode_calculation_times.end(),
-                std::chrono::steady_clock::duration::zero()
-            )
-            / mode_calculation_times.size()
-        };
-        
-        log_output << "Finished calculating modes!" << "\n\n"
-            << "Calculation of one mode took on average "
-            << std::chrono::duration_cast<std::chrono::microseconds>(
-                mean_duration
-            ).count()
-            << " microseconds.\n";
-        
-        double estimated_minutes_for_1_mill_points{
-            static_cast<double>(
-                std::chrono::duration_cast<std::chrono::nanoseconds>(
-                    mean_duration
-                ).count())
-            * 1e6 / 1e9 / 60
-        };
-        
-        log_output << "This scales to about "
-            << estimated_minutes_for_1_mill_points << " minutes "
-            << "(" << estimated_minutes_for_1_mill_points / 60 << " hours) "
-            << "of processing time for 1 Million points.\n\n";
-            
-        return res_mode_map;
     }
 }
     

@@ -37,18 +37,18 @@ Rcpp::DataFrame calculate_modes(
     Rcpp::NumericVector x_coords( point_cloud[0] );
     Rcpp::NumericVector y_coords( point_cloud[1] );
     Rcpp::NumericVector z_coords( point_cloud[2] );
-
+    
     // Create points from the coordinates.
     std::vector< spatial::point_3d_t > points;
     points.reserve(point_cloud.nrow());
-
+    
     for (int i{ 0 }; i < point_cloud.nrow(); i++)
     {
         points.push_back(
             spatial::point_3d_t{ x_coords[i], y_coords[i], z_coords[i] }
         );
     }
-
+    
     // Calculate modes for the points.
     std::vector< spatial::point_3d_t > modes{
         ams3d::calculate_modes(
@@ -58,19 +58,19 @@ Rcpp::DataFrame calculate_modes(
             verbose, Rcpp::Rcout
         )
     };
-
+    
     // Return the modes as an R data.frame.
     Rcpp::NumericVector mode_x_coords;
     Rcpp::NumericVector mode_y_coords;
     Rcpp::NumericVector mode_z_coords;
-
+    
     for (const auto &mode : modes)
     {
         mode_x_coords.push_back(spatial::get_x(mode));
         mode_y_coords.push_back(spatial::get_y(mode));
         mode_z_coords.push_back(spatial::get_z(mode));
     }
-
+    
     return Rcpp::DataFrame::create(
         Rcpp::Named("mode_x") = mode_x_coords,
         Rcpp::Named("mode_y") = mode_y_coords,

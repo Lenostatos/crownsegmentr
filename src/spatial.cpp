@@ -23,9 +23,7 @@ namespace spatial
         // Set up a unary predicate object.
         // TODO Measure performance difference between lambda and unary
         // predicate.
-        internal::within_distance_predicate within_distance{
-            center, radius
-        };
+        internal::within_distance_predicate within_distance{ center, radius };
         
         // Query the point cloud.
         std::vector<ptr_to_const_3d_point_t> points_in_neighborhood;

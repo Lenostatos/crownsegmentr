@@ -68,20 +68,6 @@ namespace ams3d
 {
     /** \brief Calculates the mode for each point in \p point_cloud.
      * 
-     *  \return A mapping of modes to the point-pointers in \p point_cloud.
-     */
-    std::unordered_map<
-        spatial::ptr_to_const_3d_point_t,
-        spatial::ptr_to_const_3d_point_t
-    > calculate_modes(
-        const std::vector<spatial::ptr_to_const_3d_point_t> &point_cloud,
-        const double crown_diameter_2_tree_height,
-        const double crown_height_2_tree_height,
-        std::basic_ostream<char> &log_output = std::cout
-    );
-    
-    /** \brief Calculates the mode for each point in \p point_cloud.
-     * 
      *  \return An array of modes with one for each point in \p point_cloud.
      *      The modes are in the same order as the points they belong to.
      */
