@@ -10,7 +10,8 @@ segment_tree_crowns(
   crown_height_2_tree_height,
   min_num_neighbors_per_core,
   neighborhood_radius,
-  verbose
+  verbose = TRUE,
+  return_modes = FALSE
 )
 }
 \arguments{
@@ -34,10 +35,15 @@ point that is treated as the point's neighborhood.}
 
 \item{verbose}{Boolean. Should the function print runtime information to the
 console?}
+
+\item{return_modes}{Boolean Scalar. Should mode coordinates be returned as
+well?}
 }
 \value{
-A data.frame with the three coordinate columns of \code{points}
-together with an additional cluster ID column called "cluster_id".
+A data.table with the three coordinate columns of \code{point_cloud}
+together with an additional cluster ID column called "cluster_id". If
+\code{return_modes} is TRUE, another three columns with the coordinates of
+modes are included.
 }
 \description{
 Employs a variant of the mean shift algorithm and after that the DBSCAN

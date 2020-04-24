@@ -10,16 +10,20 @@
 #'   point by the DBSCAN clustering algorithm.
 #' @param neighborhood_radius Numeric Scalar. The radius of the space around a
 #'   point that is treated as the point's neighborhood.
+#' @param return_modes Boolean Scalar. Should mode coordinates be returned as
+#'   well?
 #'
-#' @return A data.frame with the three coordinate columns of \code{points}
-#'   together with an additional cluster ID column called "cluster_id".
+#' @return A data.table with the three coordinate columns of \code{point_cloud}
+#'   together with an additional cluster ID column called "cluster_id". If
+#'   \code{return_modes} is TRUE, another three columns with the coordinates of
+#'   modes are included.
 #'
 #' @export
 segment_tree_crowns <- function(
   point_cloud,
   crown_diameter_2_tree_height, crown_height_2_tree_height,
   min_num_neighbors_per_core, neighborhood_radius,
-  verbose
+  verbose = TRUE, return_modes = FALSE
 ) {
   coordinates <- try_to_extract_coordinate_data(
     point_cloud, object_name = "point_cloud"
@@ -35,5 +39,9 @@ segment_tree_crowns <- function(
     modes, neighborhood_radius, min_num_neighbors_per_core + 1
   )
 
-  return(data.table::data.table(modes, "cluster_id" = cluster_ids))
+  if (return_modes) {
+    return(data.table::data.table(coordinates, modes, "cluster_id" = cluster_ids))
+  } else {
+    return(data.table::data.table(coordinates, "cluster_id" = cluster_ids))
+  }
 }
