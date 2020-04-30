@@ -20,9 +20,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calculate_modes_and_centroid_paths
+Rcpp::List calculate_modes_and_centroid_paths(const Rcpp::DataFrame& point_cloud, const double& crown_diameter_2_tree_height, const double& crown_height_2_tree_height, bool verbose);
+RcppExport SEXP _crownsegmentr_calculate_modes_and_centroid_paths(SEXP point_cloudSEXP, SEXP crown_diameter_2_tree_heightSEXP, SEXP crown_height_2_tree_heightSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::DataFrame& >::type point_cloud(point_cloudSEXP);
+    Rcpp::traits::input_parameter< const double& >::type crown_diameter_2_tree_height(crown_diameter_2_tree_heightSEXP);
+    Rcpp::traits::input_parameter< const double& >::type crown_height_2_tree_height(crown_height_2_tree_heightSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_modes_and_centroid_paths(point_cloud, crown_diameter_2_tree_height, crown_height_2_tree_height, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_crownsegmentr_calculate_modes", (DL_FUNC) &_crownsegmentr_calculate_modes, 4},
+    {"_crownsegmentr_calculate_modes_and_centroid_paths", (DL_FUNC) &_crownsegmentr_calculate_modes_and_centroid_paths, 4},
     {NULL, NULL, 0}
 };
 

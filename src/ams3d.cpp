@@ -24,6 +24,7 @@ namespace ams3d
         bool verbose,
         std::basic_ostream< char > &log_output
     ) {
+        // Set up a spatial index for the point_cloud.
         spatial::r_tree_for_3d_points_t r_tree{
             point_cloud.begin(), point_cloud.end()
         };
@@ -74,16 +75,27 @@ namespace ams3d
             std::chrono::steady_clock::duration mean_duration{
                 std::accumulate(
                     mode_calculation_times.begin(),
-                                mode_calculation_times.end(),
-                                std::chrono::steady_clock::duration::zero()
+                    mode_calculation_times.end(),
+                    std::chrono::steady_clock::duration::zero()
                 )
                 / mode_calculation_times.size()
+            };
+            
+            std::sort(
+                mode_calculation_times.begin(), mode_calculation_times.end()
+            );
+            std::chrono::steady_clock::duration median_duration{
+                mode_calculation_times[mode_calculation_times.size() / 2]
             };
             
             log_output << "Finished calculating modes!" << "\n\n"
                 << "Calculation of one mode took on average "
                 << std::chrono::duration_cast<std::chrono::microseconds>(
                     mean_duration
+                ).count()
+                << " microseconds with the median at "
+                << std::chrono::duration_cast<std::chrono::microseconds>(
+                    median_duration
                 ).count()
                 << " microseconds.\n";
             
@@ -95,17 +107,131 @@ namespace ams3d
                 * 1e6 / 1e9 / 60
             };
             
-            auto previous_precision{ std::cout.precision() };
-            std::cout.precision(2);
+            auto previous_precision{ log_output.precision() };
+            log_output.precision(3);
             
             log_output << "This scales to about "
                 << estimated_minutes_for_1_mill_points << " minutes "
                 << "of processing time for 1 Million points.\n\n";
                 
-            std::cout.precision(previous_precision);
+            log_output.precision(previous_precision);
         }
         
         return modes;
+    }
+    
+    std::pair<
+        std::vector< spatial::ptr_to_const_3d_point_t >, centroid_path_map_t
+    > calculate_modes_w_centroid_paths(
+        const std::vector< spatial::point_3d_t > &point_cloud,
+        const double crown_diameter_2_tree_height,
+        const double crown_height_2_tree_height,
+        bool verbose,
+        std::basic_ostream< char > &log_output
+    ) {
+        // Set up a spatial index for the point_cloud.
+        spatial::r_tree_for_3d_points_t r_tree{
+            point_cloud.begin(), point_cloud.end()
+        };
+        
+        // Set up a vector for mode pointers.
+        std::vector< spatial::ptr_to_const_3d_point_t > modes;
+        modes.reserve(point_cloud.size());
+        
+        // Set up a map for centroid paths to modes.
+        centroid_path_map_t centroid_paths;
+        
+        // Set up a spatial index for centroid path segments.
+        spatial::r_tree_for_segment_point_pairs_t centroid_path_segments;
+        
+        // Set up an array for time measurements.
+        std::vector<
+            std::chrono::steady_clock::duration
+        > mode_calculation_times;
+        if (verbose) { mode_calculation_times.reserve(point_cloud.size()); }
+        
+        // Calculate modes for the points.
+        if (verbose) { log_output << "Start calculating modes.\n"; }
+        
+        for (const auto &point : point_cloud)
+        {
+            std::chrono::steady_clock::time_point begin;
+            if (verbose) { begin = std::chrono::steady_clock::now(); }
+            
+            modes.push_back(
+                internal::calculate_point_mode_w_centroid_paths(
+                    point, r_tree,
+                    centroid_paths, centroid_path_segments,
+                    crown_diameter_2_tree_height,
+                    crown_height_2_tree_height
+                )
+            );
+            
+            if (verbose)
+            {                
+                auto end{ std::chrono::steady_clock::now() };
+                mode_calculation_times.push_back(end - begin);
+                
+                if (modes.size() % 10000 == 0)
+                {
+                    log_output << "Calculated " << modes.size() << " of "
+                        << point_cloud.size() << " modes...\n";
+                }
+            }
+            
+            // TODO Call Rcpp::checkUserInterrupt() in long running loops when
+            // using this code in an R package.
+        }
+        
+        if (verbose)
+        {
+            // Evaluate the time measurements.
+            std::chrono::steady_clock::duration mean_duration{
+                std::accumulate(
+                    mode_calculation_times.begin(),
+                    mode_calculation_times.end(),
+                    std::chrono::steady_clock::duration::zero()
+                )
+                / mode_calculation_times.size()
+            };
+            
+            std::sort(
+                mode_calculation_times.begin(), mode_calculation_times.end()
+            );
+            std::chrono::steady_clock::duration median_duration{
+                mode_calculation_times[mode_calculation_times.size() / 2]
+            };
+            
+            log_output << "Finished calculating modes!" << "\n\n"
+                << "Calculation of one mode took on average "
+                << std::chrono::duration_cast< std::chrono::microseconds >(
+                    mean_duration
+                ).count()
+                << " microseconds with the median at "
+                << std::chrono::duration_cast< std::chrono::microseconds >(
+                    median_duration
+                ).count()
+                << " microseconds.\n";
+            
+            double estimated_minutes_for_1_mill_points{
+                static_cast< double >(
+                    std::chrono::duration_cast< std::chrono::nanoseconds >(
+                        mean_duration
+                    ).count())
+                * 1e6 / 1e9 / 60
+            };
+            
+            auto previous_precision{ log_output.precision() };
+            log_output.precision(3);
+            
+            log_output << "This scales to about "
+                << estimated_minutes_for_1_mill_points << " minutes "
+                << "of processing time for 1 Million points.\n\n";
+            
+            log_output.precision(previous_precision);
+        }
+        
+        return std::make_pair(modes, centroid_paths);
     }
 }
     
@@ -136,13 +262,49 @@ namespace ams3d::internal
             former_centroid = current_centroid;
             current_centroid = current_kernel.calculate_centroid(point_cloud);
         } 
-        while(
+        while (
             spatial::distance(former_centroid, current_centroid)
                 > constants::centroid_convergence_distance
             && current_iteration < constants::max_num_centroids_per_mode
         );
         
         return current_centroid;
+    }
+    
+    spatial::ptr_to_const_3d_point_t calculate_point_mode_w_centroid_paths(
+        const spatial::point_3d_t &point,
+        const spatial::r_tree_for_3d_points_t &point_cloud,
+        centroid_path_map_t &centroid_paths,
+        spatial::r_tree_for_segment_point_pairs_t &centroid_path_segments,
+        const double crown_diameter_2_tree_height,
+        const double crown_height_2_tree_height
+    ) {
+        std::vector< spatial::point_3d_t > centroids{ point };
+        
+        int current_iteration{ 0 };
+        do
+        {
+            current_iteration++;
+            
+            Kernel kernel{
+                centroids.back(),
+                crown_diameter_2_tree_height,
+                crown_height_2_tree_height
+            };
+            
+            centroids.push_back(kernel.calculate_centroid(point_cloud));
+        } 
+        while (
+            spatial::distance(centroids[centroids.size() - 2], centroids.back())
+                > constants::centroid_convergence_distance
+            && current_iteration < constants::max_num_centroids_per_mode
+        );
+        
+        auto res_mode{ spatial::make_ptr_to_const_3d_point(centroids.back()) };
+        
+        centroid_paths.emplace(res_mode, centroids);
+        
+        return res_mode;
     }
     
     Kernel::Kernel(

@@ -78,6 +78,27 @@ namespace ams3d
         bool verbose = true,
         std::basic_ostream< char > &log_output = std::cout
     );
+    
+    using centroid_path_map_t = std::unordered_map<
+        spatial::ptr_to_const_3d_point_t, std::vector< spatial::point_3d_t >
+    >;
+    
+    /** \brief Calculate the mode of each point, using the paths of previously
+     *      calculated centroids as help.
+     * 
+     *  \return A vector of modes and a map of centroid paths to modes. The
+     *      modes in the vector are ordered according to the points in
+     *      \p point_cloud.
+     */
+    std::pair<
+        std::vector< spatial::ptr_to_const_3d_point_t >, centroid_path_map_t
+    > calculate_modes_w_centroid_paths(
+        const std::vector< spatial::point_3d_t > &point_cloud,
+        const double crown_diameter_2_tree_height,
+        const double crown_height_2_tree_height,
+        bool verbose = true,
+        std::basic_ostream< char > &log_output = std::cout
+    );
 }
     
 namespace ams3d::internal
@@ -87,18 +108,33 @@ namespace ams3d::internal
         /** The distance between consecutive centroids at which it is assumed
          *  that they have converged to a mode.
          */
-        inline constexpr spatial::distance_t centroid_convergence_distance{ 0.1 };
+        inline constexpr spatial::distance_t centroid_convergence_distance{
+            0.01
+        };
         
         /** A threshold to prevent excessive centroid calculation iterations for
          *  the cases where centroids don't converge towards a mode.
          */
-        inline constexpr int max_num_centroids_per_mode{ 60 };
+        inline constexpr int max_num_centroids_per_mode{ 200 };
     }
     
     /** Calculates the mode for \p point within \p point_cloud. */
     spatial::point_3d_t calculate_point_mode(
         const spatial::point_3d_t &point,
         const spatial::r_tree_for_3d_points_t &point_cloud,
+        const double crown_diameter_2_tree_height,
+        const double crown_height_2_tree_height
+    );
+    
+    /** \brief Calculates the mode for \p point within \p point_cloud using
+     *      and/or possibly adding to the paths of previously calculated
+     *      centroids.
+     */
+    spatial::ptr_to_const_3d_point_t calculate_point_mode_w_centroid_paths(
+        const spatial::point_3d_t &point,
+        const spatial::r_tree_for_3d_points_t &point_cloud,
+        centroid_path_map_t &centroid_paths,
+        spatial::r_tree_for_segment_point_pairs_t &centroid_path_segments,
         const double crown_diameter_2_tree_height,
         const double crown_height_2_tree_height
     );
