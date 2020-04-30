@@ -1,8 +1,8 @@
 Package: crownsegmentr
 Title: Tree Crown Segmentation in Airborne LiDAR Data
 Version: 0.0.0.9000
-Authors@R: person("Leon", "Steinmeier", email = "Leon.Steinmeier@posteo.net",
-    role = c("aut", "cre"))
+Authors@R: person("Leon", "Steinmeier", role = c("aut", "cre"),
+    email = "Leon.Steinmeier@posteo.net")
 Description: What the package does (one paragraph).
 License: GPL-3
 Encoding: UTF-8
@@ -12,11 +12,11 @@ RoxygenNote: 7.1.0
 Imports: 
     assertthat,
     Rcpp,
-    dbscan,
-    data.table
+    data.table,
+    dbscan
 LinkingTo: 
     BH,
     Rcpp
 SystemRequirements: C++17
-    Suggests: 
+Suggests: 
     testthat
