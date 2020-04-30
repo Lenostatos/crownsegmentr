@@ -41,7 +41,7 @@ well?}
 }
 \value{
 A data.table with the three coordinate columns of \code{point_cloud}
-together with an additional cluster ID column called "cluster_id". If
+together with an additional cluster ID column called "crown_id". If
 \code{return_modes} is TRUE, another three columns with the coordinates of
 modes are included.
 }

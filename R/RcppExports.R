@@ -27,3 +27,31 @@ calculate_modes <- function(point_cloud, crown_diameter_2_tree_height, crown_hei
     .Call(`_crownsegmentr_calculate_modes`, point_cloud, crown_diameter_2_tree_height, crown_height_2_tree_height, verbose)
 }
 
+#' Calculate the modes of points in a forest point cloud
+#'
+#' Employs the 3D adaptive mean shift algorithm to estimate the mode of each
+#' point in a point cloud that contains trees. In this context the mode is a
+#' theoretical "center of mass" of a tree crown that is usually located shortly
+#' below the crown apex. All points in the same tree crown are expected to have
+#' the same mode.
+#'
+#' @section TODO:
+#' Add reference to Ferraz et. al.
+#'
+#' @param point_cloud A data.frame. The first three columns are treated as
+#'     x-, y-, and z-coordinates in that order.
+#' @param crown_diameter_2_tree_height,crown_height_2_tree_height Numeric
+#'     Scalars. Estimates of the crown diameter and crown height to tree height
+#'     ratios that are common for the trees in \code{point_cloud}.
+#' @param verbose Boolean. Should the function print runtime information to the
+#'     console?
+#'
+#' @return A list with two elements. The first one ("mode_coords") is a
+#'     data.frame with three columns holding the x-, y-, and z-coordinates of
+#'     the calculated modes. The second one ("centroid_coords") is another list
+#'     that contains one data.frame of point coordinates for each mode. The
+#'     points are the centroids that were calculated while searching the mode.
+calculate_modes_and_centroid_paths <- function(point_cloud, crown_diameter_2_tree_height, crown_height_2_tree_height, verbose) {
+    .Call(`_crownsegmentr_calculate_modes_and_centroid_paths`, point_cloud, crown_diameter_2_tree_height, crown_height_2_tree_height, verbose)
+}
+
