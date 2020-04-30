@@ -95,5 +95,5 @@ try_to_extract_coordinate_data <- function(input_object, object_name) {
     }
   }
 
-  return(input_object[, xyz_column_indices])
+  input_object[, xyz_column_indices]
 }
