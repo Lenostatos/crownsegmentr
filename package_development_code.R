@@ -37,6 +37,8 @@ usethis::use_package("BH", type = "LinkingTo")
 
 usethis::use_rcpp()
 usethis::use_r(name = "crownsegmentr-package.R")
+# The following stackoverflow post provides valuable info on the Makevars file:
+# https://stackoverflow.com/questions/43597632/understanding-the-contents-of-the-makevars-file-in-r-macros-variables-r-ma
 
 devtools::document()
 # Or use keyboard shortcut Ctrl + Shift + D
