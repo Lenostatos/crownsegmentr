@@ -5,6 +5,8 @@
 #include "spatial.h"
 #include "ams3d.h"
 
+#include <chrono>
+
 //' Calculate the modes of points in a forest point cloud
 //'
 //' Employs the 3D adaptive mean shift algorithm to estimate the mode of each
@@ -136,6 +138,9 @@ Rcpp::List calculate_modes_and_centroid_paths(
     
     if (verbose) { Rcpp::Rcout << "Write data back to Rcpp objects...\n"; }
     
+    std::chrono::steady_clock::time_point begin;
+    if (verbose) { begin = std::chrono::steady_clock::now(); }
+    
     Rcpp::NumericVector mode_x_coords;
     Rcpp::NumericVector mode_y_coords;
     Rcpp::NumericVector mode_z_coords;
@@ -181,7 +186,16 @@ Rcpp::List calculate_modes_and_centroid_paths(
         Rcpp::Named("centroid_coords") = centroid_coords
     ) };
     
-    if (verbose) { Rcpp::Rcout << "Finished writing. Returning to R...\n\n"; }
+    if (verbose) {
+        auto writing_R_data_millisecond_duration{
+            std::chrono::duration_cast< std::chrono::milliseconds >(
+                std::chrono::steady_clock::now() - begin
+            ).count()
+        };
+        Rcpp::Rcout << "Finished writing in "
+            << writing_R_data_millisecond_duration
+            << " milliseconds. Returning to R...\n\n";
+    }
     
     return res_list;
 }
