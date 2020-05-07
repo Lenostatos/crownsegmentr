@@ -11,12 +11,15 @@ segment_tree_crowns(
   min_num_neighbors_per_core,
   neighborhood_radius,
   verbose = TRUE,
-  return_modes = FALSE
+  return_modes = FALSE,
+  return_centroids = FALSE
 )
 }
 \arguments{
-\item{point_cloud}{A data.frame. The first three columns are treated as
-x-, y-, and z-coordinates in that order.}
+\item{point_cloud}{A data.table or data.frame within which the function
+searches for coordinate columns by first looking for columns named "x",
+"y", or "z" (or one of their upper-case variants) and then for the first
+numeric columns if it couldn't find one or more of those.}
 
 \item{crown_diameter_2_tree_height}{Numeric
 Scalars. Estimates of the crown diameter and crown height to tree height
@@ -38,12 +41,32 @@ console?}
 
 \item{return_modes}{Boolean Scalar. Should mode coordinates be returned as
 well?}
+
+\item{return_centroids}{Boolean Scalar. Should centroids be returned as well?
+\emph{Warning:} Setting this to \code{TRUE} considerably slows down
+processing speed. This option is only intended to be used for parameter
+estimation and debugging purposes on small point clouds.}
 }
 \value{
 A data.table with the three coordinate columns of \code{point_cloud}
-together with an additional cluster ID column called "crown_id". If
-\code{return_modes} is TRUE, another three columns with the coordinates of
-modes are included.
+together with an additional cluster ID column called "crown_id".
+
+If \code{return_modes} was set to TRUE, another three columns named
+"mode_x", "mode_y", and "mode_z" that hold the coordinates of the modes are
+included in the data.table.
+
+If \code{return_centroids} was set to \code{TRUE} returns a list with two
+elements:
+
+The first element (named "clustered_data") is the data.table that would
+have been returned if \code{return_centroids} was set to \code{FALSE}. The
+second one (named "centroid_data") is a list of data.frames that hold point
+coordinates with one data.frame for each mode in the "clustered_data".
+The first point in each data.frame is always one of the points from the
+input point cloud while the other coordinates represent the centroids that
+were calculated while searching for that point's mode.
+There is one additional column named "crown_id" in each data.frame that
+holds the crown ID of the mode that the centroids belong to.
 }
 \description{
 Employs a variant of the mean shift algorithm and after that the DBSCAN
