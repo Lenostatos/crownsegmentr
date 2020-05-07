@@ -43,11 +43,11 @@
  *
  *  It has been observed that the modes of points that belong to the same tree
  *  crown cluster shortly below the crown apex. In order to assign crown IDs to
- *  points, these clusters have to be identified with another algorithm. Here we
- *  use DBSCAN.
+ *  points, these clusters have to be identified with another algorithm, e.g.
+ *  DBSCAN.
  * 
  * 
- *  \par On Compliance with the Equations Published by Ferraz et. al 2012 * 
+ *  \par On Compliance with the Equations Published by Ferraz et. al 2012
  *  The equations in Ferraz et. al assume a symmetric kernel with a point of
  *  the point cloud as it's center. For calculating the kernel's centroid,
  *  equations (13) and (14) are designed in such a way that points in the
@@ -210,7 +210,7 @@ namespace ams3d::internal
     
     namespace math_functions
     {
-        inline constexpr int gaussian_gamma{ -5 };
+        inline constexpr double gaussian_gamma{ -5 };
         
         /** The gaussian function f(x) = exp(gaussian_gamma * x^2).
          * 

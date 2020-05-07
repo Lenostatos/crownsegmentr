@@ -313,8 +313,8 @@ namespace ams3d::internal
         const double crown_height_2_tree_height
     ):
         _xy_center{ spatial::get_x(center), spatial::get_y(center) },
-        _radius{ crown_diameter_2_tree_height * spatial::get_z(center) / 2 },
-        _height{ crown_height_2_tree_height * spatial::get_z(center) * 3.0/4.0 },
+        _radius{ crown_diameter_2_tree_height * spatial::get_z(center) * 0.5 },
+        _height{ crown_height_2_tree_height * spatial::get_z(center) * 0.75 },
         
         // The kernel is positioned vertically asymmetric around center.
         _top_height   { spatial::get_z(center) + _height * 2.0/3.0 },
@@ -357,7 +357,7 @@ namespace ams3d::internal
             std::abs(this->_middle_height - spatial::get_z(point))
         };
         
-        return absolute_distance / (this->_height / 2);
+        return absolute_distance / (this->_height * 0.5);
     }
     
     double Kernel::_calculate_point_weight(const spatial::point_3d_t &point) const
