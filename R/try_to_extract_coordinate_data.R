@@ -59,9 +59,9 @@ try_to_extract_coordinate_data <- function(input_object, object_name) {
     all_indices <- seq_len(dim(input_object)[2])
     non_xyz_column_indices <- all_indices[
       !(all_indices %in% xyz_column_indices)
-      ]
+    ]
 
-    # ...and for the remaining numeric columns among them.
+    # ...and get the remaining numeric columns among them.
     remaining_numeric_column_indices <- vector(mode = "integer")
     for (index in non_xyz_column_indices) {
       if (is.numeric(input_object[, index])) {
