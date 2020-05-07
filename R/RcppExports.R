@@ -48,9 +48,13 @@ calculate_modes <- function(point_cloud, crown_diameter_2_tree_height, crown_hei
 #'
 #' @return A list with two elements. The first one ("mode_coords") is a
 #'     data.frame with three columns holding the x-, y-, and z-coordinates of
-#'     the calculated modes. The second one ("centroid_coords") is another list
-#'     that contains one data.frame of point coordinates for each mode. The
-#'     points are the centroids that were calculated while searching the mode.
+#'     the calculated modes. The second one ("centroid_paths") is another list
+#'     that contains one data.frame of point coordinates for each mode.
+#'     The first point in each data.frame is always one of the points from the
+#'     input point cloud while the other coordinates represent the centroids
+#'     that were calculated while searching for that point's mode.
+#'     There is one additional column named "mode_index" in each data.frame that
+#'     holds a one-based index of the mode that the centroids belong to.
 calculate_modes_and_centroid_paths <- function(point_cloud, crown_diameter_2_tree_height, crown_height_2_tree_height, verbose) {
     .Call(`_crownsegmentr_calculate_modes_and_centroid_paths`, point_cloud, crown_diameter_2_tree_height, crown_height_2_tree_height, verbose)
 }

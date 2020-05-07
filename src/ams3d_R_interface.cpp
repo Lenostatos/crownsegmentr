@@ -40,7 +40,7 @@ Rcpp::DataFrame calculate_modes(
     Rcpp::NumericVector y_coords( point_cloud[1] );
     Rcpp::NumericVector z_coords( point_cloud[2] );
     
-    // Create points from the coordinates.
+    // Create points from the coordinates
     std::vector< spatial::point_3d_t > points;
     points.reserve(point_cloud.nrow());
     
@@ -51,7 +51,7 @@ Rcpp::DataFrame calculate_modes(
         );
     }
     
-    // Calculate modes for the points.
+    // Calculate modes for the points
     std::vector< spatial::point_3d_t > modes{
         ams3d::calculate_modes(
             points,
@@ -61,16 +61,34 @@ Rcpp::DataFrame calculate_modes(
         )
     };
     
-    // Return the modes as an R data.frame.
-    Rcpp::NumericVector mode_x_coords;
-    Rcpp::NumericVector mode_y_coords;
-    Rcpp::NumericVector mode_z_coords;
+    // Return the modes as an R data.frame
+    std::chrono::steady_clock::time_point begin;
+    if (verbose)
+    { 
+        Rcpp::Rcout << "Write data from C++ back to Rcpp objects...\n";
+        begin = std::chrono::steady_clock::now();
+    }
     
-    for (const auto &mode : modes)
+    Rcpp::NumericVector mode_x_coords(modes.size());
+    Rcpp::NumericVector mode_y_coords(modes.size());
+    Rcpp::NumericVector mode_z_coords(modes.size());
+    
+    for (std::size_t i{ 0 }; i < modes.size(); i++)
     {
-        mode_x_coords.push_back(spatial::get_x(mode));
-        mode_y_coords.push_back(spatial::get_y(mode));
-        mode_z_coords.push_back(spatial::get_z(mode));
+        mode_x_coords[i] = spatial::get_x(modes[i]);
+        mode_y_coords[i] = spatial::get_y(modes[i]);
+        mode_z_coords[i] = spatial::get_z(modes[i]);
+    }
+    
+    if (verbose) {
+        auto writing_R_data_millisecond_duration{
+            std::chrono::duration_cast< std::chrono::milliseconds >(
+                std::chrono::steady_clock::now() - begin
+            ).count()
+        };
+        Rcpp::Rcout << "Finished writing in "
+            << writing_R_data_millisecond_duration
+            << " milliseconds. Returning to R...\n\n";
     }
     
     return Rcpp::DataFrame::create(
@@ -101,9 +119,13 @@ Rcpp::DataFrame calculate_modes(
 //'
 //' @return A list with two elements. The first one ("mode_coords") is a
 //'     data.frame with three columns holding the x-, y-, and z-coordinates of
-//'     the calculated modes. The second one ("centroid_coords") is another list
-//'     that contains one data.frame of point coordinates for each mode. The
-//'     points are the centroids that were calculated while searching the mode.
+//'     the calculated modes. The second one ("centroid_paths") is another list
+//'     that contains one data.frame of point coordinates for each mode.
+//'     The first point in each data.frame is always one of the points from the
+//'     input point cloud while the other coordinates represent the centroids
+//'     that were calculated while searching for that point's mode.
+//'     There is one additional column named "mode_index" in each data.frame that
+//'     holds a one-based index of the mode that the centroids belong to.
 // [[Rcpp::export]]
 Rcpp::List calculate_modes_and_centroid_paths(
     const Rcpp::DataFrame &point_cloud,
@@ -115,7 +137,7 @@ Rcpp::List calculate_modes_and_centroid_paths(
     Rcpp::NumericVector y_coords( point_cloud[1] );
     Rcpp::NumericVector z_coords( point_cloud[2] );
     
-    // Create points from the coordinates.
+    // Create points from the coordinates
     std::vector< spatial::point_3d_t > points;
     points.reserve(point_cloud.nrow());
     
@@ -126,7 +148,7 @@ Rcpp::List calculate_modes_and_centroid_paths(
         );
     }
     
-    // Calculate modes for the points.
+    // Calculate modes for the points and return centroid paths as well
     auto mode_ptrs_and_centroid_path_map{
         ams3d::calculate_modes_w_centroid_paths(
             points,
@@ -136,54 +158,58 @@ Rcpp::List calculate_modes_and_centroid_paths(
         )
     };
     
-    if (verbose) { Rcpp::Rcout << "Write data back to Rcpp objects...\n"; }
-    
     std::chrono::steady_clock::time_point begin;
-    if (verbose) { begin = std::chrono::steady_clock::now(); }
+    if (verbose)
+    { 
+        Rcpp::Rcout << "Write data from C++ back to Rcpp objects...\n";
+        begin = std::chrono::steady_clock::now();
+    }
     
-    Rcpp::NumericVector mode_x_coords;
-    Rcpp::NumericVector mode_y_coords;
-    Rcpp::NumericVector mode_z_coords;
+    auto num_modes{ mode_ptrs_and_centroid_path_map.first.size() };
     
-    Rcpp::List centroid_coords;
+    Rcpp::NumericVector mode_x_coords(num_modes);
+    Rcpp::NumericVector mode_y_coords(num_modes);
+    Rcpp::NumericVector mode_z_coords(num_modes);
     
-    for (const auto &mode_ptr : mode_ptrs_and_centroid_path_map.first)
+    Rcpp::List centroid_paths(mode_ptrs_and_centroid_path_map.second.size());
+    
+    for (std::size_t i{ 0 }; i < num_modes; i++)
     {
-        mode_x_coords.push_back(spatial::get_x(*mode_ptr));
-        mode_y_coords.push_back(spatial::get_y(*mode_ptr));
-        mode_z_coords.push_back(spatial::get_z(*mode_ptr));
+        const auto &mode_ptr{ mode_ptrs_and_centroid_path_map.first[i] };
         
-        std::vector< spatial::point_3d_t > centroids{
+        mode_x_coords[i] = spatial::get_x(*mode_ptr);
+        mode_y_coords[i] = spatial::get_y(*mode_ptr);
+        mode_z_coords[i] = spatial::get_z(*mode_ptr);
+        
+        const std::vector< spatial::point_3d_t > &centroids{
             mode_ptrs_and_centroid_path_map.second[mode_ptr]
         };
         
-        Rcpp::NumericVector centroid_x_coords;
-        Rcpp::NumericVector centroid_y_coords;
-        Rcpp::NumericVector centroid_z_coords;
+        Rcpp::NumericVector centroid_x_coords(centroids.size());
+        Rcpp::NumericVector centroid_y_coords(centroids.size());
+        Rcpp::NumericVector centroid_z_coords(centroids.size());
         
-        for (const auto &centroid : centroids)
+        for (std::size_t i{ 0 }; i < centroids.size(); i++)
         {
-            centroid_x_coords.push_back(spatial::get_x(centroid));
-            centroid_y_coords.push_back(spatial::get_y(centroid));
-            centroid_z_coords.push_back(spatial::get_z(centroid));
+            centroid_x_coords[i] = spatial::get_x(centroids[i]);
+            centroid_y_coords[i] = spatial::get_y(centroids[i]);
+            centroid_z_coords[i] = spatial::get_z(centroids[i]);
         }
         
-        centroid_coords.push_back(Rcpp::DataFrame::create(
+        // TODO This part is super time intensive. Unfortunately I can't figure
+        // out a way to reserve the needed capacity in advance.
+        centroid_paths[i] = Rcpp::DataFrame::create(
             Rcpp::Named("x") = centroid_x_coords,
             Rcpp::Named("y") = centroid_y_coords,
-            Rcpp::Named("z") = centroid_z_coords
-        ));
+            Rcpp::Named("z") = centroid_z_coords,
+            Rcpp::Named("mode_index") = i + 1
+        );
     }
     
-    Rcpp::DataFrame res_mode_coords{ Rcpp::DataFrame::create(
+    Rcpp::DataFrame mode_coords{ Rcpp::DataFrame::create(
         Rcpp::Named("mode_x") = mode_x_coords,
         Rcpp::Named("mode_y") = mode_y_coords,
         Rcpp::Named("mode_z") = mode_z_coords
-    ) };
-    
-    Rcpp::List res_list{ Rcpp::List::create(
-        Rcpp::Named("mode_coords") = res_mode_coords,
-        Rcpp::Named("centroid_coords") = centroid_coords
     ) };
     
     if (verbose) {
@@ -197,5 +223,8 @@ Rcpp::List calculate_modes_and_centroid_paths(
             << " milliseconds. Returning to R...\n\n";
     }
     
-    return res_list;
+    return Rcpp::List::create(
+        Rcpp::Named("mode_coords") = mode_coords,
+        Rcpp::Named("centroid_paths") = centroid_paths
+    );
 }
