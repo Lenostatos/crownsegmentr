@@ -56,7 +56,7 @@ try_to_extract_coordinate_data <- function(input_object, object_name) {
   if (length(xyz_column_indices) < 3) {
 
     # ...get all column indices that are not among the already found indices...
-    all_indices <- seq_len(dim(input_object)[2])
+    all_indices <- seq_len(ncol(input_object))
     non_xyz_column_indices <- all_indices[
       !(all_indices %in% xyz_column_indices)
     ]
