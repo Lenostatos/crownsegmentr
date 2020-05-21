@@ -408,10 +408,15 @@
     },
     "renv": {
       "Package": "renv",
-      "Version": "0.9.3-79",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "858271cdf5c909b757f86847ecd5e961"
+      "Version": "0.10.0-14",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "renv",
+      "RemoteUsername": "rstudio",
+      "RemoteRef": "master",
+      "RemoteSha": "d7f35c4074aa77fc849d1f537387c35bec2f7268",
+      "Hash": "c3c2c807128400049a86e18807f4a163"
     },
     "rex": {
       "Package": "rex",
