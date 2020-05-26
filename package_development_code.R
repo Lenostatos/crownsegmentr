@@ -7,6 +7,7 @@ renv::init()
 install.packages(c("roxygen2", "testthat", "knitr"))
 remotes::install_github("r-lib/devtools")
 remotes::install_github("r-lib/usethis")
+
 install.packages("styler")
 
 # Create bare-bones package structure
@@ -52,3 +53,5 @@ usethis::use_r(name = "segment_tree_crowns.R")
 #   test file (or switch to it if it already exists).
 # + Use usethis::use_r() when editing a test file in order to switch back to the
 #   respective R source file.
+# + Use usethis::use_tidy_style(strict = TRUE) to style all code according to
+#   the tidyverse style guide.

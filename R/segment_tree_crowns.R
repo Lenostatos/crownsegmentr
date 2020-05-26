@@ -42,14 +42,17 @@
 #'   holds the crown ID of the mode that the centroids belong to.
 #'
 #' @export
-segment_tree_crowns <- function(
-  point_cloud,
-  crown_diameter_2_tree_height, crown_height_2_tree_height,
-  min_num_neighbors_per_core, neighborhood_radius,
-  verbose = TRUE, return_modes = FALSE, return_centroids = FALSE
-) {
+segment_tree_crowns <- function(point_cloud,
+                                crown_diameter_2_tree_height,
+                                crown_height_2_tree_height,
+                                min_num_neighbors_per_core,
+                                neighborhood_radius,
+                                verbose = TRUE,
+                                return_modes = FALSE,
+                                return_centroids = FALSE) {
   coordinates <- try_to_extract_coordinate_data(
-    point_cloud, object_name = "point_cloud"
+    point_cloud,
+    object_name = "point_cloud"
   )
 
   if (!return_centroids) {
@@ -67,11 +70,13 @@ segment_tree_crowns <- function(
     modes <- modes_and_centroids$mode_coords
   }
 
-  if (verbose) {cat("Start clustering...")}
+  if (verbose) cat("Start clustering...")
+
   crown_ids <- dbscan::dbscan(
     modes, neighborhood_radius, min_num_neighbors_per_core + 1
   )$cluster
-  if (verbose) {cat("Finished clustering.")}
+
+  if (verbose) cat("Finished clustering.")
 
   if (return_modes) {
     res_clustered_data <-
