@@ -74,3 +74,6 @@ usethis::use_r(name = "segment_tree_crowns.R")
 #   respective R source file.
 # + Use usethis::use_tidy_style() to style all code according to the tidyverse
 #   style guide.
+# + Use devtools::build(binary = TRUE) after updating the package in order to
+#   create a compiled bundle of the package that can be installed without
+#   devtools and RTools.
