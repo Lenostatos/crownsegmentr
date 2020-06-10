@@ -64,8 +64,8 @@
 segment_tree_crowns <- function(point_cloud,
                                 crown_diameter_2_tree_height,
                                 crown_height_2_tree_height,
-                                min_num_neighbors_per_core,
-                                neighborhood_radius,
+                                min_num_neighbors_per_core = 4,
+                                neighborhood_radius = 0.3,
                                 verbose = TRUE,
                                 return_modes = FALSE,
                                 return_centroids = FALSE) {
