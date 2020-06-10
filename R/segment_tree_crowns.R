@@ -89,10 +89,16 @@ segment_tree_crowns <- function(point_cloud,
     modes <- modes_and_centroids$mode_coords
   }
 
+  is_na_mode_row <-
+    is.na(modes$mode_x) | is.na(modes$mode_y) | is.na(modes$mode_z)
+
   if (verbose) cat("Start clustering...")
 
-  crown_ids <- dbscan::dbscan(
-    modes, neighborhood_radius, min_num_neighbors_per_core + 1
+  crown_ids <- vector(mode = "integer", length = nrow(modes))
+  crown_ids[is_na_mode_row] <- NA_integer_
+
+  crown_ids[!is_na_mode_row] <- dbscan::dbscan(
+    modes[!is_na_mode_row, ], neighborhood_radius, min_num_neighbors_per_core + 1
   )$cluster
 
   if (verbose) cat("Finished clustering.")
