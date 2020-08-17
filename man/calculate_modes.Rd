@@ -19,8 +19,8 @@ x-, y-, and z-coordinates in that order.}
 Scalars. Estimates of the crown diameter and crown height to tree height
 ratios that are common for the trees in \code{point_cloud}.}
 
-\item{verbose}{Boolean. Should the function print runtime information to the
-console?}
+\item{verbose}{Boolean Scalar. Should the function print runtime information
+to the console?}
 }
 \value{
 A data.frame with three columns that hold the x-, y-, and

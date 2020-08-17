@@ -17,8 +17,8 @@
 #' @param crown_diameter_2_tree_height,crown_height_2_tree_height Numeric
 #'     Scalars. Estimates of the crown diameter and crown height to tree height
 #'     ratios that are common for the trees in \code{point_cloud}.
-#' @param verbose Boolean. Should the function print runtime information to the
-#'     console?
+#' @param verbose Boolean Scalar. Should the function print runtime information
+#'     to the console?
 #'
 #' @return A data.frame with three columns that hold the x-, y-, and
 #'     z-coordinates of the calculated modes. The rows are sorted according to
@@ -43,8 +43,8 @@ calculate_modes <- function(point_cloud, crown_diameter_2_tree_height, crown_hei
 #' @param crown_diameter_2_tree_height,crown_height_2_tree_height Numeric
 #'     Scalars. Estimates of the crown diameter and crown height to tree height
 #'     ratios that are common for the trees in \code{point_cloud}.
-#' @param verbose Boolean. Should the function print runtime information to the
-#'     console?
+#' @param verbose Boolean Scalar. Should the function print runtime information
+#'     to the console?
 #'
 #' @return A list with two elements. The first one ("mode_coords") is a
 #'     data.frame with three columns holding the x-, y-, and z-coordinates of

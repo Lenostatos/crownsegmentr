@@ -8,8 +8,8 @@ segment_tree_crowns(
   point_cloud,
   crown_diameter_2_tree_height,
   crown_height_2_tree_height,
-  min_num_neighbors_per_core,
-  neighborhood_radius,
+  min_num_neighbors_per_core = 4,
+  neighborhood_radius = 0.3,
   verbose = TRUE,
   return_modes = FALSE,
   return_centroids = FALSE
@@ -36,8 +36,8 @@ point by the DBSCAN clustering algorithm.}
 \item{neighborhood_radius}{Numeric Scalar. The radius of the space around a
 point that is treated as the point's neighborhood.}
 
-\item{verbose}{Boolean. Should the function print runtime information to the
-console?}
+\item{verbose}{Boolean Scalar. Should the function print runtime information
+to the console?}
 
 \item{return_modes}{Boolean Scalar. Should mode coordinates be returned as
 well?}
