@@ -76,4 +76,8 @@ usethis::use_r(name = "segment_tree_crowns.R")
 #   style guide.
 # + Use devtools::build(binary = TRUE) after updating the package in order to
 #   create a compiled bundle of the package that can be installed without
-#   devtools and RTools.
+#   devtools and RTools, but only on the OS that it was compiled on.
+# + Use devtools::build() after updating the package in order to create a bundle
+#   of the package that can be installed on any OS as long as the required
+#   compiler toolchain is installed (RTools on Windows and Mac OS and something
+#   equivalent on Linux)
