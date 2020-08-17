@@ -98,8 +98,24 @@ segment_tree_crowns <- function(point_cloud,
   crown_ids[is_na_mode_row] <- NA_integer_
 
   crown_ids[!is_na_mode_row] <- dbscan::dbscan(
-    modes[!is_na_mode_row, ], neighborhood_radius, min_num_neighbors_per_core + 1
+    modes[!is_na_mode_row, ],
+    eps = neighborhood_radius,
+    minPts = min_num_neighbors_per_core + 1
   )$cluster
+
+  # I have observed that the dbscan algorithm sometimes identifies clusters with
+  # less than minPts points. My guess is that a cluster can loose points to
+  # neighboring clusters after having been initially identified with minPts
+  # points.
+  #
+  # In any case, replace any crown_ids with less than minPts points with the ID
+  # given to regular noise points
+  num_points_per_id <- table(crown_ids)
+  ids_with_less_than_minPts_points <- as.integer(names(
+    num_points_per_id[which(num_points_per_id < min_num_neighbors_per_core + 1)]
+  ))
+
+  crown_ids[which(crown_ids %in% ids_with_less_than_minPts_points)] <- 0
 
   if (verbose) cat("Finished clustering.")
 
