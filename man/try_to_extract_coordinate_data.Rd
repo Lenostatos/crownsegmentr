@@ -4,24 +4,16 @@
 \alias{try_to_extract_coordinate_data}
 \title{Try to find three numeric columns for coordinate data.}
 \usage{
-try_to_extract_coordinate_data(input_object, object_name)
+try_to_extract_coordinate_data(input_object)
 }
 \arguments{
 \item{input_object}{The object that is checked for being a data.frame with
 coordinate data.}
-
-\item{object_name}{The name of the object to be used in warning and error
-messages.}
 }
 \value{
-A data.frame with just three columns that are expected to hold the
+A data.table with just three columns that are expected to hold the
 x-, y-, and z-coordinates in that order.
 }
 \description{
 TODO
 }
-\section{TODO}{
-
-Infer \code{object_name} from the parent environment.
-}
-

@@ -49,6 +49,11 @@ usethis::use_package("data.table")
 
 usethis::use_package("BH", type = "LinkingTo")
 
+usethis::use_package("methods")
+
+usethis::use_package("lidR")
+usethis::use_package("future", type = "Suggests")
+
 usethis::use_rcpp()
 usethis::use_r(name = "crownsegmentr-package.R")
 

@@ -1,9 +1,11 @@
 Package: crownsegmentr
 Title: Tree Crown Segmentation in Airborne LiDAR Data
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: person("Leon", "Steinmeier", role = c("aut", "cre"),
     email = "Leon.Steinmeier@posteo.net")
-Description: What the package does (one paragraph).
+Description: Provides a function that performs the adaptive mean shift algorithm
+    for individual tree delineation in 3D point clouds as proposed by Ferraz et.
+    al, 2016.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
@@ -13,10 +15,13 @@ Imports:
     assertthat,
     Rcpp,
     data.table,
-    dbscan
+    dbscan,
+    lidR,
+    methods
 LinkingTo: 
     BH,
     Rcpp
 SystemRequirements: C++17
 Suggests: 
-    testthat
+    testthat,
+    future

@@ -23,96 +23,66 @@
 #'
 #' @param input_object The object that is checked for being a data.frame with
 #'   coordinate data.
-#' @param object_name The name of the object to be used in warning and error
-#'   messages.
 #'
-#' @section TODO:
-#'   Infer \code{object_name} from the parent environment.
-#'
-#' @return A data.frame with just three columns that are expected to hold the
+#' @return A data.table with just three columns that are expected to hold the
 #'   x-, y-, and z-coordinates in that order.
-try_to_extract_coordinate_data <- function(input_object, object_name) {
+try_to_extract_coordinate_data <- function(input_object) {
+
   # Assert that the input object is either a data.table or data.frame.
-  assertthat::assert_that(
-    assertthat::has_attr(input_object, "class"),
+  assert_that(
+    input_object %has_attr% "class",
     "data.frame" %in% attr(input_object, "class"),
-    msg = paste0(object_name, " needs to be a data.table or data.frame.")
+    msg =
+      "The coordinate data needs to be stored in a data.table or data.frame."
   )
 
-  # Assert that the data.frame has at least three columns.
-  assertthat::assert_that(
-    ncol(input_object) >= 3,
+  # Get the names of all numeric columns
+  numeric_col_names <- names(which(sapply(input_object, is.numeric)))
+
+  # Assert that the table consists of at least three numeric columns.
+  assert_that(
+    length(numeric_col_names) >= 3,
     msg = paste0(
-      object_name, " needs to have at least three columns for x-, y-, and ",
-      "z-coordinates."
+      "The coordinates table needs to have at least three numeric columns for ",
+      "x-, y-, and z-coordinates but there are only ",
+      length(numeric_col_names), "."
     )
   )
 
-  # Get the indices of the first columns whose names are a upper- or lower-case
-  # variant of "x", "y", and "z".
-  x_y_and_z <- c("x", "y", "z")
-  lower_case_column_names <- tolower(colnames(input_object))
-  xyz_column_indices <- match(x_y_and_z, lower_case_column_names)
-  names(xyz_column_indices) <- x_y_and_z
+  # Get the names of the first numeric columns whose names are a upper- or
+  # lower-case variant of either "x", "y", or "z".
+  xyz_chars <- c("x", "y", "z")
+  input_col_names <- colnames(input_object)
 
-  # Remove NA indices.
-  xyz_column_indices <- xyz_column_indices[!is.na(xyz_column_indices)]
+  xyz_col_names <- input_col_names[match(xyz_chars, tolower(input_col_names))]
+  names(xyz_col_names) <- xyz_chars
 
-  # Check any found columns for being numeric.
-  for (index in xyz_column_indices) {
+  numeric_non_xyz_col_names <- numeric_col_names[
+    !(tolower(numeric_col_names) %in% xyz_chars)]
 
-    # If they are not, remove them with a warning.
-    if (!is.numeric(input_object[, index])) {
-      xyz_column_indices <- xyz_column_indices[xyz_column_indices != index]
+  res_col_names <- vector("character")
+
+  for (xyz_col_name in xyz_col_names) {
+    if (!is.na(xyz_col_name) && xyz_col_name %in% numeric_col_names) {
+      # If there is a numeric column called either x, y, or z, take that
+      res_col_names <- append(res_col_names, xyz_col_name)
+    } else {
+      # Take the first numeric column that is neither called x, y, or z and is
+      # also not part of the already selected columns
+      next_meaningful_col_name <- numeric_non_xyz_col_names[
+        !(numeric_non_xyz_col_names %in% res_col_names)][1]
       warning(paste0(
-        "Found column ", names(input_object[, index]),
-        " but won't use it because it's not numeric."
+        "Couldn't find a numeric column with name ", names(xyz_col_name),
+        " or ", toupper(xyz_col_name), ". Using column ",
+        next_meaningful_col_name, " for ", names(xyz_col_name),
+        "-coordinates instead."
       ))
     }
   }
 
-  # If any of x, y, or z are missing...
-  if (length(xyz_column_indices) < 3) {
-
-    # ...get all column indices that are not among the already found indices...
-    all_indices <- seq_len(ncol(input_object))
-    non_xyz_column_indices <- all_indices[
-      !(all_indices %in% xyz_column_indices)
-    ]
-
-    # ...and get the remaining numeric columns among them.
-    remaining_numeric_column_indices <- vector(mode = "integer")
-    for (index in non_xyz_column_indices) {
-      if (is.numeric(input_object[, index])) {
-        remaining_numeric_column_indices <-
-          append(remaining_numeric_column_indices, index)
-      }
-    }
-
-    num_numeric_columns <-
-      length(xyz_column_indices) + length(remaining_numeric_column_indices)
-    assertthat::assert_that(
-      num_numeric_columns >= 3,
-      msg = paste0(
-        "Need at least three numeric columns for coordinates, but found only ",
-        num_numeric_columns, " numeric columns in ", object_name, "."
-      )
-    )
-
-    # Now fill up any missing x, y, or z column indices with other numeric
-    # columns' indices.
-    for (one_of_xyz in x_y_and_z) {
-      if (is.na(xyz_column_indices[one_of_xyz])) {
-        xyz_column_indices[one_of_xyz] <- remaining_numeric_column_indices[1]
-        remaining_numeric_column_indices <-
-          remaining_numeric_column_indices[-1]
-        warning(paste0(
-          "Could not find any numeric column named ", one_of_xyz,
-          ". Using column ", names(input_object)[xyz_column_indices[one_of_xyz]], " instead."
-        ))
-      }
-    }
+  if (is.data.table(input_object)) {
+    return(input_object[, ..res_col_names])
+  } else {
+    return(input_object[res_col_names])
   }
-
-  input_object[, xyz_column_indices]
 }

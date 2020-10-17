@@ -2,6 +2,10 @@
 % Please edit documentation in R/segment_tree_crowns.R
 \name{segment_tree_crowns}
 \alias{segment_tree_crowns}
+\alias{segment_tree_crowns,data.frame-method}
+\alias{segment_tree_crowns,data.table-method}
+\alias{segment_tree_crowns,LAS-method}
+\alias{segment_tree_crowns,LAScatalog-method}
 \title{Segment Tree Crowns in a 3D Point Cloud}
 \usage{
 segment_tree_crowns(
@@ -10,16 +14,63 @@ segment_tree_crowns(
   crown_height_2_tree_height,
   min_num_neighbors_per_core = 4,
   neighborhood_radius = 0.3,
-  verbose = TRUE,
+  id_attribute_name = "crown_id",
   return_modes = FALSE,
+  ...
+)
+
+\S4method{segment_tree_crowns}{data.frame}(
+  point_cloud,
+  crown_diameter_2_tree_height,
+  crown_height_2_tree_height,
+  min_num_neighbors_per_core = 4,
+  neighborhood_radius = 0.3,
+  id_attribute_name = "crown_id",
+  return_modes = FALSE,
+  verbose = TRUE,
   return_centroids = FALSE
+)
+
+\S4method{segment_tree_crowns}{data.table}(
+  point_cloud,
+  crown_diameter_2_tree_height,
+  crown_height_2_tree_height,
+  min_num_neighbors_per_core = 4,
+  neighborhood_radius = 0.3,
+  id_attribute_name = "crown_id",
+  return_modes = FALSE,
+  verbose = TRUE,
+  return_centroids = FALSE
+)
+
+\S4method{segment_tree_crowns}{LAS}(
+  point_cloud,
+  crown_diameter_2_tree_height,
+  crown_height_2_tree_height,
+  min_num_neighbors_per_core = 4,
+  neighborhood_radius = 0.3,
+  id_attribute_name = "crown_id",
+  return_modes = FALSE,
+  verbose = TRUE,
+  make_id_attribute_file_writable = FALSE,
+  id_attribute_file_description = id_attribute_name
+)
+
+\S4method{segment_tree_crowns}{LAScatalog}(
+  point_cloud,
+  crown_diameter_2_tree_height,
+  crown_height_2_tree_height,
+  min_num_neighbors_per_core = 4,
+  neighborhood_radius = 0.3,
+  id_attribute_name = "crown_id",
+  return_modes = FALSE,
+  make_id_attribute_file_writable = TRUE,
+  id_attribute_file_description = id_attribute_name
 )
 }
 \arguments{
-\item{point_cloud}{A data.table or data.frame within which the function
-searches for coordinate columns by first looking for columns named "x",
-"y", or "z" (or one of their upper-case variants) and then for the first
-numeric columns if it couldn't find one or more of those.}
+\item{point_cloud}{A \code{\link[lidR]{LAScatalog}} object that represents
+the point cloud.}
 
 \item{crown_diameter_2_tree_height}{Numeric
 Scalars. Estimates of the crown diameter and crown height to tree height
@@ -36,26 +87,24 @@ point by the DBSCAN clustering algorithm.}
 \item{neighborhood_radius}{Numeric Scalar. The radius of the space around a
 point that is treated as the point's neighborhood.}
 
-\item{verbose}{Boolean Scalar. Should the function print runtime information
-to the console?}
+\item{id_attribute_name}{Character Scalar. The column name at which IDs for
+individual trees should be stored.}
 
 \item{return_modes}{Boolean Scalar. Should mode coordinates be returned as
-well?}
+well? This is usually used for parameter estimation and/or debugging
+purposes.}
+
+\item{...}{Arguments passed down to the methods for specific data types..}
+
+\item{verbose}{Boolean Scalar. Should the function print runtime information
+to the console?}
 
 \item{return_centroids}{Boolean Scalar. Should centroids be returned as well?
 \emph{Warning:} Setting this to \code{TRUE} considerably slows down
 processing speed. This option is only intended to be used for parameter
-estimation and debugging purposes on small point clouds.}
-}
-\value{
-A data.table with the three coordinate columns of \code{point_cloud}
-together with an additional cluster ID column called "crown_id".
+estimation and debugging purposes on small point clouds.
 
-If \code{return_modes} was set to TRUE, another three columns named
-"mode_x", "mode_y", and "mode_z" that hold the coordinates of the modes are
-included in the data.table.
-
-If \code{return_centroids} was set to \code{TRUE} returns a list with two
+If \code{return_centroids} is set to \code{TRUE} returns a list with two
 elements:
 
 The first element (named "clustered_data") is the data.table that would
@@ -66,9 +115,64 @@ The first point in each data.frame is always one of the points from the
 input point cloud while the other coordinates represent the centroids that
 were calculated while searching for that point's mode.
 There is one additional column named "crown_id" in each data.frame that
-holds the crown ID of the mode that the centroids belong to.
+holds the crown ID of the mode that the centroids belong to.}
+
+\item{make_id_attribute_file_writable}{Boolean Scalar. Should the ID be
+embedded in the LAS object in such a way that it will also be written to
+disk whenever the LAS object itself is stored in a file.}
+
+\item{id_attribute_file_description}{Character Scalar. If
+\code{make_id_attribute_file_writable} is \code{TRUE} then this will be
+used as an additional description of the ID values when the LAS object is
+written to disk.}
+}
+\value{
+A data.frame with the three coordinate columns of \code{point_cloud}
+together with an additional cluster ID column.
+
+If \code{return_modes} is set to TRUE, another three columns named
+"mode_x", "mode_y", and "mode_z" that hold the coordinates of the modes are
+included in the data.frame
+
+A \code{\link[data.table]{data.table}} instead of a data.frame but
+otherwise the same as the return value of the data.frame method.
+
+A \code{\link[lidR]{LAS}} object with an additional attribute that
+contains crown IDs.
+
+The same as with any other \code{\link[lidR]{LAScatalog}} function,
+i.e. either a \code{\link[lidR]{LAS}} object or TODO. In any case, an
+additional attribute holding crown IDs is stored with the point cloud.
 }
 \description{
 Employs a variant of the mean shift algorithm and after that the DBSCAN
 algorithm in order to find tree crowns in the \code{point_cloud}.
 }
+\details{
+This function is not tested for point clouds with ground points. Leaving
+those points in the cloud should work most of the times, but this is not
+generally accounted for.
+}
+\section{Methods (by class)}{
+\itemize{
+\item \code{data.frame}: Segments coordinates stored as three columns
+in a data.frame.
+
+\item \code{data.table}: Segments coordinates stored as three columns
+in a data.table.
+
+\item \code{LAS}: Segments the point cloud data of a LAS
+object.
+
+\item \code{LAScatalog}: Segments the point cloud data of a LAS object
+and returns a LAS object with an additional attribute that contains crown
+IDs.
+}}
+
+\section{Warning}{
+
+When the point cloud is just a data.frame, it will be converted to a
+data.table by reference at the beginning of this function's execution and
+converted back to a data.frame again before the function returns.
+}
+
