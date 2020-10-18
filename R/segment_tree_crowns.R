@@ -401,8 +401,10 @@ methods::setMethod("segment_tree_crowns",
       )
 
       # Get the apices in the core area
-      non_buffer_apices <- segmented_las@data[
-        , select_apex_helper(X, Y, Z), by = id_attribute_name][
+      core_apices <- segmented_las@data[
+        segmented_las@data[[id_attribute_name]] != 0,
+        select_apex_helper(X, Y, Z),
+        by = id_attribute_name][
           # filter the apices that are not inside the buffer
           bbox@xmin <= X & X < bbox@xmax &
             bbox@ymin <= Y & Y < bbox@ymax, ]
@@ -412,10 +414,22 @@ methods::setMethod("segment_tree_crowns",
       # just a precaution. I haven't investigated whether the buffers are
       # actually part of the problem.
 
-      # Get the tree points in the core area
-      non_buffer_trees <- lidR::filter_poi(segmented_las,
+      # Get the tree points and any points with ID == 0 in the core area
+      core_trees_n_points <- lidR::filter_poi(segmented_las,
+        # i.e. either the point's ID belongs to one of the trees in the core
+        # area...
         segmented_las@data[[id_attribute_name]] %in%
-          non_buffer_apices[[id_attribute_name]]
+          core_apices[[id_attribute_name]] | (
+            # ...or the ID is zero and the point is inside the core area. The
+            # near equality test was taken from dplyr::near.
+            abs(segmented_las@data[[id_attribute_name]] - 0) <
+            .Machine$double.eps^0.5 &
+              as.integer(buffer) == 0
+            # TODO Instead of the buffer I could use the same filter here as
+            # above but I guess a few duplicated points that don't belong to any
+            # tree won't be a big problem anytime soon. One might try to account
+            # for such artifacts after processing the catalog.
+          )
       )
 
       # Calculate cross-chunk unique crown IDs
@@ -428,33 +442,34 @@ methods::setMethod("segment_tree_crowns",
       x_scale  <- las@header@PHB[["X scale factor"]]
       y_scale  <- las@header@PHB[["Y scale factor"]]
 
-      bit_shift_ids <- non_buffer_apices[ , .(
-        crown_id = non_buffer_apices[[id_attribute_name]],
+      bit_shift_ids <- core_apices[ , .(
+        crown_id = core_apices[[id_attribute_name]],
         bit_shift_id =
           round((X - x_offset) / x_scale) * 2^32 +
           round((Y - y_offset) / y_scale)
       )]
       # Adaption end
 
-      # Keep IDs with the value zero or NA at that value
+      # Add an ID with the value zero
+      bit_shift_ids <- rbind(
+        bit_shift_ids,
+        data.table::data.table(crown_id = 0, bit_shift_id = 0)
+      )
+      # Keep IDs with the value NA at that value
       bit_shift_ids[is.na(crown_id), bit_shift_id := NA]
-      # The near equality test below was taken from dplyr
-      bit_shift_ids[
-        abs(crown_id - 0) < .Machine$double.eps^0.5,
-        bit_shift_id := 0]
 
       # Join the point cloud with the new IDs
       names(bit_shift_ids)[1] <- id_attribute_name
 
       joined_ids <- bit_shift_ids[
-        non_buffer_trees@data, on = (id_attribute_name)][
+        core_trees_n_points@data, on = (id_attribute_name)][
           , -id_attribute_name, with = FALSE]$bit_shift_id
 
-      non_buffer_trees@data[, (id_attribute_name) := joined_ids]
+      core_trees_n_points@data[, (id_attribute_name) := joined_ids]
 
-      non_buffer_trees@data[, buffer := NULL]
+      core_trees_n_points@data[, buffer := NULL]
 
-      return(non_buffer_trees)
+      return(core_trees_n_points)
     }
 
     return(lidR::catalog_apply(point_cloud,

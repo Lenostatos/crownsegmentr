@@ -76,8 +76,8 @@ test_that("the calculation of unique crown IDs works for LAScatalog", {
   )
 
   expect_equal(
-    uniqueN(segmented_las@data$crown_id),
-    uniqueN(segmented_las_catalog@data$crown_id)
+    data.table::uniqueN(segmented_las@data$crown_id),
+    data.table::uniqueN(segmented_las_catalog@data$crown_id)
   )
 
   # chunks <- lidR::catalog_makechunks(las_catalog)
