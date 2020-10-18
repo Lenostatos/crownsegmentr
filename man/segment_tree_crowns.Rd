@@ -69,8 +69,17 @@ segment_tree_crowns(
 )
 }
 \arguments{
-\item{point_cloud}{A \code{\link[lidR]{LAScatalog}} object that represents
-the point cloud.}
+\item{point_cloud}{A set of xyz-coordinates. Can be passed as either a
+\code{\link[base]{data.frame}}, a \code{\link[data.table]{data.table}}, or
+a lidR- \code{\link[lidR]{LAS}} or \code{\link[lidR]{LAScatalog-class}}
+object.
+
+If it's a \code{\link[base]{data.frame}} or a
+\code{\link[data.table]{data.table}} the function searches for coordinate
+columns by first looking for numeric columns named "X", "Y", or "Z" (or one
+of their lower-case variants) and for each instance where it can't find one
+of those it selects the numeric column that comes next in the table's
+column order.}
 
 \item{crown_diameter_2_tree_height}{Numeric
 Scalars. Estimates of the crown diameter and crown height to tree height
@@ -92,34 +101,41 @@ individual trees should be stored.}
 
 \item{return_modes}{Boolean Scalar. Should mode coordinates be returned as
 well? This is usually used for parameter estimation and/or debugging
-purposes.}
+purposes. If set to \code{TRUE} the returned point cloud will have three
+additional columns/attributes with mode coordinates named "mode_x",
+"mode_y", and "mode_z".}
 
-\item{...}{Arguments passed down to the methods for specific data types..}
+\item{...}{This is just a placeholder for the method-specific parameters
+listed below.}
 
 \item{verbose}{Boolean Scalar. Should the function print runtime information
 to the console?}
 
 \item{return_centroids}{Boolean Scalar. Should centroids be returned as well?
 \emph{Warning:} Setting this to \code{TRUE} considerably slows down
-processing speed. This option is only intended to be used for parameter
-estimation and debugging purposes on small point clouds.
+processing speed. This option is only intended to be used with small point
+clouds for debugging purposes.
 
-If \code{return_centroids} is set to \code{TRUE} returns a list with two
-elements:
+If \code{return_centroids} is set to \code{TRUE} a list with two
+elements is returned:
 
-The first element (named "clustered_data") is the data.table that would
-have been returned if \code{return_centroids} was set to \code{FALSE}. The
-second one (named "centroid_data") is a list of data.frames that hold point
-coordinates with one data.frame for each mode in the "clustered_data".
-The first point in each data.frame is always one of the points from the
-input point cloud while the other coordinates represent the centroids that
-were calculated while searching for that point's mode.
-There is one additional column named "crown_id" in each data.frame that
-holds the crown ID of the mode that the centroids belong to.}
+The first element (named "clustered_data") is the
+\code{\link[base]{data.frame}}/\code{\link[data.table]{data.table}} that
+would have been returned if \code{return_centroids} was set to
+\code{FALSE}. The second one (named "centroid_data") is a list of
+\code{\link[base]{data.frame}}s that hold point coordinates with one
+\code{\link[base]{data.frame}} for each mode in the "clustered_data". The
+first point in each \code{\link[base]{data.frame}} is always one of the
+points from the input point cloud while the other coordinates represent the
+centroids that were calculated while searching for that point's mode. There
+is one additional column named "crown_id" in each
+\code{\link[base]{data.frame}} that holds the crown ID of the mode that the
+centroids belong to.}
 
-\item{make_id_attribute_file_writable}{Boolean Scalar. Should the ID be
-embedded in the LAS object in such a way that it will also be written to
-disk whenever the LAS object itself is stored in a file.}
+\item{make_id_attribute_file_writable}{Boolean Scalar. When writing the
+returned LAS object to disk, should the crown IDs (and if
+\code{return_modes} is set to \code{TRUE} also the mode coordinates) be
+written into that file as well?}
 
 \item{id_attribute_file_description}{Character Scalar. If
 \code{make_id_attribute_file_writable} is \code{TRUE} then this will be
@@ -127,52 +143,51 @@ used as an additional description of the ID values when the LAS object is
 written to disk.}
 }
 \value{
-A data.frame with the three coordinate columns of \code{point_cloud}
-together with an additional cluster ID column.
+A point cloud of the same type as passed to the function but with an
+additional column/attribute holding a crown ID for each point. IDs with the
+value zero indicate non-tree points.
 
-If \code{return_modes} is set to TRUE, another three columns named
-"mode_x", "mode_y", and "mode_z" that hold the coordinates of the modes are
-included in the data.frame
-
-A \code{\link[data.table]{data.table}} instead of a data.frame but
-otherwise the same as the return value of the data.frame method.
-
-A \code{\link[lidR]{LAS}} object with an additional attribute that
-contains crown IDs.
-
-The same as with any other \code{\link[lidR]{LAScatalog}} function,
-i.e. either a \code{\link[lidR]{LAS}} object or TODO. In any case, an
-additional attribute holding crown IDs is stored with the point cloud.
+The method for \code{\link[lidR]{LAScatalog-class}} objects is an
+exception. It works just like any other lidR function that accepts such
+objects, i.e. it returns either an in-memory \code{\link[lidR]{LAS}} object
+or writes the processed chunks to individual files and returns those file's
+names. Please refer to the documentation of the
+\code{\link[lidR]{LAScatalog-class}} for more details.
 }
 \description{
-Employs a variant of the mean shift algorithm and after that the DBSCAN
-algorithm in order to find tree crowns in the \code{point_cloud}.
-}
-\details{
-This function is not tested for point clouds with ground points. Leaving
-those points in the cloud should work most of the times, but this is not
-generally accounted for.
+Employs a variant of the mean shift algorithm (Ferraz et. al, 2016) and after
+that the DBSCAN algorithm in order to find tree crowns in a set of
+xyz-coordinates.
 }
 \section{Methods (by class)}{
 \itemize{
 \item \code{data.frame}: Segments coordinates stored as three columns
-in a data.frame.
+in a \code{\link[base]{data.frame}}.
 
 \item \code{data.table}: Segments coordinates stored as three columns
-in a data.table.
+in a \code{\link[data.table]{data.table}}.
 
-\item \code{LAS}: Segments the point cloud data of a LAS
-object.
+\item \code{LAS}: Segments the point cloud data of a
+\code{\link[lidR]{LAS}} object.
 
-\item \code{LAScatalog}: Segments the point cloud data of a LAS object
-and returns a LAS object with an additional attribute that contains crown
-IDs.
+\item \code{LAScatalog}: Segments the point cloud data of a
+\code{\link[lidR]{LAScatalog-class}} instance.
 }}
 
-\section{Warning}{
-
-When the point cloud is just a data.frame, it will be converted to a
-data.table by reference at the beginning of this function's execution and
-converted back to a data.frame again before the function returns.
+\section{Note}{
+ This function is not intended for point clouds with ground
+points.
 }
 
+\section{Warning}{
+ When the point cloud is a \code{\link[base]{data.frame}},
+it will be converted to a \code{\link[data.table]{data.table}} by reference
+at the beginning of this function's execution and converted back to a
+\code{\link[base]{data.frame}} again before the function returns.
+}
+
+\references{
+\href{https://doi.org/10.1016/j.rse.2016.05.028}{Ferraz, A., S.
+Saatchi, C. Mallet, and V. Meyer (2016) \emph{Lidar detection of individual
+tree size in tropical forests}. Remote Sensing of Environment 183:318–333.}
+}

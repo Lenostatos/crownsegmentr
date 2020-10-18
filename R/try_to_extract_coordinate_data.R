@@ -21,11 +21,12 @@
 #'
 #' TODO
 #'
-#' @param input_object The object that is checked for being a data.frame with
-#'   coordinate data.
+#' @param input_object The object that is checked for being a
+#'   \code{\link[base]{data.frame}} or a \code{\link[data.table]{data.table}}
+#'   and is searched for xyz-coordinate data.
 #'
-#' @return A data.table with just three columns that are expected to hold the
-#'   x-, y-, and z-coordinates in that order.
+#' @return A \code{\link[data.table]{data.table}} with just three columns that
+#'   are expected to hold the x-, y-, and z-coordinates in that order.
 try_to_extract_coordinate_data <- function(input_object) {
 
   # Assert that the input object is either a data.table or data.frame.
@@ -81,7 +82,7 @@ try_to_extract_coordinate_data <- function(input_object) {
   }
 
   if (is.data.table(input_object)) {
-    return(input_object[, ..res_col_names])
+    return(input_object[, res_col_names, with = FALSE])
   } else {
     return(input_object[res_col_names])
   }

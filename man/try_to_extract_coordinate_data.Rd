@@ -7,12 +7,13 @@
 try_to_extract_coordinate_data(input_object)
 }
 \arguments{
-\item{input_object}{The object that is checked for being a data.frame with
-coordinate data.}
+\item{input_object}{The object that is checked for being a
+\code{\link[base]{data.frame}} or a \code{\link[data.table]{data.table}}
+and is searched for xyz-coordinate data.}
 }
 \value{
-A data.table with just three columns that are expected to hold the
-x-, y-, and z-coordinates in that order.
+A \code{\link[data.table]{data.table}} with just three columns that
+are expected to hold the x-, y-, and z-coordinates in that order.
 }
 \description{
 TODO

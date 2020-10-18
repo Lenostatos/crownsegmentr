@@ -18,20 +18,28 @@ test_that("the different methods for the generic work", {
   las_object <- lidR::readLAS(
     system.file("extdata", "MixedConifer.laz", package = "lidR")
   )
-  expect_visible(segment_tree_crowns(las_object,
+  segmented_las <- segment_tree_crowns(las_object,
     crown_diameter_2_tree_height = 0.25,
     crown_height_2_tree_height = 0.5
-  ))
+  )
+  expect_s4_class(segmented_las, "LAS")
+  expect_named(segmented_las@data,
+    expected = c(names(las_object@data), "crown_id")
+  )
 
   # Method dispatch for lidR::LAScatalog object
   las_catalog <- lidR::readLAScatalog(
     system.file("extdata", "MixedConifer.laz", package = "lidR"),
     chunk_size = 50
   )
-  expect_visible(segment_tree_crowns(las_catalog,
+  segmented_las <- segment_tree_crowns(las_catalog,
     crown_diameter_2_tree_height = 0.25,
     crown_height_2_tree_height = 0.5
-  ))
+  )
+  expect_s4_class(segmented_las, "LAS")
+  expect_named(segmented_las@data,
+    expected = c(names(las_object@data), "crown_id")
+  )
 
   # Testing visually that the output is okay:
   # lidR::plot(

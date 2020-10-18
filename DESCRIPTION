@@ -1,6 +1,6 @@
 Package: crownsegmentr
 Title: Tree Crown Segmentation in Airborne LiDAR Data
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: person("Leon", "Steinmeier", role = c("aut", "cre"),
     email = "Leon.Steinmeier@posteo.net")
 Description: Provides a function that performs the adaptive mean shift algorithm
