@@ -167,6 +167,9 @@ methods::setMethod("segment_tree_crowns",
 
     coordinates <- try_to_extract_coordinate_data(point_cloud)
 
+    # TODO give a warning like "Did you forget to normalize?" if height values
+    # are unrealistically high
+
     if (!return_centroids) {
       modes <- calculate_modes(
         point_cloud = coordinates,
@@ -376,6 +379,9 @@ methods::setMethod("segment_tree_crowns",
            make_id_attribute_file_writable = TRUE,
            id_attribute_file_description = id_attribute_name) {
 
+    # TODO Throw an error if the scale and offset values are not the same for
+    # all files
+
     select_apex_helper <- function(x, y, z) {
       max_z_index <- which.max(z)
       return(list(
@@ -384,6 +390,7 @@ methods::setMethod("segment_tree_crowns",
       ))
     }
 
+    # TODO make this function an extra internal function
     catalog_function <- function(las, bbox, ...) {
 
       # segment the chunk
