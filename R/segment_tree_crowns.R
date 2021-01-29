@@ -1,7 +1,7 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2020 Leon Steinmeier
+# Copyright (C) 2020 Leon Steinmeier, Nikolai Knapp, UFZ
 # Contact: Lenostatos@gmx.de
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
@@ -15,7 +15,8 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with crownsegmentr. If not, see <http://www.gnu.org/licenses/>.
+# along with crownsegmentr in a file called "COPYING". If not,
+# see <http://www.gnu.org/licenses/>.
 
 #' Segment Tree Crowns in a 3D Point Cloud
 #'

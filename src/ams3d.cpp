@@ -1,3 +1,23 @@
+// This file is part of crownsegmentr, an R package for identifying tree crowns
+// within 3D point clouds.
+//
+// Copyright (C) 2020 Leon Steinmeier, Nikolai Knapp, UFZ
+// Contact: Lenostatos@gmx.de
+//
+// crownsegmentr is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// crownsegmentr is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with crownsegmentr in a file called "COPYING". If not,
+// see <http://www.gnu.org/licenses/>.
+
 #include "ams3d.h"
 
 #include "spatial.h"
@@ -10,7 +30,7 @@
 #include <ostream>      // for std::basic_ostream
 #include <algorithm>    // for std:: accumulate
 #include <utility>      // std::move
-#include <functional>   // TODO 
+#include <functional>   // TODO
 #include <cmath>        // std::pow, std::fmin
 #include <iterator>     // std::back_inserter
 #include <numeric>      // std::accumulate
@@ -28,23 +48,23 @@ namespace ams3d
         spatial::r_tree_for_3d_points_t r_tree{
             point_cloud.begin(), point_cloud.end()
         };
-        
+
         // Prepare some time measurements.
         std::vector<
             std::chrono::steady_clock::duration
         > mode_calculation_times;
         if (verbose) { mode_calculation_times.reserve(point_cloud.size()); }
-        
+
         // Calculate modes for the points.
         std::vector< spatial::point_3d_t > modes;
-        
+
         if (verbose) { log_output << "Start calculating modes.\n"; }
-        
+
         for (const auto &point : point_cloud)
         {
             std::chrono::steady_clock::time_point begin;
             if (verbose) { begin = std::chrono::steady_clock::now(); }
-            
+
             modes.push_back(
                 internal::calculate_point_mode(
                     point, r_tree,
@@ -52,23 +72,23 @@ namespace ams3d
                     crown_height_2_tree_height
                 )
             );
-            
+
             if (verbose)
-            {                
+            {
                 auto end{ std::chrono::steady_clock::now() };
                 mode_calculation_times.push_back(end - begin);
-                
+
                 if (modes.size() % 10000 == 0)
                 {
                     log_output << "Calculated " << modes.size() << " of "
                     << point_cloud.size() << " modes...\n";
                 }
             }
-            
+
             // TODO Call Rcpp::checkUserInterrupt() in long running loops when
             // using this code in an R package.
         }
-        
+
         if (verbose)
         {
             // Evaluate the time measurements.
@@ -80,14 +100,14 @@ namespace ams3d
                 )
                 / mode_calculation_times.size()
             };
-            
+
             std::sort(
                 mode_calculation_times.begin(), mode_calculation_times.end()
             );
             std::chrono::steady_clock::duration median_duration{
                 mode_calculation_times[mode_calculation_times.size() / 2]
             };
-            
+
             log_output << "Finished calculating modes!" << "\n\n"
                 << "Calculation of one mode took on average "
                 << std::chrono::duration_cast<std::chrono::microseconds>(
@@ -98,7 +118,7 @@ namespace ams3d
                     median_duration
                 ).count()
                 << " microseconds.\n";
-            
+
             double estimated_minutes_for_1_mill_points{
                 static_cast<double>(
                     std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -106,20 +126,20 @@ namespace ams3d
                     ).count())
                 * 1e6 / 1e9 / 60
             };
-            
+
             auto previous_precision{ log_output.precision() };
             log_output.precision(3);
-            
+
             log_output << "This scales to about "
                 << estimated_minutes_for_1_mill_points << " minutes "
                 << "of processing time for 1 Million points.\n\n";
-                
+
             log_output.precision(previous_precision);
         }
-        
+
         return modes;
     }
-    
+
     std::pair<
         std::vector< spatial::ptr_to_const_3d_point_t >, centroid_path_map_t
     > calculate_modes_w_centroid_paths(
@@ -133,31 +153,31 @@ namespace ams3d
         spatial::r_tree_for_3d_points_t r_tree{
             point_cloud.begin(), point_cloud.end()
         };
-        
+
         // Set up a vector for mode pointers.
         std::vector< spatial::ptr_to_const_3d_point_t > modes;
         modes.reserve(point_cloud.size());
-        
+
         // Set up a map for centroid paths to modes.
         centroid_path_map_t centroid_paths;
-        
+
         // Set up a spatial index for centroid path segments.
         spatial::r_tree_for_segment_point_pairs_t centroid_path_segments;
-        
+
         // Set up an array for time measurements.
         std::vector<
             std::chrono::steady_clock::duration
         > mode_calculation_times;
         if (verbose) { mode_calculation_times.reserve(point_cloud.size()); }
-        
+
         // Calculate modes for the points.
         if (verbose) { log_output << "Start calculating modes.\n"; }
-        
+
         for (const auto &point : point_cloud)
         {
             std::chrono::steady_clock::time_point begin;
             if (verbose) { begin = std::chrono::steady_clock::now(); }
-            
+
             modes.push_back(
                 internal::calculate_point_mode_w_centroid_paths(
                     point, r_tree,
@@ -166,23 +186,23 @@ namespace ams3d
                     crown_height_2_tree_height
                 )
             );
-            
+
             if (verbose)
-            {                
+            {
                 auto end{ std::chrono::steady_clock::now() };
                 mode_calculation_times.push_back(end - begin);
-                
+
                 if (modes.size() % 10000 == 0)
                 {
                     log_output << "Calculated " << modes.size() << " of "
                         << point_cloud.size() << " modes...\n";
                 }
             }
-            
+
             // TODO Call Rcpp::checkUserInterrupt() in long running loops when
             // using this code in an R package.
         }
-        
+
         if (verbose)
         {
             // Evaluate the time measurements.
@@ -194,14 +214,14 @@ namespace ams3d
                 )
                 / mode_calculation_times.size()
             };
-            
+
             std::sort(
                 mode_calculation_times.begin(), mode_calculation_times.end()
             );
             std::chrono::steady_clock::duration median_duration{
                 mode_calculation_times[mode_calculation_times.size() / 2]
             };
-            
+
             log_output << "Finished calculating modes!" << "\n\n"
                 << "Calculation of one mode took on average "
                 << std::chrono::duration_cast< std::chrono::microseconds >(
@@ -212,7 +232,7 @@ namespace ams3d
                     median_duration
                 ).count()
                 << " microseconds.\n";
-            
+
             double estimated_minutes_for_1_mill_points{
                 static_cast< double >(
                     std::chrono::duration_cast< std::chrono::nanoseconds >(
@@ -220,21 +240,21 @@ namespace ams3d
                     ).count())
                 * 1e6 / 1e9 / 60
             };
-            
+
             auto previous_precision{ log_output.precision() };
             log_output.precision(3);
-            
+
             log_output << "This scales to about "
                 << estimated_minutes_for_1_mill_points << " minutes "
                 << "of processing time for 1 Million points.\n\n";
-            
+
             log_output.precision(previous_precision);
         }
-        
+
         return std::make_pair(modes, centroid_paths);
     }
 }
-    
+
 namespace ams3d::internal
 {
     spatial::point_3d_t calculate_point_mode(
@@ -245,32 +265,32 @@ namespace ams3d::internal
     ) {
         spatial::point_3d_t current_centroid{ point };
         spatial::point_3d_t former_centroid;
-        
+
         int current_iteration{ 0 };
         do
         {
             current_iteration++;
-            
+
             Kernel current_kernel{
                 current_centroid,
                 crown_diameter_2_tree_height,
                 crown_height_2_tree_height
             };
-            
+
             // TODO Do some performance tests in release mode to see whether
             // "former_centroid = std::move(current_centroid);" is faster.
             former_centroid = current_centroid;
             current_centroid = current_kernel.calculate_centroid(point_cloud);
-        } 
+        }
         while (
             spatial::distance(former_centroid, current_centroid)
                 > constants::centroid_convergence_distance
             && current_iteration < constants::max_num_centroids_per_mode
         );
-        
+
         return current_centroid;
     }
-    
+
     spatial::ptr_to_const_3d_point_t calculate_point_mode_w_centroid_paths(
         const spatial::point_3d_t &point,
         const spatial::r_tree_for_3d_points_t &point_cloud,
@@ -280,33 +300,33 @@ namespace ams3d::internal
         const double crown_height_2_tree_height
     ) {
         std::vector< spatial::point_3d_t > centroids{ point };
-        
+
         int current_iteration{ 0 };
         do
         {
             current_iteration++;
-            
+
             Kernel kernel{
                 centroids.back(),
                 crown_diameter_2_tree_height,
                 crown_height_2_tree_height
             };
-            
+
             centroids.push_back(kernel.calculate_centroid(point_cloud));
-        } 
+        }
         while (
             spatial::distance(centroids[centroids.size() - 2], centroids.back())
                 > constants::centroid_convergence_distance
             && current_iteration < constants::max_num_centroids_per_mode
         );
-        
+
         auto res_mode{ spatial::make_ptr_to_const_3d_point(centroids.back()) };
-        
+
         centroid_paths.emplace(res_mode, centroids);
-        
+
         return res_mode;
     }
-    
+
     Kernel::Kernel(
         const spatial::point_3d_t &center,
         const double crown_diameter_2_tree_height,
@@ -315,13 +335,13 @@ namespace ams3d::internal
         _xy_center{ spatial::get_x(center), spatial::get_y(center) },
         _radius{ crown_diameter_2_tree_height * spatial::get_z(center) * 0.5 },
         _height{ crown_height_2_tree_height * spatial::get_z(center) * 0.75 },
-        
+
         // The kernel is positioned vertically asymmetric around center.
         _top_height   { spatial::get_z(center) + _height * 2.0/3.0 },
         _middle_height{ _top_height - _height * 0.5 },
         _bottom_height{ _top_height - _height }
     {}
-    
+
     std::vector<spatial::point_3d_t> Kernel::_find_intersecting_points(
         const spatial::r_tree_for_3d_points_t &point_cloud
     ) const
@@ -332,7 +352,7 @@ namespace ams3d::internal
             this->_bottom_height, this->_top_height
         );
     }
-    
+
     spatial::distance_t Kernel::_calculate_relative_horizontal_distance_to_center(
         const spatial::point_3d_t &point
     ) const
@@ -345,10 +365,10 @@ namespace ams3d::internal
                 }
             )
         };
-        
+
         return absolute_distance / this->_radius;
     }
-    
+
     spatial::distance_t Kernel::_calculate_relative_vertical_distance_to_center(
         const spatial::point_3d_t &point
     ) const
@@ -356,10 +376,10 @@ namespace ams3d::internal
         spatial::distance_t absolute_distance{
             std::abs(this->_middle_height - spatial::get_z(point))
         };
-        
+
         return absolute_distance / (this->_height * 0.5);
     }
-    
+
     double Kernel::_calculate_point_weight(const spatial::point_3d_t &point) const
     {
         return
@@ -370,7 +390,7 @@ namespace ams3d::internal
                 _calculate_relative_vertical_distance_to_center(point)
             );
     }
-    
+
     spatial::point_3d_t Kernel::calculate_centroid(
         const spatial::r_tree_for_3d_points_t &point_cloud
     ) const
@@ -378,10 +398,10 @@ namespace ams3d::internal
         std::vector<spatial::point_3d_t> points_in_kernel{
             _find_intersecting_points(point_cloud)
         };
-        
+
         std::vector<double> point_weights;
         point_weights.reserve(points_in_kernel.size());
-        
+
         std::transform(
             points_in_kernel.begin(), points_in_kernel.end(),
             std::back_inserter(point_weights),
@@ -390,7 +410,7 @@ namespace ams3d::internal
                 return this->_calculate_point_weight(point);
             }
         );
-        
+
         return spatial::weighted_mean_of_points(
             points_in_kernel, point_weights
         );
@@ -417,24 +437,24 @@ namespace ams3d::internal
 //            // i.e. horizontal distance between Point and Center is smaller than radius
 //            (PointZ >= (CtrZ - (0.5 * Height))) &&
 //            (PointZ <= (CtrZ + (0.5 * Height)));
-//            
+//
 //     if ((pow((PointX - CtrX), 2.0) + pow((PointY - CtrY), 2.0) <= pow(Radius, 2.0)) && (PointZ >= (CtrZ - (0.5*Height))) && (PointZ <= (CtrZ + (0.5*Height))) == true) {
 //         return true;
 //     } else {
 //         return false;
 //     }
 // }
-// 
+//
 // // Help functions for vertical filter
 // double VerticalDistance(double Height, double CtrZ, double PointZ){
-//     
+//
 //   double BottomDistance{ std::abs((CtrZ - Height/4 - PointZ) / (3 * Height/8)) };
 //   double TopDistance{ std::abs((CtrZ + Height/2 - PointZ) / (3 * Height/8)) };
-//   
+//
 //   double MinDistance{ std::min(BottomDistance, TopDistance) };
 //   return MinDistance;
 // }
-// 
+//
 //Equivalent R code
 //distx <- function(h, CtrZ, PointZ){
 //  bottomdist <- abs((CtrZ-h/4-PointZ)/(3*h/8))
@@ -442,17 +462,17 @@ namespace ams3d::internal
 //  mindist <- pmin(bottomdist, topdist)
 //  return(mindist)
 //}
-// 
+//
 // // Selects all points in the upper three quarters of the cylinder.
 // double VerticalMask(double Height, double CtrZ, double PointZ){
-//     
+//
 //     if(CtrZ - Height/4 <= PointZ && PointZ <= CtrZ + Height/2)
 //     {
 //         return 1;
 //     } else {
 //         return 0;
 //     }
-//     
+//
 //     if((PointZ >= CtrZ - Height/4) && (PointZ <= CtrZ + Height/2))
 //     {
 //         return 1;
@@ -460,32 +480,32 @@ namespace ams3d::internal
 //         return 0;
 //     }
 // }
-// 
+//
 //Equivalent R code
 //maskx <- function(h, CtrZ, PointZ){
 //  maskvec <- ifelse(PointZ >= CtrZ-h/4 & PointZ <= CtrZ+h/2, 1, 0)
 //  return(maskvec)
 //}
-// 
+//
 // // Epanechnikov function for vertical filter
 // double EpanechnikovFunction(double Height, double CtrZ, double PointZ){
-//     
+//
 //     double Result {
 //         VerticalMask(Height, CtrZ, PointZ) *
 //         (1 - pow(1 - VerticalDistance(Height, CtrZ, PointZ), 2.0))
 //     };
 //     // i.e. for every point in the upper three quarters of the cylinder do:
 //     // 1 - (1 - VerticalDistance(Point))²
-//         
+//
 //     return Result;
 // }
-// 
+//
 //Equivalent R code
 //Epanechnikov <- function(h, CtrZ, PointZ){
 //  output <- maskx(h, CtrZ, PointZ)*(1-(1-distx(h, CtrZ, PointZ))^2)
 //  return(output)
 //}
-// 
+//
 // Gauss function for horizontal filter
 // double GaussFunction(
 //     double Width,
@@ -497,13 +517,13 @@ namespace ams3d::internal
 //         pow((PointY - CtrY), 2.0),
 //         0.5
 //     );
-//     
+//
 //     double NormDistance = Distance / Width;
-//     
+//
 //     double Result = std::exp(-5.0 * pow(NormDistance, 2.0));
 //     return Result;
 // }
-// 
+//
 //Equivalent R code
 //gauss <- function(w, CtrX, CtrY, PointX, PointY){
 //  distance <- ((PointX-CtrX)^2+(PointY-CtrY)^2)^0.5
