@@ -18,8 +18,8 @@
 // along with crownsegmentr in a file called "COPYING". If not,
 // see <http://www.gnu.org/licenses/>.
 
-#ifndef AMS3D_R_CPP_INTERFACE
-#define AMS3D_R_CPP_INTERFACE
+#ifndef AMS3D_R_CPP_INTERFACE_H
+#define AMS3D_R_CPP_INTERFACE_H
 
 /** \file
  *  This header exposes C++ functions to users who get this code via an R
@@ -47,4 +47,4 @@ std::vector< spatial::point_3d_t > calculate_modes(
     bool verbose = true
 );
 
-#endif  // define AMS3D_R_CPP_INTERFACE
+#endif  // define AMS3D_R_CPP_INTERFACE_H

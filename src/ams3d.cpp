@@ -58,7 +58,11 @@ namespace ams3d
         // Calculate modes for the points.
         std::vector< spatial::point_3d_t > modes;
 
-        if (verbose) { log_output << "Start calculating modes.\n"; }
+        if (verbose)
+        {
+            log_output << "Starting calculation of " << point_cloud.size()
+                       << " modes...\n";
+        }
 
         for (const auto &point : point_cloud)
         {
@@ -171,7 +175,11 @@ namespace ams3d
         if (verbose) { mode_calculation_times.reserve(point_cloud.size()); }
 
         // Calculate modes for the points.
-        if (verbose) { log_output << "Start calculating modes.\n"; }
+        if (verbose)
+        {
+            log_output << "Starting calculation of " << point_cloud.size()
+            << " modes...\n";
+        }
 
         for (const auto &point : point_cloud)
         {
@@ -346,7 +354,7 @@ namespace ams3d::internal
         const spatial::r_tree_for_3d_points_t &point_cloud
     ) const
     {
-        return spatial::get_points_intersecting_vertical_cylinder (
+        return spatial::get_points_intersecting_vertical_cylinder(
             point_cloud,
             this->_xy_center, this->_radius,
             this->_bottom_height, this->_top_height

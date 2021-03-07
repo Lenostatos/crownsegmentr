@@ -18,8 +18,8 @@
 // along with crownsegmentr in a file called "COPYING". If not,
 // see <http://www.gnu.org/licenses/>.
 
-#ifndef AMS3D_R_INTERFACE
-#define AMS3D_R_INTERFACE
+#ifndef AMS3D_R_INTERFACE_H
+#define AMS3D_R_INTERFACE_H
 
 #include <Rcpp.h>
 
@@ -37,4 +37,4 @@ Rcpp::List calculate_modes_and_centroid_paths(
     bool verbose = true
 );
 
-#endif  // define AMS3D_R_INTERFACE
+#endif  // define AMS3D_R_INTERFACE_H
