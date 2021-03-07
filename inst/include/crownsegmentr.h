@@ -18,17 +18,16 @@
 // along with crownsegmentr in a file called "COPYING". If not,
 // see <http://www.gnu.org/licenses/>.
 
-#ifndef RCPP_crownsegmentr
-#define RCPP_crownsegmentr
+#ifndef CROWNSEGMENTR_H
+#define CROWNSEGMENTR_H
 
-//' \p The rationale for this file:
-//' I want the C++ function(s) in the dbscan_Rcpp_interface header to be
-//' available to users who import this package. There are no C++ functions that
-//' I want Rcpp to generate a wrapper for.
-//' The other header files in this include directory become available to the
-//' respective source code by using the Makevars files with the
-//' "PKG_CPPFLAGS =	-I../inst/include/" setting.
+//' \p Rationale for this file:
+//' I wanted to provide a direct C++ interface for other R packages. This could
+//' also be done with the [[Rcpp::export]] and [[Rcpp::interfaces(cpp)]]
+//' attributes. However, I wanted a cleanly separated R-C++ interface so I
+//' created the ams3d_R_Cpp_interface files and included the header here. This
+//' should have the same effect as using the Rcpp attributes.
 
 #include "ams3d_R_Cpp_interface.h"
 
-#endif // RCPP_crownsegmentr
+#endif // CROWNSEGMENTR_H
