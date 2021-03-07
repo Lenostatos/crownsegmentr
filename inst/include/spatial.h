@@ -113,66 +113,6 @@ namespace spatial
         return r_tree.bounds();
     }
 
-    inline std::vector< ptr_to_const_3d_point_t > get_points_intersecting_box (
-        const box_t &box,
-        const r_tree_for_ptrs_to_const_3d_points_t &point_cloud
-    ) {
-        std::vector< ptr_to_const_3d_point_t > points_in_box;
-
-        point_cloud.query(
-            geom::index::intersects(box), std::back_inserter(points_in_box)
-        );
-
-        return points_in_box;
-    }
-
-    /** \brief Queries \p point_cloud for all points within a sphere with a
-     *  certain \p radius that is centered on \p center.
-     *
-     *  \param radius Any point with a distance to \p center that is equal to or
-     *      lesser than this radius is considered to be in the sphere. This
-     *      includes \p center itself.
-     */
-    std::vector< ptr_to_const_3d_point_t > get_points_intersecting_sphere (
-        const r_tree_for_ptrs_to_const_3d_points_t &point_cloud,
-        const point_3d_t &center, distance_t radius
-    );
-
-    namespace internal
-    {
-        /** \brief A functor for querying wether the distance between any point
-         *      and the point of this functor is smaller than a treshold.
-         */
-        class within_distance_predicate
-        {
-        private:
-            const point_3d_t &_point;
-            const distance_t _comparable_distance;
-
-        public:
-            within_distance_predicate(
-                const point_3d_t &point, const distance_t distance
-            ):
-                _point{ point },
-                _comparable_distance{ geom::comparable_distance(
-                    point_3d_t{ 0, 0, 0 }, point_3d_t{ 0, 0, distance }
-                ) }
-            {}
-
-            bool operator()(const point_3d_t &point) const
-            {
-                return geom::comparable_distance(point, _point)
-                <= _comparable_distance;
-            }
-
-            bool operator()(const ptr_to_const_3d_point_t &point) const
-            {
-                return geom::comparable_distance(*point, _point)
-                <= _comparable_distance;
-            }
-        };
-    }
-
     std::vector< point_3d_t > get_points_intersecting_vertical_cylinder (
         const r_tree_for_3d_points_t &point_cloud,
         const point_2d_t &xy_center, distance_t radius,
