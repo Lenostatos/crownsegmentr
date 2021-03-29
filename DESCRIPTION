@@ -1,11 +1,18 @@
 Package: crownsegmentr
 Title: Tree Crown Segmentation in Airborne LiDAR Data
 Version: 0.1.2
-Authors@R: person("Leon", "Steinmeier", role = c("aut", "cre"),
-    email = "Leon.Steinmeier@posteo.net")
+Authors@R: c(
+    person("Leon", "Steinmeier",
+        role = c("aut", "cre", "cph"), 
+        email = "Leon.Steinmeier@posteo.net",
+        comment = "Created the package as part of his master thesis."),
+    person("Nikolai", "Knapp", 
+        role = c("aut", "cph"), 
+        email = "Nikolai.Knapp@ufz.de",
+        comment = "Initialized and motivated the development of the package and provided an R draft of the AMS3D algorithm."))
 Description: Provides a function that performs the adaptive mean shift algorithm
-    for individual tree delineation in 3D point clouds as proposed by Ferraz et.
-    al, 2016.
+    for individual tree crown delineation in 3D point clouds as proposed by 
+    Ferraz et. al, 2016.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
@@ -20,8 +27,9 @@ Imports:
     methods
 LinkingTo: 
     BH,
-    Rcpp
-SystemRequirements: C++17
+    Rcpp,
+    progress
+SystemRequirements: C++17, GNU make
 Suggests: 
     testthat,
     future
