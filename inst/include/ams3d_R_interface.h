@@ -1,7 +1,7 @@
 // This file is part of crownsegmentr, an R package for identifying tree crowns
 // within 3D point clouds.
 //
-// Copyright (C) 2020 Leon Steinmeier, Nikolai Knapp, UFZ
+// Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ
 // Contact: Lenostatos@gmx.de
 //
 // crownsegmentr is free software: you can redistribute it and/or modify
@@ -21,20 +21,40 @@
 #ifndef AMS3D_R_INTERFACE_H
 #define AMS3D_R_INTERFACE_H
 
+#include "spatial.h"
+#include "ams3d.h"
+
 #include <Rcpp.h>
 
-Rcpp::DataFrame calculate_modes(
-    const Rcpp::DataFrame &point_cloud,
-    const double &crown_diameter_2_tree_height,
-    const double &crown_height_2_tree_height,
-    bool verbose = true
+#include <RProgress.h> // This line needs to go after "#include <Rcpp.h>"!
+// (RProgress seems to rely on Rinternal.h which is probably loaded implicitly
+// by "#include <Rcpp.h>".)
+
+Rcpp::DataFrame calculate_modes (
+    const Rcpp::DataFrame &coordinate_table,
+    const double &crown_diameter_to_tree_height,
+    const double &crown_height_to_tree_height,
+    const spatial::distance_t &centroid_convergence_distance,
+    const int max_num_centroids_per_mode,
+    const bool show_progress_bar = true
 );
 
-Rcpp::List calculate_modes_and_centroid_paths(
-    const Rcpp::DataFrame &point_cloud,
-    const double &crown_diameter_2_tree_height,
-    const double &crown_height_2_tree_height,
-    bool verbose = true
+Rcpp::List calculate_modes_plus_centroids (
+    const Rcpp::DataFrame &coordinate_table,
+    const double &crown_diameter_to_tree_height,
+    const double &crown_height_to_tree_height,
+    const spatial::distance_t &centroid_convergence_distance,
+    const int max_num_centroids_per_mode,
+    const bool show_progress_bar = true
 );
+
+namespace ams3d_R_interface_helper
+{
+    std::vector< spatial::point_3d_t > create_point_objects_from (
+        const Rcpp::DataFrame &coordinate_table
+    );
+
+    RProgress::RProgress create_progress_bar( double total );
+}
 
 #endif  // define AMS3D_R_INTERFACE_H

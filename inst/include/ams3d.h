@@ -1,7 +1,7 @@
 // This file is part of crownsegmentr, an R package for identifying tree crowns
 // within 3D point clouds.
 //
-// Copyright (C) 2020 Leon Steinmeier, Nikolai Knapp, UFZ
+// Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ
 // Contact: Lenostatos@gmx.de
 //
 // crownsegmentr is free software: you can redistribute it and/or modify
@@ -23,13 +23,7 @@
 
 #include "spatial.h"
 
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point_xy.hpp>
-
-#include <iostream>       // for std::cout
-#include <unordered_map>  // for std::unordered_map
-#include <cmath>   // for std::exp and std::pow
-#include <vector>  // for std::vector
+#include <cmath>            // std::exp and std::pow
 
 /** \brief Contains an implementation of the mean shift algorithm adapted for
  *  the use case of identifying tree crowns in 3D LiDAR point clouds as
@@ -86,97 +80,57 @@
  */
 namespace ams3d
 {
-    /** \brief Calculates the mode for each point in \p point_cloud.
-     *
-     *  \return An array of modes with one for each point in \p point_cloud.
-     *      The modes are in the same order as the points they belong to.
-     */
-    std::vector< spatial::point_3d_t > calculate_modes(
-        const std::vector< spatial::point_3d_t > &point_cloud,
-        const double crown_diameter_2_tree_height,
-        const double crown_height_2_tree_height,
-        bool verbose = true,
-        std::basic_ostream< char > &log_output = std::cout
-    );
-
-    using centroid_path_map_t = std::unordered_map<
-        spatial::ptr_to_const_3d_point_t, std::vector< spatial::point_3d_t >
-    >;
-
-    /** \brief Calculate the mode of each point, using the paths of previously
-     *      calculated centroids as help.
-     *
-     *  \return A vector of modes and a map of centroid paths to modes. The
-     *      modes in the vector are ordered according to the points in
-     *      \p point_cloud.
-     */
-    std::pair<
-        std::vector< spatial::ptr_to_const_3d_point_t >, centroid_path_map_t
-    > calculate_modes_w_centroid_paths(
-        const std::vector< spatial::point_3d_t > &point_cloud,
-        const double crown_diameter_2_tree_height,
-        const double crown_height_2_tree_height,
-        bool verbose = true,
-        std::basic_ostream< char > &log_output = std::cout
-    );
-}
-
-namespace ams3d::internal
-{
-    namespace constants
-    {
-        /** The distance between consecutive centroids at which it is assumed
-         *  that they have converged to a mode.
-         */
-        inline constexpr spatial::distance_t centroid_convergence_distance{
-            0.01
-        };
-
-        /** A threshold to prevent excessive centroid calculation iterations for
-         *  the cases where centroids don't converge towards a mode.
-         */
-        inline constexpr int max_num_centroids_per_mode{ 200 };
-    }
-
-    /** Calculates the mode for \p point within \p point_cloud. */
-    spatial::point_3d_t calculate_point_mode(
+    /** \brief Calculates the mode of \p point within \p indexed_point_cloud. */
+    spatial::point_3d_t calculate_a_single_mode (
         const spatial::point_3d_t &point,
-        const spatial::r_tree_for_3d_points_t &point_cloud,
-        const double crown_diameter_2_tree_height,
-        const double crown_height_2_tree_height
+        const spatial::index_for_3d_points_t &indexed_point_cloud,
+        const double crown_diameter_to_tree_height,
+        const double crown_height_to_tree_height,
+        const double centroid_convergence_distance,
+        const int max_num_centroids_per_mode
     );
 
-    /** \brief Calculates the mode for \p point within \p point_cloud using
-     *      and/or possibly adding to the paths of previously calculated
-     *      centroids.
+    /** \brief Calculates the mode of \p point within \p indexed_point_cloud.
+     *
+     *  Same as calculate_a_single_mode but also returns the centroids.
+     *
+     *  \return A pair with the calculated mode at the first position and an
+     *      array of the calculated centroids at the second position.
      */
-    spatial::ptr_to_const_3d_point_t calculate_point_mode_w_centroid_paths(
+    std::pair <
+        spatial::point_3d_t, std::vector< spatial::point_3d_t >
+    > calculate_a_single_mode_plus_centroids (
         const spatial::point_3d_t &point,
-        const spatial::r_tree_for_3d_points_t &point_cloud,
-        centroid_path_map_t &centroid_paths,
-        spatial::r_tree_for_segment_point_pairs_t &centroid_path_segments,
-        const double crown_diameter_2_tree_height,
-        const double crown_height_2_tree_height
+        const spatial::index_for_3d_points_t &indexed_point_cloud,
+        const double crown_diameter_to_tree_height,
+        const double crown_height_to_tree_height,
+        const spatial::distance_t &centroid_convergence_distance,
+        const int max_num_centroids_per_mode
     );
+
+
+    // ===================
+    // Internal Components
+    // ===================
 
     /** \brief Models a kernel with the shape of a three-dimensional
-     *  vertical cylinder.
+     *      vertical cylinder.
      */
-    class Kernel
+    class _Kernel
     {
     private:
-        spatial::point_2d_t _xy_center;
-        spatial::distance_t _radius;
-        spatial::distance_t _height;
-        spatial::distance_t _top_height;
-        spatial::distance_t _middle_height;
-        spatial::distance_t _bottom_height;
+        const spatial::point_2d_t _xy_center;
+        const spatial::distance_t _radius;
+        const spatial::distance_t _height;
+        const spatial::distance_t _top_height;
+        const spatial::distance_t _middle_height;
+        const spatial::distance_t _bottom_height;
 
         /** Searches for points in \p point_cloud that intersect with the
          *  kernel.
          */
-        std::vector<spatial::point_3d_t> _find_intersecting_points(
-            const spatial::r_tree_for_3d_points_t &point_cloud
+        std::vector<spatial::point_3d_t> _find_intersecting_points_in (
+            const spatial::index_for_3d_points_t &point_cloud
         ) const;
 
         /** Calculate \p point's distance to the kernel's center on the
@@ -185,7 +139,7 @@ namespace ams3d::internal
          *  Analogous to the argument to the function g^s in equation (15)
          *  in Ferraz et al. 2012.
          */
-        spatial::distance_t _calculate_relative_horizontal_distance_to_center(
+        spatial::distance_t _calculate_relative_horizontal_distance_of_center_to (
             const spatial::point_3d_t &point
         ) const;
 
@@ -195,14 +149,14 @@ namespace ams3d::internal
          *  Analogous to parts of equation (13) and (14) in
          *  Ferraz et al. 2012.
          */
-        spatial::distance_t _calculate_relative_vertical_distance_to_center(
+        spatial::distance_t _calculate_relative_vertical_distance_of_center_to (
             const spatial::point_3d_t &point
         ) const;
 
-        /** Calculate \p point's weight according to the kernel's horizontal
-         *  and vertical profile.
+        /** Calculate the weight of a \p point inside the kernel according to
+         *  the kernel's horizontal and vertical profile.
          */
-        double _calculate_point_weight(
+        double _calculate_point_weight_of (
             const spatial::point_3d_t &point
         ) const;
 
@@ -210,42 +164,42 @@ namespace ams3d::internal
         /** \brief Constructs an asymmetric kernel around \p center.
          *
          *  @param center A three-dimensional point.
-         *  @param crown_diameter_2_tree_height The estimated relationship
+         *  @param crown_diameter_to_tree_height The estimated relationship
          *      between crown diameter and tree height.
-         *  @param crown_height_2_tree_height The estimated relationship
+         *  @param crown_height_to_tree_height The estimated relationship
          *      between crown height and tree height.
          */
-        Kernel(
+        _Kernel (
             const spatial::point_3d_t &center,
-            const double crown_diameter_2_tree_height,
-            const double crown_height_2_tree_height
+            const double crown_diameter_to_tree_height,
+            const double crown_height_to_tree_height
         );
 
         /** Returns the kernel's weighted centroid given a point cloud. */
-        spatial::point_3d_t calculate_centroid(
-            const spatial::r_tree_for_3d_points_t &point_cloud
+        spatial::point_3d_t calculate_centroid_in (
+            const spatial::index_for_3d_points_t &point_cloud
         ) const;
 
     };
 
-    namespace math_functions
+    namespace _math_functions
     {
-        inline constexpr double gaussian_gamma{ -5 };
+        inline constexpr double gaussian_gamma{-5};
 
         /** The gaussian function f(x) = exp(gaussian_gamma * x^2).
          *
          *  Analogous to equation (11) in Ferraz et al. 2012.
          */
-        inline double gauss(const double x) {
-            return std::exp(gaussian_gamma * std::pow(x, 2));
+        inline double gauss( const double x ) {
+            return std::exp( gaussian_gamma * std::pow(x, 2) );
         }
 
         /** The epanechnikov distribution function f(x) = 1 - x^2 .
          *
          *  Analogous to parts of equation (14) in Ferraz et al. 2012.
          */
-        inline double epanechnikov(const double x) {
-            return 1 - std::pow(x, 2);
+        inline double epanechnikov( const double x ) {
+            return 1 - std::pow( x, 2 );
         }
     }
 }

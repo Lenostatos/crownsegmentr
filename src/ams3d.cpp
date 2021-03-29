@@ -1,7 +1,7 @@
 // This file is part of crownsegmentr, an R package for identifying tree crowns
 // within 3D point clouds.
 //
-// Copyright (C) 2020 Leon Steinmeier, Nikolai Knapp, UFZ
+// Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ
 // Contact: Lenostatos@gmx.de
 //
 // crownsegmentr is free software: you can redistribute it and/or modify
@@ -22,354 +22,143 @@
 
 #include "spatial.h"
 
-// TODO update these includes
-#include <map>          // for std::map
-#include <vector>       // for std::vector
-#include <chrono>       // for std::chrono::*
-#include <memory>       // for std::make_shared
-#include <ostream>      // for std::basic_ostream
-#include <algorithm>    // for std:: accumulate
 #include <utility>      // std::move
-#include <functional>   // TODO
-#include <cmath>        // std::pow, std::fmin
-#include <iterator>     // std::back_inserter
-#include <numeric>      // std::accumulate
 
 namespace ams3d
 {
-    std::vector< spatial::point_3d_t > calculate_modes(
-        const std::vector< spatial::point_3d_t > &point_cloud,
-        const double crown_diameter_2_tree_height,
-        const double crown_height_2_tree_height,
-        bool verbose,
-        std::basic_ostream< char > &log_output
-    ) {
-        // Set up a spatial index for the point_cloud.
-        spatial::r_tree_for_3d_points_t r_tree{
-            point_cloud.begin(), point_cloud.end()
-        };
-
-        // Prepare some time measurements.
-        std::vector<
-            std::chrono::steady_clock::duration
-        > mode_calculation_times;
-        if (verbose) { mode_calculation_times.reserve(point_cloud.size()); }
-
-        // Calculate modes for the points.
-        std::vector< spatial::point_3d_t > modes;
-
-        if (verbose)
-        {
-            log_output << "Starting calculation of " << point_cloud.size()
-                       << " modes...\n";
-        }
-
-        for (const auto &point : point_cloud)
-        {
-            std::chrono::steady_clock::time_point begin;
-            if (verbose) { begin = std::chrono::steady_clock::now(); }
-
-            modes.push_back(
-                internal::calculate_point_mode(
-                    point, r_tree,
-                    crown_diameter_2_tree_height,
-                    crown_height_2_tree_height
-                )
-            );
-
-            if (verbose)
-            {
-                auto end{ std::chrono::steady_clock::now() };
-                mode_calculation_times.push_back(end - begin);
-
-                if (modes.size() % 10000 == 0)
-                {
-                    log_output << "Calculated " << modes.size() << " of "
-                    << point_cloud.size() << " modes...\n";
-                }
-            }
-
-            // TODO Call Rcpp::checkUserInterrupt() in long running loops when
-            // using this code in an R package.
-        }
-
-        if (verbose)
-        {
-            // Evaluate the time measurements.
-            std::chrono::steady_clock::duration mean_duration{
-                std::accumulate(
-                    mode_calculation_times.begin(),
-                    mode_calculation_times.end(),
-                    std::chrono::steady_clock::duration::zero()
-                )
-                / mode_calculation_times.size()
-            };
-
-            std::sort(
-                mode_calculation_times.begin(), mode_calculation_times.end()
-            );
-            std::chrono::steady_clock::duration median_duration{
-                mode_calculation_times[mode_calculation_times.size() / 2]
-            };
-
-            log_output << "Finished calculating modes!" << "\n\n"
-                << "Calculation of one mode took on average "
-                << std::chrono::duration_cast<std::chrono::microseconds>(
-                    mean_duration
-                ).count()
-                << " microseconds with the median at "
-                << std::chrono::duration_cast<std::chrono::microseconds>(
-                    median_duration
-                ).count()
-                << " microseconds.\n";
-
-            double estimated_minutes_for_1_mill_points{
-                static_cast<double>(
-                    std::chrono::duration_cast<std::chrono::nanoseconds>(
-                        mean_duration
-                    ).count())
-                * 1e6 / 1e9 / 60
-            };
-
-            auto previous_precision{ log_output.precision() };
-            log_output.precision(3);
-
-            log_output << "This scales to about "
-                << estimated_minutes_for_1_mill_points << " minutes "
-                << "of processing time for 1 Million points.\n\n";
-
-            log_output.precision(previous_precision);
-        }
-
-        return modes;
-    }
-
-    std::pair<
-        std::vector< spatial::ptr_to_const_3d_point_t >, centroid_path_map_t
-    > calculate_modes_w_centroid_paths(
-        const std::vector< spatial::point_3d_t > &point_cloud,
-        const double crown_diameter_2_tree_height,
-        const double crown_height_2_tree_height,
-        bool verbose,
-        std::basic_ostream< char > &log_output
-    ) {
-        // Set up a spatial index for the point_cloud.
-        spatial::r_tree_for_3d_points_t r_tree{
-            point_cloud.begin(), point_cloud.end()
-        };
-
-        // Set up a vector for mode pointers.
-        std::vector< spatial::ptr_to_const_3d_point_t > modes;
-        modes.reserve(point_cloud.size());
-
-        // Set up a map for centroid paths to modes.
-        centroid_path_map_t centroid_paths;
-
-        // Set up a spatial index for centroid path segments.
-        spatial::r_tree_for_segment_point_pairs_t centroid_path_segments;
-
-        // Set up an array for time measurements.
-        std::vector<
-            std::chrono::steady_clock::duration
-        > mode_calculation_times;
-        if (verbose) { mode_calculation_times.reserve(point_cloud.size()); }
-
-        // Calculate modes for the points.
-        if (verbose)
-        {
-            log_output << "Starting calculation of " << point_cloud.size()
-            << " modes...\n";
-        }
-
-        for (const auto &point : point_cloud)
-        {
-            std::chrono::steady_clock::time_point begin;
-            if (verbose) { begin = std::chrono::steady_clock::now(); }
-
-            modes.push_back(
-                internal::calculate_point_mode_w_centroid_paths(
-                    point, r_tree,
-                    centroid_paths, centroid_path_segments,
-                    crown_diameter_2_tree_height,
-                    crown_height_2_tree_height
-                )
-            );
-
-            if (verbose)
-            {
-                auto end{ std::chrono::steady_clock::now() };
-                mode_calculation_times.push_back(end - begin);
-
-                if (modes.size() % 10000 == 0)
-                {
-                    log_output << "Calculated " << modes.size() << " of "
-                        << point_cloud.size() << " modes...\n";
-                }
-            }
-
-            // TODO Call Rcpp::checkUserInterrupt() in long running loops when
-            // using this code in an R package.
-        }
-
-        if (verbose)
-        {
-            // Evaluate the time measurements.
-            std::chrono::steady_clock::duration mean_duration{
-                std::accumulate(
-                    mode_calculation_times.begin(),
-                    mode_calculation_times.end(),
-                    std::chrono::steady_clock::duration::zero()
-                )
-                / mode_calculation_times.size()
-            };
-
-            std::sort(
-                mode_calculation_times.begin(), mode_calculation_times.end()
-            );
-            std::chrono::steady_clock::duration median_duration{
-                mode_calculation_times[mode_calculation_times.size() / 2]
-            };
-
-            log_output << "Finished calculating modes!" << "\n\n"
-                << "Calculation of one mode took on average "
-                << std::chrono::duration_cast< std::chrono::microseconds >(
-                    mean_duration
-                ).count()
-                << " microseconds with the median at "
-                << std::chrono::duration_cast< std::chrono::microseconds >(
-                    median_duration
-                ).count()
-                << " microseconds.\n";
-
-            double estimated_minutes_for_1_mill_points{
-                static_cast< double >(
-                    std::chrono::duration_cast< std::chrono::nanoseconds >(
-                        mean_duration
-                    ).count())
-                * 1e6 / 1e9 / 60
-            };
-
-            auto previous_precision{ log_output.precision() };
-            log_output.precision(3);
-
-            log_output << "This scales to about "
-                << estimated_minutes_for_1_mill_points << " minutes "
-                << "of processing time for 1 Million points.\n\n";
-
-            log_output.precision(previous_precision);
-        }
-
-        return std::make_pair(modes, centroid_paths);
-    }
-}
-
-namespace ams3d::internal
-{
-    spatial::point_3d_t calculate_point_mode(
+    spatial::point_3d_t calculate_a_single_mode (
         const spatial::point_3d_t &point,
-        const spatial::r_tree_for_3d_points_t &point_cloud,
-        const double crown_diameter_2_tree_height,
-        const double crown_height_2_tree_height
+        const spatial::index_for_3d_points_t &indexed_point_cloud,
+        const double crown_diameter_to_tree_height,
+        const double crown_height_to_tree_height,
+        const double centroid_convergence_distance,
+        const int max_num_centroids_per_mode
     ) {
+        // Set the current centroid to the starting point because it will be
+        // queried in the loop below.
         spatial::point_3d_t current_centroid{ point };
         spatial::point_3d_t former_centroid;
 
-        int current_iteration{ 0 };
+        int num_calculated_centroids{0};
         do
         {
-            current_iteration++;
-
-            Kernel current_kernel{
+            // Create a kernel at the current centroid.
+            _Kernel kernel {
                 current_centroid,
-                crown_diameter_2_tree_height,
-                crown_height_2_tree_height
+                crown_diameter_to_tree_height,
+                crown_height_to_tree_height
             };
 
-            // TODO Do some performance tests in release mode to see whether
-            // "former_centroid = std::move(current_centroid);" is faster.
+            // Store the current centroid and calculate a new centroid with the
+            // new kernel.
             former_centroid = current_centroid;
-            current_centroid = current_kernel.calculate_centroid(point_cloud);
+            current_centroid = kernel.calculate_centroid_in(
+                indexed_point_cloud
+            );
+
+            num_calculated_centroids++;
         }
         while (
-            spatial::distance(former_centroid, current_centroid)
-                > constants::centroid_convergence_distance
-            && current_iteration < constants::max_num_centroids_per_mode
+            spatial::distance( former_centroid, current_centroid ) >
+                centroid_convergence_distance
+            && num_calculated_centroids < max_num_centroids_per_mode
         );
 
         return current_centroid;
     }
 
-    spatial::ptr_to_const_3d_point_t calculate_point_mode_w_centroid_paths(
+    std::pair <
+        spatial::point_3d_t, std::vector< spatial::point_3d_t >
+    > calculate_a_single_mode_plus_centroids (
         const spatial::point_3d_t &point,
-        const spatial::r_tree_for_3d_points_t &point_cloud,
-        centroid_path_map_t &centroid_paths,
-        spatial::r_tree_for_segment_point_pairs_t &centroid_path_segments,
-        const double crown_diameter_2_tree_height,
-        const double crown_height_2_tree_height
+        const spatial::index_for_3d_points_t &indexed_point_cloud,
+        const double crown_diameter_to_tree_height,
+        const double crown_height_to_tree_height,
+        const spatial::distance_t &centroid_convergence_distance,
+        const int max_num_centroids_per_mode
     ) {
-        std::vector< spatial::point_3d_t > centroids{ point };
+        // Set the current centroid to the starting point because it will be
+        // queried in the loop below.
+        spatial::point_3d_t current_centroid{ point };
+        spatial::point_3d_t former_centroid;
 
-        int current_iteration{ 0 };
+        // Create an array for calculated centroids.
+        std::vector< spatial::point_3d_t > centroids;
+        centroids.reserve(60);
+
+        int num_calculated_centroids{0};
         do
         {
-            current_iteration++;
-
-            Kernel kernel{
-                centroids.back(),
-                crown_diameter_2_tree_height,
-                crown_height_2_tree_height
+            // Create a kernel at the previously calculated centroid (which is
+            // the starting point during the first iteration).
+            _Kernel kernel {
+                current_centroid,
+                crown_diameter_to_tree_height,
+                crown_height_to_tree_height
             };
 
-            centroids.push_back(kernel.calculate_centroid(point_cloud));
+            // Store the current centroid and calculate a new centroid with the
+            // new kernel.
+            former_centroid = current_centroid;
+            current_centroid = kernel.calculate_centroid_in (
+                indexed_point_cloud
+            );
+
+            // Append the new centroid to the already calculated ones.
+            centroids.push_back( current_centroid );
+
+            num_calculated_centroids++;
         }
         while (
-            spatial::distance(centroids[centroids.size() - 2], centroids.back())
-                > constants::centroid_convergence_distance
-            && current_iteration < constants::max_num_centroids_per_mode
+            spatial::distance( former_centroid, current_centroid ) >
+                centroid_convergence_distance
+            && num_calculated_centroids < max_num_centroids_per_mode
         );
 
-        auto res_mode{ spatial::make_ptr_to_const_3d_point(centroids.back()) };
-
-        centroid_paths.emplace(res_mode, centroids);
-
-        return res_mode;
+        // Return the last centroid as the mode plus all centroids in an array.
+        return std::make_pair( current_centroid, centroids );
     }
 
-    Kernel::Kernel(
+
+    // ===================
+    // Internal Components
+    // ===================
+
+    _Kernel::_Kernel (
         const spatial::point_3d_t &center,
-        const double crown_diameter_2_tree_height,
-        const double crown_height_2_tree_height
+        const double crown_diameter_to_tree_height,
+        const double crown_height_to_tree_height
     ):
-        _xy_center{ spatial::get_x(center), spatial::get_y(center) },
-        _radius{ crown_diameter_2_tree_height * spatial::get_z(center) * 0.5 },
-        _height{ crown_height_2_tree_height * spatial::get_z(center) * 0.75 },
+        _xy_center{ spatial::get_x( center ), spatial::get_y( center ) },
+        _radius{ crown_diameter_to_tree_height * spatial::get_z( center ) * 0.5 },
+        _height{ crown_height_to_tree_height * spatial::get_z( center ) * 0.75 },
 
         // The kernel is positioned vertically asymmetric around center.
-        _top_height   { spatial::get_z(center) + _height * 2.0/3.0 },
+        _top_height   { spatial::get_z( center ) + _height * 2.0/3.0 },
         _middle_height{ _top_height - _height * 0.5 },
         _bottom_height{ _top_height - _height }
     {}
 
-    std::vector<spatial::point_3d_t> Kernel::_find_intersecting_points(
-        const spatial::r_tree_for_3d_points_t &point_cloud
+    std::vector<spatial::point_3d_t> _Kernel::_find_intersecting_points_in (
+        const spatial::index_for_3d_points_t &point_cloud
     ) const
     {
-        return spatial::get_points_intersecting_vertical_cylinder(
+        return spatial::get_points_intersecting_vertical_cylinder (
             point_cloud,
             this->_xy_center, this->_radius,
             this->_bottom_height, this->_top_height
         );
     }
 
-    spatial::distance_t Kernel::_calculate_relative_horizontal_distance_to_center(
+    spatial::distance_t _Kernel::_calculate_relative_horizontal_distance_of_center_to (
         const spatial::point_3d_t &point
     ) const
     {
-        spatial::distance_t absolute_distance{
-            spatial::distance(
+        spatial::distance_t absolute_distance {
+            spatial::distance (
                 this->_xy_center,
-                spatial::point_2d_t{
-                    spatial::get_x(point), spatial::get_y(point)
+                spatial::point_2d_t {
+                    spatial::get_x( point ), spatial::get_y( point )
                 }
             )
         };
@@ -377,49 +166,59 @@ namespace ams3d::internal
         return absolute_distance / this->_radius;
     }
 
-    spatial::distance_t Kernel::_calculate_relative_vertical_distance_to_center(
+    spatial::distance_t _Kernel::_calculate_relative_vertical_distance_of_center_to (
         const spatial::point_3d_t &point
     ) const
     {
-        spatial::distance_t absolute_distance{
-            std::abs(this->_middle_height - spatial::get_z(point))
+        spatial::distance_t absolute_distance {
+            std::abs( this->_middle_height - spatial::get_z( point ) )
         };
 
         return absolute_distance / (this->_height * 0.5);
     }
 
-    double Kernel::_calculate_point_weight(const spatial::point_3d_t &point) const
+    double _Kernel::_calculate_point_weight_of (
+        const spatial::point_3d_t &point
+    ) const
     {
         return
-            math_functions::gauss(
-                _calculate_relative_horizontal_distance_to_center(point)
+            _math_functions::gauss (
+                _calculate_relative_horizontal_distance_of_center_to( point )
             )
-            * math_functions::epanechnikov(
-                _calculate_relative_vertical_distance_to_center(point)
+            * _math_functions::epanechnikov (
+                _calculate_relative_vertical_distance_of_center_to( point )
             );
     }
 
-    spatial::point_3d_t Kernel::calculate_centroid(
-        const spatial::r_tree_for_3d_points_t &point_cloud
+    spatial::point_3d_t _Kernel::calculate_centroid_in (
+        const spatial::index_for_3d_points_t &point_cloud
     ) const
     {
-        std::vector<spatial::point_3d_t> points_in_kernel{
-            _find_intersecting_points(point_cloud)
+        // Find the points intersecting with the kernel.
+        std::vector<spatial::point_3d_t> points_in_kernel {
+            _find_intersecting_points_in( point_cloud )
         };
 
+        // Idea: If there are no other points in the kernel, directly return the
+        // symmetric(!) kernel's center as the centroid.
+        // This would mostly be relevant for ground points, so test the
+        // performance impact of this on point clouds without ground points.
+        // -> Doesn't seem to have a positive performance impact.
+
+        // Set up an array of point weights.
         std::vector<double> point_weights;
-        point_weights.reserve(points_in_kernel.size());
+        point_weights.reserve( points_in_kernel.size() );
 
-        std::transform(
-            points_in_kernel.begin(), points_in_kernel.end(),
-            std::back_inserter(point_weights),
-            [&](spatial::point_3d_t const& point) -> double
-            {
-                return this->_calculate_point_weight(point);
-            }
-        );
+        // Calculate point weights.
+        for (const auto &point_in_kernel : points_in_kernel)
+        {
+            point_weights.push_back (
+                this->_calculate_point_weight_of( point_in_kernel )
+            );
+        }
 
-        return spatial::weighted_mean_of_points(
+        // Return the weighted mean point of all points in the kernel.
+        return spatial::weighted_mean_of (
             points_in_kernel, point_weights
         );
     }
