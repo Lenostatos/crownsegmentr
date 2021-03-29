@@ -19,10 +19,6 @@
 # see <http://www.gnu.org/licenses/>.
 
 
-# For the LAScatalog tests
-# TODO Check whether enabling parallelization like this is CRAN conform
-future::plan(strategy = future::multisession)
-
 # data.frame/data.table method --------------------------------
 test_that("the data.frame/data.table method works", {
 
@@ -281,6 +277,9 @@ test_that("the LAS method works", {
 
 # LAScatalog method -------------------------------------------
 test_that("the LAScatalog method works", {
+
+  # TODO Check whether enabling parallelization like this is CRAN conform
+  future::plan(strategy = future::multisession)
 
   # Load real point cloud data
   test_catalog <- lidR::readLAScatalog(
