@@ -2,40 +2,77 @@
 % Please edit documentation in R/RcppExports.R
 \name{calculate_modes}
 \alias{calculate_modes}
-\title{Calculate the modes of points in a forest point cloud}
+\alias{calculate_modes_plus_centroids}
+\title{Calculate modes with the AMS3D algorithm for a lidar point cloud of a forest}
 \usage{
 calculate_modes(
-  point_cloud,
-  crown_diameter_2_tree_height,
-  crown_height_2_tree_height,
-  verbose
+  coordinate_table,
+  crown_diameter_to_tree_height,
+  crown_height_to_tree_height,
+  centroid_convergence_distance,
+  max_num_centroids_per_mode,
+  show_progress_bar
+)
+
+calculate_modes_plus_centroids(
+  coordinate_table,
+  crown_diameter_to_tree_height,
+  crown_height_to_tree_height,
+  centroid_convergence_distance,
+  max_num_centroids_per_mode,
+  show_progress_bar
 )
 }
 \arguments{
-\item{point_cloud}{A data.frame. The first three columns are treated as
-x-, y-, and z-coordinates in that order.}
+\item{coordinate_table}{A data.frame. The first three columns are treated
+as x-, y-, and z-coordinates of an airborne lidar point cloud in that
+order.}
 
-\item{crown_diameter_2_tree_height, crown_height_2_tree_height}{Numeric
-Scalars. Estimates of the crown diameter and crown height to tree height
-ratios that are common for the trees in \code{point_cloud}.}
+\item{crown_diameter_to_tree_height, crown_height_to_tree_height}{Numeric
+Scalars. Crown diameter and crown height to tree height ratios of the
+trees expected to be found in the point cloud.}
 
-\item{verbose}{Boolean Scalar. Should the function print runtime information
-to the console?}
+\item{centroid_convergence_distance}{Numeric Scalar. Distance at which it is
+assumed that subsequently calculated centroids have converged to the
+nearest mode.}
+
+\item{max_num_centroids_per_mode}{Integer Scalar. Maximum number of
+centroids calculated before the search for the nearest mode is aborted.}
+
+\item{show_progress_bar}{Boolean Scalar. Should the function show a progress
+bar during the computation?}
 }
 \value{
-A data.frame with three columns that hold the x-, y-, and
-z-coordinates of the calculated modes. The rows are sorted according to
-the points in \code{point_cloud} that the modes belong to.
+\code{calculate_modes} returns a data.frame with three columns that
+hold the x-, y-, and z-coordinates of the calculated modes. The rows are
+sorted according to the points in the \code{coordinate_table}.
+
+\code{calculate_modes_plus_centroids} returns a list with two
+elements. The first element (named "mode_coordinates") is the
+\code{data.frame} which would have been returned if
+\code{calculate_modes} had been called. The second element (named
+"centroid_coordinates") is another \code{data.frame} holding centroid
+coordinates. To enable grouping of these centroids by the point they
+belong to, there is one additional column (named "point_index") which
+holds row indices of the corresponding points in the
+\code{coordinate_table}.
 }
 \description{
-Employs the 3D adaptive mean shift algorithm to estimate the mode of each
-point in a point cloud that contains trees. In this context the mode is a
-theoretical "center of mass" of a tree crown that is usually located shortly
-below the crown apex. All points in the same tree crown are expected to have
-the same mode.
+Employs the 3D adaptive mean shift algorithm (Ferraz et al., 2016) to
+estimate the mode of each point in a point cloud which is assumed to contain
+trees. In this context the mode is a theoretical "center of mass" of a tree
+crown that is usually located shortly below the crown apex. All points of
+the same tree crown are expected to have the same mode.
 }
-\section{TODO}{
+\section{Functions}{
+\itemize{
+\item \code{calculate_modes_plus_centroids}: Also return centroids calculated during the mode
+finding.
+}}
 
-Add reference to Ferraz et. al.
+\references{
+Ferraz, A., S. Saatchi, C. Mallet, and V. Meyer (2016)
+\emph{Lidar detection of individual tree size in tropical forests}.
+Remote Sensing of Environment 183:318–333.
+\url{https://doi.org/10.1016/j.rse.2016.05.028}.
 }
-

@@ -1,7 +1,7 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2020 Leon Steinmeier, Nikolai Knapp, UFZ
+# Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ
 # Contact: Lenostatos@gmx.de
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
@@ -18,371 +18,524 @@
 # along with crownsegmentr in a file called "COPYING". If not,
 # see <http://www.gnu.org/licenses/>.
 
+
+# Generic S4 Function -------------------------------------------------
+
 #' Segment Tree Crowns in a 3D Point Cloud
 #'
 #' Employs a variant of the mean shift algorithm (Ferraz et. al, 2016) and after
-#' that the DBSCAN algorithm in order to find tree crowns in a set of
-#' xyz-coordinates.
+#' that the DBSCAN algorithm in order to identify tree crowns in airborne lidar
+#' data.
 #'
-#' @param point_cloud A set of xyz-coordinates. Can be passed as either a
-#'   \code{\link[base]{data.frame}}, a \code{\link[data.table]{data.table}}, or
-#'   a lidR- \code{\link[lidR]{LAS}} or \code{\link[lidR]{LAScatalog-class}}
-#'   object.
+#' @param point_cloud A data set containing xyz-coordinates. Can be passed as
+#'   either a \code{\link[base]{data.frame}}, a
+#'   \code{\link[data.table]{data.table}}, or a lidR- \code{\link[lidR]{LAS}} or
+#'   \code{\link[lidR]{LAScatalog-class}} object.
 #'
 #'   If it's a \code{\link[base]{data.frame}} or a
 #'   \code{\link[data.table]{data.table}} the function searches for coordinate
-#'   columns by first looking for numeric columns named "X", "Y", or "Z" (or one
-#'   of their lower-case variants) and for each instance where it can't find one
-#'   of those it selects the numeric column that comes next in the table's
-#'   column order.
+#'   columns by looking for the first numeric columns named "x"/"X", "y"/"Y", or
+#'   "z"/"Z". For each instance where it can't find one of those it selects the
+#'   next available numeric column in the table and issues a warning.
 #'
-#' @inheritParams calculate_modes
-#' @param min_num_neighbors_per_core Integer Scalar. The minimum number of
-#'   neighbors that a point needs to have in order to be considered as a core
-#'   point by the DBSCAN clustering algorithm.
-#' @param neighborhood_radius Numeric Scalar. The radius of the space around a
-#'   point that is treated as the point's neighborhood.
-#' @param id_attribute_name Character Scalar. The column name at which IDs for
-#'   individual trees should be stored.
-#' @param return_modes Boolean Scalar. Should mode coordinates be returned as
-#'   well? This is usually used for parameter estimation and/or debugging
-#'   purposes. If set to \code{TRUE} the returned point cloud will have three
-#'   additional columns/attributes with mode coordinates named "mode_x",
-#'   "mode_y", and "mode_z".
-#' @param ... This is just a placeholder for the method-specific parameters
-#'   listed below.
+#' @param crown_diameter_to_tree_height,crown_height_to_tree_height Single
+#'   Numbers. Approximate crown diameter and crown height to tree height ratios
+#'   of the trees expected to be found in the point cloud.
+#' @param ground_height Under construction - does nothing yet. One of
+#'   \itemize{
+#'     \item A single number denoting the overall ground height of a
+#'     *normalized* point cloud, usually zero.
+#'     \item A \code{\link[raster]{raster}} object providing ground heights for
+#'     the area of a *not-normalized* point cloud.
+#'     \item A list of arguments for the \code{\link[lidR]{grid_terrain}}
+#'     function to calculate a ground height grid internally.
+#'   }
+#' @param segment_points_only_above Under construction - does nothing yet. A
+#'   single number denoting the above-ground height below which no points should
+#'   be used during the tree segmentation.
+#' @param crown_id_column_name A character string. The column or attribute name
+#'   under which IDs for segmented bodies should be stored.
+#' @param centroid_convergence_distance A single number. Distance at which it is
+#'   assumed that subsequently calculated centroids have converged to the
+#'   nearest mode. See "How the algorithm works" to learn about centroids and
+#'   modes in the context of the AMS3D algorithm.
+#' @param max_num_centroids_per_mode A single integer. Maximum number of
+#'   centroids calculated before the search for the nearest mode is aborted. See
+#'   "How the algorithm works" to learn about centroids and modes in the context
+#'   of the AMS3D algorithm.
+#' @param dbscan_neighborhood_radius A single number. Radius for the spherical
+#'   DBSCAN neighborhood around a mode. See "How the algorithm works" to learn
+#'   about neighborhoods in the context of the DBSCAN algorithm.
+#' @param min_num_modes_per_neighborhood A single integer. The minimum number of
+#'   modes within a DBSCAN neighborhood at which the mode in the neighborhood's
+#'   center will be treated as a core point. See "How the algorithm works" to
+#'   learn about neighborhoods and core points in the context of the DBSCAN
+#'   algorithm.
+#' @param ... Unused.
 #'
-#' @return A point cloud of the same type as passed to the function but with an
-#'   additional column/attribute holding a crown ID for each point. IDs with the
-#'   value zero indicate non-tree points.
+#' @return The point cloud which was passed to the function but extended with a
+#'   column/attribute holding for each point the ID of a segmented body. IDs
+#'   with the value \code{NA} indicate that a point was not assigned to any
+#'   body.
 #'
-#'   The method for \code{\link[lidR]{LAScatalog-class}} objects is an
-#'   exception. It works just like any other lidR function that accepts such
-#'   objects, i.e. it returns either an in-memory \code{\link[lidR]{LAS}} object
-#'   or writes the processed chunks to individual files and returns those file's
-#'   names. Please refer to the documentation of the
-#'   \code{\link[lidR]{LAScatalog-class}} for more details.
+#'   If \code{also_return_modes} and/or \code{also_return_centroids} were set to
+#'   \code{TRUE}, a list with at most three named elements in the following
+#'   order:
+#'   \describe{
+#'     \item{segmented_point_cloud}{
+#'       The segmented point cloud which would have been returned directly if
+#'       \code{also_return_modes} and \code{also_return_centroids} had been set
+#'       to \code{FALSE}.
+#'     }
+#'     \item{modes}{
+#'       If \code{also_return_modes} was set to \code{TRUE}, a point cloud of
+#'       the same type as the input point cloud. Holds modes calculated with the
+#'       AMS3D algorithm and two additional columns/attributes. One
+#'       column/attribute holds IDs of the segmented bodies that the modes
+#'       belong to and the other (named "point_index") holds indices to the
+#'       points in the input point cloud.
+#'     }
+#'     \item{centroids}{
+#'       If \code{also_return_centroids} was set to \code{TRUE}, a point cloud
+#'       of the same type as the input point cloud. Holds centroids calculated
+#'       with the AMS3D algorithm and two additional columns/attributes. One
+#'       column/attribute holds IDs of the segmented bodies that the centroids
+#'       belong to and the other (named "point_index") holds indices to the
+#'       points in the input point cloud.
+#'     }
+#'   }
 #'
-#' @section Note: This function is not intended for point clouds with ground
-#'   points.
+#'   The method for \code{\link[lidR]{LAScatalog-class}} objects works just like
+#'   any other lidR function that accepts LAScatalogs, i.e. it returns either an
+#'   in-memory \code{\link[lidR]{LAS}} object or writes the processed chunks to
+#'   individual files and returns those file's names. Please refer to the
+#'   documentation of the \code{\link[lidR]{LAScatalog-class}} for more details.
 #'
-#' @section Warning: When the point cloud is a \code{\link[base]{data.frame}},
-#'   it will be converted to a \code{\link[data.table]{data.table}} by reference
-#'   at the beginning of this function's execution and converted back to a
-#'   \code{\link[base]{data.frame}} again before the function returns.
+#' @section How the algorithm works:
+#'
+#'   The basic assumption is that tree crowns form local maxima of point density
+#'   and height within lidar point clouds. These local maxima are called
+#'   *modes*. The algorithm tries to find the nearest mode for each point. This
+#'   is done by looking at the surrounding points and moving into the direction
+#'   of the highest point density until the nearest mode is reached.
+#'
+#'   The surrounding points are found with a three-dimensional search window
+#'   which is roughly shaped like a crown itself, i.e. it is a vertical cylinder
+#'   whose diameter and height are similar to those of the surrounding tree
+#'   crowns. The exact diameter and height are dependent on the cylinder's
+#'   height above ground and are controlled with the two main parameters of the
+#'   algorithm: \code{crown_diameter_to_tree_height} and
+#'   \code{crown_height_to_tree_height}.
+#'
+#'   The direction of the highest point density is found by calculating the
+#'   average position of all points within the cylinder, the cylinder's so
+#'   called *centroid*. In order to move further into the direction of the
+#'   highest point density, a new cylinder is placed on the centroid and a new
+#'   centroid is calculated for that cylinder. This goes on until the cylinders
+#'   "stop moving", i.e. until two subsequently calculated centroids are closer
+#'   to each other than \code{centroid_convergence_distance}. At this point, the
+#'   most recently calculated centroid, is taken as the original point's nearest
+#'   mode.
+#'
+#'   It sometimes happens that centroids converge only after a lot of
+#'   iterations. In order to prevent situations where an excessive number of
+#'   centroids is calculated for just one point, the parameter
+#'   \code{max_num_centroids_per_mode} is used to abort the centroid
+#'   calculations after a certain number of them has been performed.
+#'   Nonetheless, the last centroid found before the abortion is still taken as
+#'   a good enough guess of the nearest mode's position.
+#'
+#'   After the modes of the individual points have been calculated, it can be
+#'   seen that modes of the same tree crown are positioned very close to each
+#'   other, shortly below their crown's apex. These dense clusters of modes are
+#'   identified with the DBSCAN algorithm which assigns a cluster ID to every
+#'   mode. The cluster IDs are then finally connected back to the points of the
+#'   point cloud and used as crown IDs.
+#'
+#'   The DBSCAN clustering is explained nicely in
+#'   \href{https://en.wikipedia.org/wiki/DBSCAN#Preliminary}{Wikipedia} but here
+#'   is a quick sketch of what it does: The DBSCAN algorithm classifies points
+#'   as either core points, border points, or noise and assigns core and border
+#'   points to the same cluster if they are close enough to at least one other
+#'   core point of the cluster.
+#'
+#'   In order to be core points, points need to have enough neighbors. The
+#'   parameter \code{dbscan_neighborhood_radius} determines the radius of the
+#'   neighborhood and the parameter \code{min_num_modes_per_neighborhood}
+#'   determines the minimum number of points in the neighborhood (including the
+#'   to-be-classified one), which are needed for a core point.
+#'
+#'   Border points are within the neighborhood of core points but don't have
+#'   enough neighbors to be core points themselves. Noise points are not within
+#'   the neighborhood of any core point and also don't have enough neighbors to
+#'   be core points.
+#'
+#'   Clusters are identified by iterating over the points and classifying them
+#'   one by one. For each point the neighborhood is scanned and the point is
+#'   classified accordingly. If the point is a core or border point, the
+#'   neighboring points are classified next. As long as it is possible to
+#'   directly connect to new core or border points in this way, the same cluster
+#'   ID is assigned to each encountered point.
 #'
 #' @references Ferraz, A., S. Saatchi, C. Mallet, and V. Meyer (2016)
 #'   \emph{Lidar detection of individual tree size in tropical forests}. Remote
 #'   Sensing of Environment 183:318–333.
 #'   \url{https://doi.org/10.1016/j.rse.2016.05.028}.
 #'
+#' @example R/examples/segment_tree_crowns_examples.R
+#'
 #' @export
 methods::setGeneric("segment_tree_crowns",
   function(point_cloud,
-           crown_diameter_2_tree_height,
-           crown_height_2_tree_height,
-           min_num_neighbors_per_core = 4,
-           neighborhood_radius = 0.3,
-           id_attribute_name = "crown_id",
-           return_modes = FALSE,
+           crown_diameter_to_tree_height,
+           crown_height_to_tree_height,
+           ground_height = 0,
+           segment_points_only_above = 0,
+           crown_id_column_name = "crown_id",
+           centroid_convergence_distance = 0.01,
+           max_num_centroids_per_mode = 200,
+           dbscan_neighborhood_radius = 0.3,
+           min_num_modes_per_neighborhood = 5,
            ...
            ) standardGeneric("segment_tree_crowns"),
   signature = "point_cloud"
 )
 
-#' @describeIn segment_tree_crowns Segments coordinates stored as three columns
-#'   in a \code{\link[base]{data.frame}}.
-#'
-#' @param return_centroids Boolean Scalar. Should centroids be returned as well?
-#'   \emph{Warning:} Setting this to \code{TRUE} considerably slows down
-#'   processing speed. This option is only intended to be used with small point
-#'   clouds for debugging purposes.
-#'
-#'   If \code{return_centroids} is set to \code{TRUE} a list with two
-#'   elements is returned:
-#'
-#'   The first element (named "clustered_data") is the
-#'   \code{\link[base]{data.frame}}/\code{\link[data.table]{data.table}} that
-#'   would have been returned if \code{return_centroids} was set to
-#'   \code{FALSE}. The second one (named "centroid_data") is a list of
-#'   \code{\link[base]{data.frame}}s that hold point coordinates with one
-#'   \code{\link[base]{data.frame}} for each mode in the "clustered_data". The
-#'   first point in each \code{\link[base]{data.frame}} is always one of the
-#'   points from the input point cloud while the other coordinates represent the
-#'   centroids that were calculated while searching for that point's mode. There
-#'   is one additional column named "crown_id" in each
-#'   \code{\link[base]{data.frame}} that holds the crown ID of the mode that the
-#'   centroids belong to.
-methods::setMethod("segment_tree_crowns",
-  signature(point_cloud = "data.frame"),
-  function(point_cloud,
-           crown_diameter_2_tree_height,
-           crown_height_2_tree_height,
-           min_num_neighbors_per_core = 4,
-           neighborhood_radius = 0.3,
-           id_attribute_name = "crown_id",
-           return_modes = FALSE,
-           verbose = TRUE,
-           return_centroids = FALSE) {
 
-    # TODO This feels uncool. Maybe there is a way without having side-effects?
-    data.table::setDT(point_cloud)
-    res <- segment_tree_crowns(point_cloud)
-    data.table::setDF(point_cloud)
-
-    return(res)
-  }
-)
+# Method for data.frames and data.tables ----------------------------------
 
 #' @describeIn segment_tree_crowns Segments coordinates stored as three columns
-#'   in a \code{\link[data.table]{data.table}}.
+#'   in a \code{\link[base]{data.frame}} or
+#'   \code{\link[data.table]{data.table}}.
 #'
-#' @import assertthat
+#' @param verbose \code{TRUE} or \code{FALSE}. Should the function show a
+#'   progress bar and other runtime information in the console?
+#' @param also_return_modes \code{TRUE} or \code{FALSE}. Should mode coordinates
+#'   be returned as well?
+#' @param also_return_centroids \code{TRUE} or \code{FALSE}. Should centroid
+#'   coordinates be returned as well? This slows down processing by a little bit
+#'   and will return a data set which requires at least ~10 times more memory
+#'   than the input point cloud.
 methods::setMethod("segment_tree_crowns",
-  signature(point_cloud = "data.table"),
+  signature(point_cloud = c("data.frame")),
   function(point_cloud,
-           crown_diameter_2_tree_height,
-           crown_height_2_tree_height,
-           min_num_neighbors_per_core = 4,
-           neighborhood_radius = 0.3,
-           id_attribute_name = "crown_id",
-           return_modes = FALSE,
+           crown_diameter_to_tree_height,
+           crown_height_to_tree_height,
+           ground_height,
+           segment_points_only_above,
+           crown_id_column_name,
+           centroid_convergence_distance,
+           max_num_centroids_per_mode,
+           dbscan_neighborhood_radius,
+           min_num_modes_per_neighborhood,
            verbose = TRUE,
-           return_centroids = FALSE) {
+           also_return_modes = FALSE,
+           also_return_centroids = FALSE) {
 
-    assert_that(is.number(crown_diameter_2_tree_height))
-    assert_that(is.number(crown_height_2_tree_height))
+    validate_coordinate_table(point_cloud)
+    validate_crown_diameter_to_tree_height(crown_diameter_to_tree_height)
+    validate_crown_height_to_tree_height(crown_height_to_tree_height)
+    validate_crown_id_column_name(crown_id_column_name, point_cloud)
+    validate_centroid_convergence_distance(centroid_convergence_distance)
+    validate_max_num_centroids_per_mode(max_num_centroids_per_mode)
+    validate_dbscan_neighborhood_radius(dbscan_neighborhood_radius)
+    validate_min_num_modes_per_neighborhood(min_num_modes_per_neighborhood)
+    validate_verbose(verbose)
+    validate_also_return_modes(also_return_modes)
+    validate_also_return_centroids(also_return_centroids)
 
-    assert_that(is.count(min_num_neighbors_per_core))
-    assert_that(min_num_neighbors_per_core >= 4)
-
-    assert_that(is.number(neighborhood_radius))
-    assert_that(neighborhood_radius > 0)
-
-    assert_that(is.string(id_attribute_name))
-    assert_that(!(id_attribute_name == ""))
-
-    assert_that(is.flag(return_modes))
-    assert_that(is.flag(verbose))
-    assert_that(is.flag(return_centroids))
-
-    coordinates <- try_to_extract_coordinate_data(point_cloud)
-
-    # TODO give a warning like "Did you forget to normalize?" if height values
-    # are unrealistically high
-
-    if (!return_centroids) {
-      modes <- calculate_modes(
-        point_cloud = coordinates,
-        crown_diameter_2_tree_height,
-        crown_height_2_tree_height,
-        verbose
-      )
-    } else {
-      modes_and_centroids <- calculate_modes_and_centroid_paths(
-        point_cloud = coordinates,
-        crown_diameter_2_tree_height,
-        crown_height_2_tree_height,
-        verbose
-      )
-      modes <- modes_and_centroids$mode_coords
-    }
-
-    is_na_mode_row <-
-      is.na(modes$mode_x) | is.na(modes$mode_y) | is.na(modes$mode_z)
-
-    if (verbose) cat("Start clustering...")
-
-    crown_ids <- vector(mode = "integer", length = nrow(modes))
-    crown_ids[is_na_mode_row] <- NA_integer_
-
-    crown_ids[!is_na_mode_row] <- dbscan::dbscan(
-      modes[!is_na_mode_row, ],
-      eps = neighborhood_radius,
-      minPts = min_num_neighbors_per_core + 1
-    )$cluster
-
-    # I have observed that the dbscan algorithm sometimes identifies clusters
-    # with less than minPts points. My guess is that a cluster can loose points
-    # to neighboring clusters after having been initially identified with minPts
-    # points.
-    #
-    # In any case, replace any crown_ids with less than minPts points with the
-    # ID given to regular noise points
-    num_points_per_id <- table(crown_ids)
-    ids_with_less_than_minPts_points <- as.integer(names(
-      num_points_per_id[
-        which(num_points_per_id < min_num_neighbors_per_core + 1)]
-    ))
-
-    crown_ids[which(crown_ids %in% ids_with_less_than_minPts_points)] <- 0
-
-    if (verbose) cat("Finished clustering.")
-
-    # TODO I tried to use the user-defined column name for the crown IDs here,
-    # but I got weird bugs. I would love to know how to do this with the
-    # user-defined name but for now I will just change the column name at the
-    # end of this function.
-    res_clustered_data <- data.table::data.table(coordinates,
-      "crown_id" = crown_ids
+    # Segment the point cloud
+    ids_modes_n_centroids <- segment_tree_crowns_core(
+      point_cloud,
+      crown_diameter_to_tree_height,
+      crown_height_to_tree_height,
+      verbose,
+      centroid_convergence_distance,
+      max_num_centroids_per_mode,
+      dbscan_neighborhood_radius,
+      min_num_modes_per_neighborhood,
+      also_return_modes,
+      also_return_centroids
     )
 
-    if (return_modes) {
-      res_clustered_data <- cbind(res_clustered_data, modes)
-    }
-
-    if (!return_centroids) {
-
-      col_names = names(res_clustered_data)
-      col_names[which(col_names == "crown_id")] <- id_attribute_name
-      names(res_clustered_data) <- col_names
-
-      return(res_clustered_data)
-
-    } else {
-
-      centroid_paths <- lapply(
-        modes_and_centroids$centroid_paths,
-        FUN = function(centroid_path_coords) {
-          centroid_path_coords <- cbind(
-            centroid_path_coords[, 1:3],
-            crown_id = res_clustered_data[
-              centroid_path_coords$mode_index[1], crown_id]
-          )
-          col_names = names(centroid_path_coords)
-          col_names[which(col_names == "crown_id")] <- id_attribute_name
-          names(centroid_path_coords) <- col_names
-        }
+    # Bind the IDs to the point cloud data
+    if (data.table::is.data.table(point_cloud)) {
+      res <- data.table::data.table(
+        point_cloud,
+        ids_modes_n_centroids$crown_ids
       )
+    } else {
+      res <- cbind(
+        point_cloud,
+        ids_modes_n_centroids$crown_ids
+      )
+    }
+    # Rename the ID column with the requested name
+    names(res)[ncol(res)] <- crown_id_column_name
 
-      col_names = names(res_clustered_data)
-      col_names[which(col_names == "crown_id")] <- id_attribute_name
-      names(res_clustered_data) <- col_names
+    # Return the point cloud with crown IDs if no additional data was requested
+    if (!also_return_modes && !also_return_centroids) {
 
-      return(list(
-        "clustered_data" = res_clustered_data, "centroid_data" = centroid_paths
-      ))
+      return(res)
+
+    } else { # set up a list with the different result data sets
+
+      res <- list(segmented_point_cloud = res)
+
+      if (also_return_modes) {
+        # Add the modes to the list
+        if (data.table::is.data.table(point_cloud)) {
+          res[["modes"]] <- ids_modes_n_centroids$mode_coordinates
+        } else {
+          res[["modes"]] <- as.data.frame(
+            ids_modes_n_centroids$mode_coordinates
+          )
+        }
+        # Rename the ID column with the requested name
+        names(res$modes)[4] <- crown_id_column_name
+      }
+
+      if (also_return_centroids) {
+        # Add the centroids to the list
+        if (data.table::is.data.table(point_cloud)) {
+          res[["centroids"]] <- ids_modes_n_centroids$centroid_coordinates
+        } else {
+          res[["centroids"]] <- as.data.frame(
+            ids_modes_n_centroids$centroid_coordinates
+          )
+        }
+        # Rename the ID column with the requested name
+        names(res$centroids)[4] <- crown_id_column_name
+      }
+
+      return(res)
     }
   }
 )
+
+# Method for lidR::LAS Objects ----------------------------------------
 
 #' @describeIn segment_tree_crowns Segments the point cloud data of a
 #'   \code{\link[lidR]{LAS}} object.
 #'
-#' @param make_id_attribute_file_writable Boolean Scalar. When writing the
-#'   returned LAS object to disk, should the crown IDs (and if
-#'   \code{return_modes} is set to \code{TRUE} also the mode coordinates) be
-#'   written into that file as well?
-#' @param id_attribute_file_description Character Scalar. If
-#'   \code{make_id_attribute_file_writable} is \code{TRUE} then this will be
-#'   used as an additional description of the ID values when the LAS object is
-#'   written to disk.
+#' @param write_crown_id_also_to_file \code{TRUE} or \code{FALSE}. When writing
+#'   the returned LAS object to disk, should the IDs of segmented bodies be
+#'   written into that file as well? See \code{\link[lidR]{add_lasattribute}}
+#'   for additional details. Will also be used for all attributes of the LAS
+#'   object(s) which are returned if \code{also_return_modes} and/or
+#'   \code{also_return_centroids} were set to \code{TRUE}.
+#'
+#'   For \code{\link[lidR]{LAScatalog-class}} objects, this is only used if the
+#'   result is returned as a \code{\link[lidR]{LAS}} object in memory. If the
+#'   LAScatalog is set up to write the segmented point clouds into files, the
+#'   IDs of segmented bodies will always be written to these files as well.
+#'
+#' @param crown_id_file_description A character string. If
+#'   \code{write_crown_id_also_to_file} is set to \code{TRUE} this will be used
+#'   as an additional description of the IDs of segmented bodies when the LAS
+#'   object is written to disk. See the "desc" parameter of
+#'   \code{\link[lidR]{add_lasattribute}} for additional details.
 #'
 #' @importClassesFrom lidR LAS
 methods::setMethod("segment_tree_crowns",
   signature(point_cloud = "LAS"),
   function(point_cloud,
-           crown_diameter_2_tree_height,
-           crown_height_2_tree_height,
-           min_num_neighbors_per_core = 4,
-           neighborhood_radius = 0.3,
-           id_attribute_name = "crown_id",
-           return_modes = FALSE,
+           crown_diameter_to_tree_height,
+           crown_height_to_tree_height,
+           ground_height,
+           segment_points_only_above,
+           crown_id_column_name,
+           centroid_convergence_distance,
+           max_num_centroids_per_mode,
+           dbscan_neighborhood_radius,
+           min_num_modes_per_neighborhood,
            verbose = TRUE,
-           make_id_attribute_file_writable = FALSE,
-           id_attribute_file_description = id_attribute_name) {
+           also_return_modes = FALSE,
+           also_return_centroids = FALSE,
+           write_crown_id_also_to_file = FALSE,
+           crown_id_file_description = crown_id_column_name) {
 
-    assert_that(is.flag(make_id_attribute_file_writable))
-    assert_that(is.string(id_attribute_file_description))
-    assert_that(!(id_attribute_file_description == ""))
+    validate_crown_diameter_to_tree_height(crown_diameter_to_tree_height)
+    validate_crown_height_to_tree_height(crown_height_to_tree_height)
+    validate_crown_id_column_name(crown_id_column_name, point_cloud@data)
+    validate_centroid_convergence_distance(centroid_convergence_distance)
+    validate_max_num_centroids_per_mode(max_num_centroids_per_mode)
+    validate_dbscan_neighborhood_radius(dbscan_neighborhood_radius)
+    validate_min_num_modes_per_neighborhood(min_num_modes_per_neighborhood)
+    validate_verbose(verbose)
+    validate_also_return_modes(also_return_modes)
+    validate_also_return_centroids(also_return_centroids)
+    validate_write_crown_id_also_to_file(write_crown_id_also_to_file)
+    validate_crown_id_file_description(crown_id_file_description)
 
-    segmented_points <- segment_tree_crowns(
-      point_cloud = point_cloud@data,
-      crown_diameter_2_tree_height,
-      crown_height_2_tree_height,
-      min_num_neighbors_per_core,
-      neighborhood_radius,
-      id_attribute_name,
-      return_modes,
-      verbose
+    # Segment the point cloud
+    ids_modes_n_centroids <- segment_tree_crowns_core(
+      point_cloud@data,
+      crown_diameter_to_tree_height,
+      crown_height_to_tree_height,
+      verbose,
+      centroid_convergence_distance,
+      max_num_centroids_per_mode,
+      dbscan_neighborhood_radius,
+      min_num_modes_per_neighborhood,
+      also_return_modes,
+      also_return_centroids
     )
 
-    res_point_cloud <- NULL
-
-    if (make_id_attribute_file_writable) {
-
-      res_point_cloud <- lidR::add_lasattribute(point_cloud,
-        x = segmented_points[[id_attribute_name]],
-        name = id_attribute_name,
-        desc = id_attribute_file_description
+    # Bind the IDs to the point cloud data using the requested name
+    if (write_crown_id_also_to_file) { # IDs will be saved with LAS files
+      res <- lidR::add_lasattribute(
+        las = point_cloud,
+        x = ids_modes_n_centroids$crown_ids,
+        name = crown_id_column_name,
+        desc = crown_id_file_description
       )
-
-      if (return_modes) {
-        res_point_cloud <- lidR::add_lasattribute(res_point_cloud,
-          x = segmented_points[["mode_x"]],
-          name = "mode_x",
-          desc = "mode_x"
-        )
-        res_point_cloud <- lidR::add_lasattribute(res_point_cloud,
-          x = segmented_points[["mode_y"]],
-          name = "mode_y",
-          desc = "mode_y"
-        )
-        res_point_cloud <- lidR::add_lasattribute(res_point_cloud,
-          x = segmented_points[["mode_z"]],
-          name = "mode_z",
-          desc = "mode_z"
-        )
-      }
-
-    } else {
-
-      res_point_cloud <- lidR::add_attribute(point_cloud,
-        x = segmented_points[[id_attribute_name]],
-        name = id_attribute_name
+    } else { # IDs will only be available in memory
+      res <- lidR::add_attribute(
+        las = point_cloud,
+        x = ids_modes_n_centroids$crown_ids,
+        name = crown_id_column_name
       )
-
-      if (return_modes) {
-        res_point_cloud <- lidR::add_attribute(res_point_cloud,
-          x = segmented_points[["mode_x"]],
-          name = "mode_x"
-        )
-        res_point_cloud <- lidR::add_attribute(res_point_cloud,
-          x = segmented_points[["mode_y"]],
-          name = "mode_y"
-        )
-        res_point_cloud <- lidR::add_attribute(res_point_cloud,
-          x = segmented_points[["mode_z"]],
-          name = "mode_z"
-        )
-      }
     }
 
-    return(res_point_cloud)
+    # Return the point cloud with crown IDs if no additional data was requested
+    if (!also_return_modes && !also_return_centroids) {
+
+      return(res)
+
+    } else { # set up a list with the different result data sets
+
+      res <- list(segmented_point_cloud = res)
+
+      if (also_return_modes) {
+        # Create a LAS object storing the mode coordinates
+        res[["modes"]] <- suppressWarnings(
+          lidR::las_update(
+            lidR::las_quantize(
+              lidR::LAS(
+                ids_modes_n_centroids$mode_coordinates[
+                  , .(X = x, Y = y, Z = z)],
+                header = point_cloud@header
+        ))))
+
+        # Add the crown IDs and point indices to the modes
+        res$modes <- lidR::add_attribute(
+          las = lidR::add_attribute(
+            las = res$modes,
+            x = ids_modes_n_centroids$mode_coordinates$crown_id,
+            name = crown_id_column_name
+          ),
+          x = ids_modes_n_centroids$mode_coordinates$point_index,
+          name = "point_index"
+        )
+
+        # If requested for the crown IDs, make the crown ID and point index
+        # attributes of the modes LAS "file-writable" as well
+        if (write_crown_id_also_to_file) {
+          res$modes <- lidR::add_lasattribute(
+            las = lidR::add_lasattribute(
+              las = res$modes,
+              name = crown_id_column_name,
+              desc = crown_id_file_description
+            ),
+            name = "point_index",
+            desc = "Index of original points"
+          )
+        }
+
+      } # end if also_return_modes
+
+      if (also_return_centroids) {
+        # Create a LAS object storing the centroid coordinates
+        res[["centroids"]] <- suppressWarnings(
+          lidR::las_update(
+            lidR::las_quantize(
+              lidR::LAS(
+                ids_modes_n_centroids$centroid_coordinates[
+                  , .(X = x, Y = y, Z = z)],
+                header = point_cloud@header
+        ))))
+
+        # Add the crown IDs and point indices to the centroids
+        res$centroids <- lidR::add_attribute(
+          las = lidR::add_attribute(
+            las = res$centroids,
+            x = ids_modes_n_centroids$centroid_coordinates$crown_id,
+            name = crown_id_column_name
+          ),
+          x = ids_modes_n_centroids$centroid_coordinates$point_index,
+          name = "point_index"
+        )
+
+        # If requested for the crown IDs, make the crown ID and point index
+        # attributes of the centroids LAS "file-writable" as well
+        if (write_crown_id_also_to_file) {
+          res$centroids <- lidR::add_lasattribute(
+            las = lidR::add_lasattribute(
+              las = res$centroids,
+              name = crown_id_column_name,
+              desc = crown_id_file_description
+            ),
+            name = "point_index",
+            desc = "Index of original points"
+          )
+        }
+
+      } # end if also_return_centroids
+
+      return(res)
+
+    } # end returning mode and/or centroid coordinates
   }
 )
 
+
+# Method for lidR::LAScatalog Objects ---------------------------------
+
 #' @describeIn segment_tree_crowns Segments the point cloud data of a
-#'   \code{\link[lidR]{LAScatalog-class}} instance.
+#'   \code{\link[lidR]{LAScatalog-class}} object. This method does not support
+#'   additionally returning modes and/or centroids. Instead of the verbose
+#'   parameter use the LAScatalog's progress option (see the LAScatalog
+#'   documentation -> "Processing options" -> "progress").
 #'
 #' @import data.table
 #' @importClassesFrom lidR LAScatalog
 methods::setMethod("segment_tree_crowns",
   signature(point_cloud = "LAScatalog"),
   function(point_cloud,
-           crown_diameter_2_tree_height,
-           crown_height_2_tree_height,
-           min_num_neighbors_per_core = 4,
-           neighborhood_radius = 0.3,
-           id_attribute_name = "crown_id",
-           return_modes = FALSE,
-           # TODO toggle based on catalog options:
-           make_id_attribute_file_writable = TRUE,
-           id_attribute_file_description = id_attribute_name) {
+           crown_diameter_to_tree_height,
+           crown_height_to_tree_height,
+           ground_height,
+           segment_points_only_above,
+           crown_id_column_name,
+           centroid_convergence_distance,
+           max_num_centroids_per_mode,
+           dbscan_neighborhood_radius,
+           min_num_modes_per_neighborhood,
+           write_crown_id_also_to_file = TRUE,
+           crown_id_file_description = crown_id_column_name) {
 
-    # TODO Throw an error if the scale and offset values are not the same for
-    # all files
+    validate_scale_n_offset_are_consistent(point_cloud)
 
+    validate_crown_diameter_to_tree_height(crown_diameter_to_tree_height)
+    validate_crown_height_to_tree_height(crown_height_to_tree_height)
+    # validate_crown_id_column_name(crown_id_column_name, point_cloud@data)
+    # TODO find out whether there is a way to validate this here instead of in
+    # the individual calls to the LAS methods.
+    validate_centroid_convergence_distance(centroid_convergence_distance)
+    validate_max_num_centroids_per_mode(max_num_centroids_per_mode)
+    validate_dbscan_neighborhood_radius(dbscan_neighborhood_radius)
+    validate_min_num_modes_per_neighborhood(min_num_modes_per_neighborhood)
+    write_crown_id_also_to_file <-
+      validate_write_crown_id_also_to_file_for_LAScatalogs(
+        write_crown_id_also_to_file,
+        point_cloud
+      )
+    validate_crown_id_file_description(crown_id_file_description)
+
+
+    # Used for selecting the x and y coordinates of the highest point of a tree
+    # crown point cloud. Called in the catalog_function below.
     select_apex_helper <- function(x, y, z) {
       max_z_index <- which.max(z)
       return(list(
@@ -391,53 +544,60 @@ methods::setMethod("segment_tree_crowns",
       ))
     }
 
-    # TODO make this function an extra internal function
+    # This function is forwarded to the lidR::LAScatalog framework by which it
+    # is used to process the individual chunks of the input LAScatalog.
     catalog_function <- function(las, bbox, ...) {
 
-      # segment the chunk
+      # segment the chunk with the LAS method
       segmented_las <- segment_tree_crowns(
         point_cloud = las,
-        crown_diameter_2_tree_height,
-        crown_height_2_tree_height,
-        min_num_neighbors_per_core,
-        neighborhood_radius,
-        id_attribute_name,
-        return_modes,
+        crown_diameter_to_tree_height,
+        crown_height_to_tree_height,
+        ground_height,
+        segment_points_only_above,
+        crown_id_column_name,
+        centroid_convergence_distance,
+        max_num_centroids_per_mode,
+        dbscan_neighborhood_radius,
+        min_num_modes_per_neighborhood,
         verbose = FALSE,
-        make_id_attribute_file_writable,
-        id_attribute_file_description
+        also_return_modes = FALSE,
+        also_return_centroids = FALSE,
+        write_crown_id_also_to_file,
+        crown_id_file_description
       )
 
-      # Get the apices in the core area
+      # Get the apex xy-coordinates and ID of each tree crown
+      # Then select only those crowns whose apex lies in the core area
       core_apices <- segmented_las@data[
-        segmented_las@data[[id_attribute_name]] != 0,
+        !is.na(segmented_las@data[[crown_id_column_name]]),
         select_apex_helper(X, Y, Z),
-        by = id_attribute_name][
-          # filter the apices that are not inside the buffer
+        by = crown_id_column_name][
+          # filter the apices that are inside the core area
           bbox@xmin <= X & X < bbox@xmax &
             bbox@ymin <= Y & Y < bbox@ymax, ]
       # -> I could use the buffer atrribute here instead but I have observed
       # that lidR sometimes produces duplicated trees on chunk borders and
-      # that's what I am trying to prevent here by using the <= and <. This is
-      # just a precaution. I haven't investigated whether the buffers are
-      # actually part of the problem.
+      # that's what I am trying to prevent here by using the <= and <.
+      # TODO Test whether this actually makes a difference.
 
-      # Get the tree points and any points with ID == 0 in the core area
+      # Get the trees and any points with ID == NA in the core area
+      # I.e. in the end, trees at the chunk edge will extend into the buffer
+      # while unsegmented points are only selected inside the core area.
       core_trees_n_points <- lidR::filter_poi(segmented_las,
         # i.e. either the point's ID belongs to one of the trees in the core
         # area...
-        segmented_las@data[[id_attribute_name]] %in%
-          core_apices[[id_attribute_name]] | (
-            # ...or the ID is zero and the point is inside the core area. The
-            # near equality test was taken from dplyr::near.
-            abs(segmented_las@data[[id_attribute_name]] - 0) <
-            .Machine$double.eps^0.5 &
+        segmented_las@data[[crown_id_column_name]] %in%
+          core_apices[[crown_id_column_name]] |
+          # ...or the ID is NA and the point is inside the core area.
+          (
+            is.na(segmented_las@data[[crown_id_column_name]]) &
               as.integer(buffer) == 0
-            # TODO Instead of the buffer I could use the same filter here as
-            # above but I guess a few duplicated points that don't belong to any
-            # tree won't be a big problem anytime soon. One might try to account
-            # for such artifacts after processing the catalog.
           )
+          # TODO Instead of the buffer I could use the same filter here as with
+          # the apices above but I guess a few duplicated points that don't
+          # belong to any tree won't be a big problem anytime soon. One might
+          # try to account for such artifacts after processing the catalog.
       )
 
       # Calculate cross-chunk unique crown IDs
@@ -450,31 +610,43 @@ methods::setMethod("segment_tree_crowns",
       x_scale  <- las@header@PHB[["X scale factor"]]
       y_scale  <- las@header@PHB[["Y scale factor"]]
 
-      bit_shift_ids <- core_apices[ , .(
-        crown_id = core_apices[[id_attribute_name]],
+      # Connect the IDs of the core apices with the their respective bitshift
+      # IDs
+      bit_shift_ids <- core_apices[, .(
+        crown_id = core_apices[[crown_id_column_name]],
         bit_shift_id =
           round((X - x_offset) / x_scale) * 2^32 +
           round((Y - y_offset) / y_scale)
       )]
       # Adaption end
 
-      # Add an ID with the value zero
+      # The ID of unsegmented points is missing from the core apices so let's
+      # add it here
       bit_shift_ids <- rbind(
         bit_shift_ids,
-        data.table::data.table(crown_id = 0, bit_shift_id = 0)
+        data.table::data.table(crown_id = NA, bit_shift_id = NA)
       )
       # Keep IDs with the value NA at that value
-      bit_shift_ids[is.na(crown_id), bit_shift_id := NA]
+      # -> I think this is unnecessary
+      # bit_shift_ids[is.na(crown_id), bit_shift_id := NA]
 
-      # Join the point cloud with the new IDs
-      names(bit_shift_ids)[1] <- id_attribute_name
+      # Give the crown_id column in the bit_shift_ids data.table the same name
+      # as the crown IDs in the point cloud data
+      names(bit_shift_ids)[1] <- crown_id_column_name
 
+      # Join the bitshift IDs to the individual points based on their crown IDs
       joined_ids <- bit_shift_ids[
-        core_trees_n_points@data, on = (id_attribute_name)][
-          , -id_attribute_name, with = FALSE]$bit_shift_id
+        core_trees_n_points@data[, ..crown_id_column_name],
+        on = (crown_id_column_name)
+      ]$bit_shift_id
+      # Code before:
+      # core_trees_n_points@data, on = (crown_id_column_name)][
+      #   , -crown_id_column_name, with = FALSE]$bit_shift_id
 
-      core_trees_n_points@data[, (id_attribute_name) := joined_ids]
+      # Overwrite the "normal" crown IDs with the bitshift ones
+      core_trees_n_points@data[, (crown_id_column_name) := joined_ids]
 
+      # Remove the buffer column
       core_trees_n_points@data[, buffer := NULL]
 
       return(core_trees_n_points)
@@ -486,3 +658,44 @@ methods::setMethod("segment_tree_crowns",
     ))
   }
 )
+
+
+#' Get the scale and offset values of all files referenced by a LAScatalog
+#'
+#' @return A data.table with 7 columns. The first three columns hold the x, y,
+#'   and z scale factors, the next three columns hold the x, y, and z offsets
+#'   and the last column holds the file paths. There is one row for each
+#'   referenced file.
+#'
+#' @keywords internal
+#'
+#' @export
+collect_scale_n_offset_of_LAScatalog_files <- function(LAScatalog) {
+
+  # Get the paths to the files accessed by the LAScatalog
+  file_paths <- unique(unlist(lapply(
+    X = lidR::catalog_makechunks(LAScatalog, plot = FALSE),
+    FUN = function(chunk) {
+      chunk@files
+    }
+  )))
+
+  # Read the scale and offset data from the file headers and convert them into a
+  # table
+  return(data.table::rbindlist(lapply(
+    X = file_paths,
+    FUN = function(file_path) {
+      c(
+        lidR::readLASheader(file_path)@PHB[c(
+          "X scale factor",
+          "Y scale factor",
+          "Z scale factor",
+          "X offset",
+          "Y offset",
+          "Z offset"
+        )],
+        file_path = file_path
+      )
+    }
+  )))
+}

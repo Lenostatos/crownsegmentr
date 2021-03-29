@@ -1,7 +1,7 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2020 Leon Steinmeier, Nikolai Knapp, UFZ
+# Copyright (C) 2021 Leon Steinmeier, Nikolai Knapp, UFZ
 # Contact: Lenostatos@gmx.de
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
@@ -18,43 +18,28 @@
 # along with crownsegmentr in a file called "COPYING". If not,
 # see <http://www.gnu.org/licenses/>.
 
-#' Try to find three numeric columns for coordinate data.
+#' Extract coordinate data from an object
 #'
-#' TODO
+#' This function extracts three numeric columns from the input table. If
+#' possible, columns which are named x/X, y/Y, or z/Z.
 #'
-#' @param input_object The object that is checked for being a
-#'   \code{\link[base]{data.frame}} or a \code{\link[data.table]{data.table}}
-#'   and is searched for xyz-coordinate data.
+#' @param coordinate_table An object which is valid according to
+#'   \code{validate_coordinate_table} (i.e. data.frame-like and contains at
+#'   least three numeric columns).
 #'
-#' @return A \code{\link[data.table]{data.table}} with just three columns that
-#'   are expected to hold the x-, y-, and z-coordinates in that order.
-try_to_extract_coordinate_data <- function(input_object) {
-
-  # Assert that the input object is either a data.table or data.frame.
-  assert_that(
-    input_object %has_attr% "class",
-    "data.frame" %in% attr(input_object, "class"),
-    msg =
-      "The coordinate data needs to be stored in a data.table or data.frame."
-  )
+#' @return A \code{data.frame} with just three columns that are expected to hold
+#'   the x-, y-, and z-coordinates in that order.
+#'
+#' @import assertthat
+extract_coordinate_values <- function(coordinate_table) {
 
   # Get the names of all numeric columns
-  numeric_col_names <- names(which(sapply(input_object, is.numeric)))
-
-  # Assert that the table consists of at least three numeric columns.
-  assert_that(
-    length(numeric_col_names) >= 3,
-    msg = paste0(
-      "The coordinates table needs to have at least three numeric columns for ",
-      "x-, y-, and z-coordinates but there are only ",
-      length(numeric_col_names), "."
-    )
-  )
+  numeric_col_names <- names(which(sapply(coordinate_table, is.numeric)))
 
   # Get the names of the first numeric columns whose names are a upper- or
   # lower-case variant of either "x", "y", or "z".
   xyz_chars <- c("x", "y", "z")
-  input_col_names <- colnames(input_object)
+  input_col_names <- colnames(coordinate_table)
 
   xyz_col_names <- input_col_names[match(xyz_chars, tolower(input_col_names))]
   names(xyz_col_names) <- xyz_chars
@@ -82,9 +67,6 @@ try_to_extract_coordinate_data <- function(input_object) {
     }
   }
 
-  if (is.data.table(input_object)) {
-    return(input_object[, res_col_names, with = FALSE])
-  } else {
-    return(input_object[res_col_names])
-  }
+  # Return the columns which are assumed to hold the coordinate values
+  return(as.data.frame(coordinate_table)[res_col_names])
 }

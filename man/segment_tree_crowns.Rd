@@ -3,189 +3,372 @@
 \name{segment_tree_crowns}
 \alias{segment_tree_crowns}
 \alias{segment_tree_crowns,data.frame-method}
-\alias{segment_tree_crowns,data.table-method}
 \alias{segment_tree_crowns,LAS-method}
 \alias{segment_tree_crowns,LAScatalog-method}
 \title{Segment Tree Crowns in a 3D Point Cloud}
 \usage{
 segment_tree_crowns(
   point_cloud,
-  crown_diameter_2_tree_height,
-  crown_height_2_tree_height,
-  min_num_neighbors_per_core = 4,
-  neighborhood_radius = 0.3,
-  id_attribute_name = "crown_id",
-  return_modes = FALSE,
+  crown_diameter_to_tree_height,
+  crown_height_to_tree_height,
+  ground_height = 0,
+  segment_points_only_above = 0,
+  crown_id_column_name = "crown_id",
+  centroid_convergence_distance = 0.01,
+  max_num_centroids_per_mode = 200,
+  dbscan_neighborhood_radius = 0.3,
+  min_num_modes_per_neighborhood = 5,
   ...
 )
 
 \S4method{segment_tree_crowns}{data.frame}(
   point_cloud,
-  crown_diameter_2_tree_height,
-  crown_height_2_tree_height,
-  min_num_neighbors_per_core = 4,
-  neighborhood_radius = 0.3,
-  id_attribute_name = "crown_id",
-  return_modes = FALSE,
+  crown_diameter_to_tree_height,
+  crown_height_to_tree_height,
+  ground_height,
+  segment_points_only_above,
+  crown_id_column_name,
+  centroid_convergence_distance,
+  max_num_centroids_per_mode,
+  dbscan_neighborhood_radius,
+  min_num_modes_per_neighborhood,
   verbose = TRUE,
-  return_centroids = FALSE
-)
-
-\S4method{segment_tree_crowns}{data.table}(
-  point_cloud,
-  crown_diameter_2_tree_height,
-  crown_height_2_tree_height,
-  min_num_neighbors_per_core = 4,
-  neighborhood_radius = 0.3,
-  id_attribute_name = "crown_id",
-  return_modes = FALSE,
-  verbose = TRUE,
-  return_centroids = FALSE
+  also_return_modes = FALSE,
+  also_return_centroids = FALSE
 )
 
 \S4method{segment_tree_crowns}{LAS}(
   point_cloud,
-  crown_diameter_2_tree_height,
-  crown_height_2_tree_height,
-  min_num_neighbors_per_core = 4,
-  neighborhood_radius = 0.3,
-  id_attribute_name = "crown_id",
-  return_modes = FALSE,
+  crown_diameter_to_tree_height,
+  crown_height_to_tree_height,
+  ground_height,
+  segment_points_only_above,
+  crown_id_column_name,
+  centroid_convergence_distance,
+  max_num_centroids_per_mode,
+  dbscan_neighborhood_radius,
+  min_num_modes_per_neighborhood,
   verbose = TRUE,
-  make_id_attribute_file_writable = FALSE,
-  id_attribute_file_description = id_attribute_name
+  also_return_modes = FALSE,
+  also_return_centroids = FALSE,
+  write_crown_id_also_to_file = FALSE,
+  crown_id_file_description = crown_id_column_name
 )
 
 \S4method{segment_tree_crowns}{LAScatalog}(
   point_cloud,
-  crown_diameter_2_tree_height,
-  crown_height_2_tree_height,
-  min_num_neighbors_per_core = 4,
-  neighborhood_radius = 0.3,
-  id_attribute_name = "crown_id",
-  return_modes = FALSE,
-  make_id_attribute_file_writable = TRUE,
-  id_attribute_file_description = id_attribute_name
+  crown_diameter_to_tree_height,
+  crown_height_to_tree_height,
+  ground_height,
+  segment_points_only_above,
+  crown_id_column_name,
+  centroid_convergence_distance,
+  max_num_centroids_per_mode,
+  dbscan_neighborhood_radius,
+  min_num_modes_per_neighborhood,
+  write_crown_id_also_to_file = TRUE,
+  crown_id_file_description = crown_id_column_name
 )
 }
 \arguments{
-\item{point_cloud}{A set of xyz-coordinates. Can be passed as either a
-\code{\link[base]{data.frame}}, a \code{\link[data.table]{data.table}}, or
-a lidR- \code{\link[lidR]{LAS}} or \code{\link[lidR]{LAScatalog-class}}
-object.
+\item{point_cloud}{A data set containing xyz-coordinates. Can be passed as
+either a \code{\link[base]{data.frame}}, a
+\code{\link[data.table]{data.table}}, or a lidR- \code{\link[lidR]{LAS}} or
+\code{\link[lidR]{LAScatalog-class}} object.
 
 If it's a \code{\link[base]{data.frame}} or a
 \code{\link[data.table]{data.table}} the function searches for coordinate
-columns by first looking for numeric columns named "X", "Y", or "Z" (or one
-of their lower-case variants) and for each instance where it can't find one
-of those it selects the numeric column that comes next in the table's
-column order.}
+columns by looking for the first numeric columns named "x"/"X", "y"/"Y", or
+"z"/"Z". For each instance where it can't find one of those it selects the
+next available numeric column in the table and issues a warning.}
 
-\item{crown_diameter_2_tree_height}{Numeric
-Scalars. Estimates of the crown diameter and crown height to tree height
-ratios that are common for the trees in \code{point_cloud}.}
+\item{crown_diameter_to_tree_height, crown_height_to_tree_height}{Single
+Numbers. Approximate crown diameter and crown height to tree height ratios
+of the trees expected to be found in the point cloud.}
 
-\item{crown_height_2_tree_height}{Numeric
-Scalars. Estimates of the crown diameter and crown height to tree height
-ratios that are common for the trees in \code{point_cloud}.}
+\item{ground_height}{Under construction - does nothing yet. One of
+\itemize{
+\item A single number denoting the overall ground height of a
+\emph{normalized} point cloud, usually zero.
+\item A \code{\link[raster]{raster}} object providing ground heights for
+the area of a \emph{not-normalized} point cloud.
+\item A list of arguments for the \code{\link[lidR]{grid_terrain}}
+function to calculate a ground height grid internally.
+}}
 
-\item{min_num_neighbors_per_core}{Integer Scalar. The minimum number of
-neighbors that a point needs to have in order to be considered as a core
-point by the DBSCAN clustering algorithm.}
+\item{segment_points_only_above}{Under construction - does nothing yet. A
+single number denoting the above-ground height below which no points should
+be used during the tree segmentation.}
 
-\item{neighborhood_radius}{Numeric Scalar. The radius of the space around a
-point that is treated as the point's neighborhood.}
+\item{crown_id_column_name}{A character string. The column or attribute name
+under which IDs for segmented bodies should be stored.}
 
-\item{id_attribute_name}{Character Scalar. The column name at which IDs for
-individual trees should be stored.}
+\item{centroid_convergence_distance}{A single number. Distance at which it is
+assumed that subsequently calculated centroids have converged to the
+nearest mode. See "How the algorithm works" to learn about centroids and
+modes in the context of the AMS3D algorithm.}
 
-\item{return_modes}{Boolean Scalar. Should mode coordinates be returned as
-well? This is usually used for parameter estimation and/or debugging
-purposes. If set to \code{TRUE} the returned point cloud will have three
-additional columns/attributes with mode coordinates named "mode_x",
-"mode_y", and "mode_z".}
+\item{max_num_centroids_per_mode}{A single integer. Maximum number of
+centroids calculated before the search for the nearest mode is aborted. See
+"How the algorithm works" to learn about centroids and modes in the context
+of the AMS3D algorithm.}
 
-\item{...}{This is just a placeholder for the method-specific parameters
-listed below.}
+\item{dbscan_neighborhood_radius}{A single number. Radius for the spherical
+DBSCAN neighborhood around a mode. See "How the algorithm works" to learn
+about neighborhoods in the context of the DBSCAN algorithm.}
 
-\item{verbose}{Boolean Scalar. Should the function print runtime information
-to the console?}
+\item{min_num_modes_per_neighborhood}{A single integer. The minimum number of
+modes within a DBSCAN neighborhood at which the mode in the neighborhood's
+center will be treated as a core point. See "How the algorithm works" to
+learn about neighborhoods and core points in the context of the DBSCAN
+algorithm.}
 
-\item{return_centroids}{Boolean Scalar. Should centroids be returned as well?
-\emph{Warning:} Setting this to \code{TRUE} considerably slows down
-processing speed. This option is only intended to be used with small point
-clouds for debugging purposes.
+\item{...}{Unused.}
 
-If \code{return_centroids} is set to \code{TRUE} a list with two
-elements is returned:
+\item{verbose}{\code{TRUE} or \code{FALSE}. Should the function show a
+progress bar and other runtime information in the console?}
 
-The first element (named "clustered_data") is the
-\code{\link[base]{data.frame}}/\code{\link[data.table]{data.table}} that
-would have been returned if \code{return_centroids} was set to
-\code{FALSE}. The second one (named "centroid_data") is a list of
-\code{\link[base]{data.frame}}s that hold point coordinates with one
-\code{\link[base]{data.frame}} for each mode in the "clustered_data". The
-first point in each \code{\link[base]{data.frame}} is always one of the
-points from the input point cloud while the other coordinates represent the
-centroids that were calculated while searching for that point's mode. There
-is one additional column named "crown_id" in each
-\code{\link[base]{data.frame}} that holds the crown ID of the mode that the
-centroids belong to.}
+\item{also_return_modes}{\code{TRUE} or \code{FALSE}. Should mode coordinates
+be returned as well?}
 
-\item{make_id_attribute_file_writable}{Boolean Scalar. When writing the
-returned LAS object to disk, should the crown IDs (and if
-\code{return_modes} is set to \code{TRUE} also the mode coordinates) be
-written into that file as well?}
+\item{also_return_centroids}{\code{TRUE} or \code{FALSE}. Should centroid
+coordinates be returned as well? This slows down processing by a little bit
+and will return a data set which requires at least ~10 times more memory
+than the input point cloud.}
 
-\item{id_attribute_file_description}{Character Scalar. If
-\code{make_id_attribute_file_writable} is \code{TRUE} then this will be
-used as an additional description of the ID values when the LAS object is
-written to disk.}
+\item{write_crown_id_also_to_file}{\code{TRUE} or \code{FALSE}. When writing
+the returned LAS object to disk, should the IDs of segmented bodies be
+written into that file as well? See \code{\link[lidR]{add_lasattribute}}
+for additional details. Will also be used for all attributes of the LAS
+object(s) which are returned if \code{also_return_modes} and/or
+\code{also_return_centroids} were set to \code{TRUE}.
+
+For \code{\link[lidR]{LAScatalog-class}} objects, this is only used if the
+result is returned as a \code{\link[lidR]{LAS}} object in memory. If the
+LAScatalog is set up to write the segmented point clouds into files, the
+IDs of segmented bodies will always be written to these files as well.}
+
+\item{crown_id_file_description}{A character string. If
+\code{write_crown_id_also_to_file} is set to \code{TRUE} this will be used
+as an additional description of the IDs of segmented bodies when the LAS
+object is written to disk. See the "desc" parameter of
+\code{\link[lidR]{add_lasattribute}} for additional details.}
 }
 \value{
-A point cloud of the same type as passed to the function but with an
-additional column/attribute holding a crown ID for each point. IDs with the
-value zero indicate non-tree points.
+The point cloud which was passed to the function but extended with a
+column/attribute holding for each point the ID of a segmented body. IDs
+with the value \code{NA} indicate that a point was not assigned to any
+body.
 
-The method for \code{\link[lidR]{LAScatalog-class}} objects is an
-exception. It works just like any other lidR function that accepts such
-objects, i.e. it returns either an in-memory \code{\link[lidR]{LAS}} object
-or writes the processed chunks to individual files and returns those file's
-names. Please refer to the documentation of the
-\code{\link[lidR]{LAScatalog-class}} for more details.
+If \code{also_return_modes} and/or \code{also_return_centroids} were set to
+\code{TRUE}, a list with at most three named elements in the following
+order:
+\describe{
+\item{segmented_point_cloud}{
+The segmented point cloud which would have been returned directly if
+\code{also_return_modes} and \code{also_return_centroids} had been set
+to \code{FALSE}.
+}
+\item{modes}{
+If \code{also_return_modes} was set to \code{TRUE}, a point cloud of
+the same type as the input point cloud. Holds modes calculated with the
+AMS3D algorithm and two additional columns/attributes. One
+column/attribute holds IDs of the segmented bodies that the modes
+belong to and the other (named "point_index") holds indices to the
+points in the input point cloud.
+}
+\item{centroids}{
+If \code{also_return_centroids} was set to \code{TRUE}, a point cloud
+of the same type as the input point cloud. Holds centroids calculated
+with the AMS3D algorithm and two additional columns/attributes. One
+column/attribute holds IDs of the segmented bodies that the centroids
+belong to and the other (named "point_index") holds indices to the
+points in the input point cloud.
+}
+}
+
+The method for \code{\link[lidR]{LAScatalog-class}} objects works just like
+any other lidR function that accepts LAScatalogs, i.e. it returns either an
+in-memory \code{\link[lidR]{LAS}} object or writes the processed chunks to
+individual files and returns those file's names. Please refer to the
+documentation of the \code{\link[lidR]{LAScatalog-class}} for more details.
 }
 \description{
 Employs a variant of the mean shift algorithm (Ferraz et. al, 2016) and after
-that the DBSCAN algorithm in order to find tree crowns in a set of
-xyz-coordinates.
+that the DBSCAN algorithm in order to identify tree crowns in airborne lidar
+data.
 }
 \section{Methods (by class)}{
 \itemize{
 \item \code{data.frame}: Segments coordinates stored as three columns
-in a \code{\link[base]{data.frame}}.
-
-\item \code{data.table}: Segments coordinates stored as three columns
-in a \code{\link[data.table]{data.table}}.
+in a \code{\link[base]{data.frame}} or
+\code{\link[data.table]{data.table}}.
 
 \item \code{LAS}: Segments the point cloud data of a
 \code{\link[lidR]{LAS}} object.
 
 \item \code{LAScatalog}: Segments the point cloud data of a
-\code{\link[lidR]{LAScatalog-class}} instance.
+\code{\link[lidR]{LAScatalog-class}} object. This method does not support
+additionally returning modes and/or centroids. Instead of the verbose
+parameter use the LAScatalog's progress option (see the LAScatalog
+documentation -> "Processing options" -> "progress").
 }}
 
-\section{Note}{
- This function is not intended for point clouds with ground
-points.
+\section{How the algorithm works}{
+
+
+The basic assumption is that tree crowns form local maxima of point density
+and height within lidar point clouds. These local maxima are called
+\emph{modes}. The algorithm tries to find the nearest mode for each point. This
+is done by looking at the surrounding points and moving into the direction
+of the highest point density until the nearest mode is reached.
+
+The surrounding points are found with a three-dimensional search window
+which is roughly shaped like a crown itself, i.e. it is a vertical cylinder
+whose diameter and height are similar to those of the surrounding tree
+crowns. The exact diameter and height are dependent on the cylinder's
+height above ground and are controlled with the two main parameters of the
+algorithm: \code{crown_diameter_to_tree_height} and
+\code{crown_height_to_tree_height}.
+
+The direction of the highest point density is found by calculating the
+average position of all points within the cylinder, the cylinder's so
+called \emph{centroid}. In order to move further into the direction of the
+highest point density, a new cylinder is placed on the centroid and a new
+centroid is calculated for that cylinder. This goes on until the cylinders
+"stop moving", i.e. until two subsequently calculated centroids are closer
+to each other than \code{centroid_convergence_distance}. At this point, the
+most recently calculated centroid, is taken as the original point's nearest
+mode.
+
+It sometimes happens that centroids converge only after a lot of
+iterations. In order to prevent situations where an excessive number of
+centroids is calculated for just one point, the parameter
+\code{max_num_centroids_per_mode} is used to abort the centroid
+calculations after a certain number of them has been performed.
+Nonetheless, the last centroid found before the abortion is still taken as
+a good enough guess of the nearest mode's position.
+
+After the modes of the individual points have been calculated, it can be
+seen that modes of the same tree crown are positioned very close to each
+other, shortly below their crown's apex. These dense clusters of modes are
+identified with the DBSCAN algorithm which assigns a cluster ID to every
+mode. The cluster IDs are then finally connected back to the points of the
+point cloud and used as crown IDs.
+
+The DBSCAN clustering is explained nicely in
+\href{https://en.wikipedia.org/wiki/DBSCAN#Preliminary}{Wikipedia} but here
+is a quick sketch of what it does: The DBSCAN algorithm classifies points
+as either core points, border points, or noise and assigns core and border
+points to the same cluster if they are close enough to at least one other
+core point of the cluster.
+
+In order to be core points, points need to have enough neighbors. The
+parameter \code{dbscan_neighborhood_radius} determines the radius of the
+neighborhood and the parameter \code{min_num_modes_per_neighborhood}
+determines the minimum number of points in the neighborhood (including the
+to-be-classified one), which are needed for a core point.
+
+Border points are within the neighborhood of core points but don't have
+enough neighbors to be core points themselves. Noise points are not within
+the neighborhood of any core point and also don't have enough neighbors to
+be core points.
+
+Clusters are identified by iterating over the points and classifying them
+one by one. For each point the neighborhood is scanned and the point is
+classified accordingly. If the point is a core or border point, the
+neighboring points are classified next. As long as it is possible to
+directly connect to new core or border points in this way, the same cluster
+ID is assigned to each encountered point.
 }
 
-\section{Warning}{
- When the point cloud is a \code{\link[base]{data.frame}},
-it will be converted to a \code{\link[data.table]{data.table}} by reference
-at the beginning of this function's execution and converted back to a
-\code{\link[base]{data.frame}} again before the function returns.
-}
+\examples{
+# Load a point cloud of some trees included in the lidR package
+point_cloud <- lidR::readLAS(system.file(
+  "extdata", "MixedConifer.laz", package = "lidR"
+))
 
+# Segment the point cloud
+segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
+  point_cloud,
+  crown_diameter_to_tree_height = 0.25,
+  crown_height_to_tree_height = 0.5
+)
+
+# Generate some crown colors for plotting
+crown_colors <- c(
+  # the first color is a very light grey used for unsegmented points
+  "#DDDDDD",
+  # the colors of the actual crowns are randomly generated
+  lidR::random.colors(
+    n = length(unique(segmented_point_cloud@data$crown_id)) - 1
+  )
+)
+
+# Plot the segmented crown bodies
+lidR::plot(
+  segmented_point_cloud,
+  color = "crown_id",
+  colorPalette = crown_colors,
+  size = 3,
+  axis = TRUE
+)
+
+# Observe how adjacent crowns are undersegmented when the
+# crown_diameter_to_tree_height parameter is set too high
+segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
+  point_cloud,
+  crown_diameter_to_tree_height = 0.5,
+  crown_height_to_tree_height = 0.5
+)
+
+lidR::plot(
+  segmented_point_cloud,
+  color = "crown_id",
+  colorPalette = c(
+    "#DDDDDD",
+    lidR::random.colors(
+      n = length(unique(segmented_point_cloud@data$crown_id)) - 1
+    )
+  ),
+  size = 3,
+  axis = TRUE
+)
+
+# In order to get a more in-depth impression of how the segmentation works,
+# also return and plot modes and centroids.
+segmentation_results <- crownsegmentr::segment_tree_crowns(
+  point_cloud,
+  crown_diameter_to_tree_height = 0.25,
+  crown_height_to_tree_height = 0.5,
+  also_return_modes = TRUE,
+  also_return_centroids = TRUE
+)
+
+lidR::plot(
+  segmentation_results$segmented_point_cloud,
+  color = "crown_id",
+  colorPalette = crown_colors,
+  size = 3,
+  axis = TRUE
+)
+
+lidR::plot(
+  segmentation_results$modes,
+  color = "crown_id",
+  colorPalette = crown_colors,
+  size = 3,
+  axis = TRUE
+)
+
+lidR::plot(
+  segmentation_results$centroids,
+  color = "crown_id",
+  colorPalette = crown_colors,
+  size = 1,
+  axis = TRUE
+)
+}
 \references{
 Ferraz, A., S. Saatchi, C. Mallet, and V. Meyer (2016)
 \emph{Lidar detection of individual tree size in tropical forests}. Remote
