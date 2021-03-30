@@ -1,17 +1,17 @@
 # crownsegmentr
-An R package with a C++ implementation of the AMS3D algorithm [(Ferraz et. al, 2016)](#ferraz2016) for tree crown segmentation in airborne lidar data. For a general description of how the tree segmentation works, see the documentation of the [`segment_tree_crowns` generic](R/segment_tree_crowns.R). Pseudo code of the AMS3D algorithm is listed [below](pseudo-code-of-the-ams3d-algorithm).
+An R package with a C++ implementation of the AMS3D algorithm [(Ferraz et. al, 2016)](#ferraz2016) for tree crown segmentation in airborne lidar data. For a general description of how the tree segmentation works, see the documentation of the [`segment_tree_crowns` generic](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R). Pseudo code of the AMS3D algorithm is listed [below](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/README.md#pseudo-code-of-the-ams3d-algorithm).
 
 ## Code Structure
 The code base is split into an R "front-end" and a C++ "back-end".
 
 ### R Front-End
-The front-end exposes just one R function called [`segment_tree_crowns`](R/segment_tree_crowns.R). This function is an [S4 generic](https://adv-r.hadley.nz/s4.html#s4-generics), i.e. it can be passed point cloud data stored in different data types and behaves differently according to that type. More specifically, the generic function chooses one out of several so called "methods" based on the input data type. There currently are methods for
+The front-end exposes just one R function called [`segment_tree_crowns`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R). This function is an [S4 generic](https://adv-r.hadley.nz/s4.html#s4-generics), i.e. it can be passed point cloud data stored in different data types and behaves differently according to that type. More specifically, the generic function chooses one out of several so called "methods" based on the input data type. There currently are methods for
 
 - `data.frame`s/`data.table`s,
-- `lidR::LAS` objects, and
-- `lidR::LAScatalog`s.
+- [`lidR::LAS` objects](https://github.com/Jean-Romain/lidR/blob/HEAD/R/Class-LAS.R), and
+- [`lidR::LAScatalog`s](https://github.com/Jean-Romain/lidR/blob/HEAD/R/Class-LAScatalog.R).
 
-All of these methods just deal with specifics of their data type. The actual segmentation is done by the internal core function [`segment_tree_crowns_core`](R/segment_tree_crowns_core.R), which is used by the `data.frame`/`data.table` and `lidR::LAS` methods. The `lidR::LAScatalog` method internally calls the `lidR::LAS` method.
+All of these methods just deal with specifics of their data type. The actual segmentation is done by the internal core function [`segment_tree_crowns_core`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns_core.R), which is used by the `data.frame`/`data.table` and `lidR::LAS` methods. The `lidR::LAScatalog` method internally calls the `lidR::LAS` method.
 
 #### `segment_tree_crowns_core`
 This function performs the segmentation by first calling the C++ back-end to calculate modes and by then clustering these modes with the DBSCAN algorithm (as implemented in the [`dbscan::dbscan` function](https://cran.r-project.org/package=dbscan)). It takes point cloud data in the tabular form of a `data.frame` or `data.table` and returns a list with at most three elements. The first element always contains a vector of crown IDs with one ID for each point (i.e. row) in the input data. The second and third elements are optional and contain mode and centroid coordinates together with crown IDs and (row) indices of the points they belong to.
@@ -28,18 +28,18 @@ For context: The [`lidR` R package](https://cran.r-project.org/package=lidR) off
 The `segment_tree_crowns` method for `lidR::LAScatalog`s internally defines a function which segments a chunk of a `LAScatalog`. This function is then applied to all chunks of the `LAScatalog` provided by the user. The "chunk function" first passes the chunk to the `lidR::LAS` method. Afterwards, it excludes both tree crowns and unsegmented points in the buffer area. Since crown IDs overlap across chunks (the IDs in each chunk start at 1), the chunk function also calculates unique replacements for the crown IDs based on the apices' absolute coordinates.
 
 #### Other Internal Functionality
-- [validation functions](R/validation_functions.R) for method arguments
-- helper functions [`extract_coordinate_values`](R/extract_coordinate_values.R) and `collect_scale_n_offset_of_LAScatalog_files`
-- [test suite](tests/testthat) for R functions/methods
+- [validation functions](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/validation_functions.R) for method arguments
+- helper functions [`extract_coordinate_values`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/extract_coordinate_values.R) and `collect_scale_n_offset_of_LAScatalog_files`
+- [test suite](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/tests/testthat) for R functions/methods
 
 
 ### C++ Back-End
 The back-end is a small C++ library which implements the AMS3D algorithm. The core functionality can be found in:
 
-- `namespace ams3d`: An implementation for calculating a single mode with the AMS3D algorithm ([header](inst/include/ams3d.h) and [source](src/ams3d.cpp)), and
-- `namespace spatial`: a facade to the [Boost Geometry](https://www.boost.org/doc/libs/1_75_0/libs/geometry/doc/html/geometry/introduction.html) library which provides e.g. the spatial index used for finding points inside cylinders ([header](inst/include/spatial.h) and [source](src/spatial.cpp)).
+- `namespace ams3d`: An implementation for calculating a single mode with the AMS3D algorithm ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d.h) and [source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d.cpp)), and
+- `namespace spatial`: a facade to the [Boost Geometry](https://www.boost.org/doc/libs/1_75_0/libs/geometry/doc/html/geometry/introduction.html) library which provides e.g. the spatial index used for finding points inside cylinders ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial.h) and [source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/spatial.cpp)).
 
-There is also some interface code outside of any namespace called "ams3d_R_interface" ([header](inst/include/ams3d_R_interface.h) and [source](src/ams3d_R_interface.cpp)). This code loops over the points which it gets from R and calls the C++ functions exposed by `ams3d` and `spatial` to calculate modes for these points. This interface is not contained in any namespace, since this is a requirement of the [`Rcpp`](https://cran.r-project.org/package=Rcpp) package which is used to actually connect the interface to R. It is also the only part of the C++ code which calls R-specific functions (a.o. it manages a progress bar provided by the [R package `progress`](https://cran.r-project.org/package=progress)). By separating the core functionality from the R-specific C++ code it is possible to use the core functionality with other C++ code when not using R.
+There is also some interface code outside of any namespace called "ams3d_R_interface" ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d_R_interface.h) and [source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface.cpp)). This code loops over the points which it gets from R and calls the C++ functions exposed by `ams3d` and `spatial` to calculate modes for these points. This interface is not contained in any namespace, since this is a requirement of the [`Rcpp`](https://cran.r-project.org/package=Rcpp) package which is used to actually connect the interface to R. It is also the only part of the C++ code which calls R-specific functions (a.o. it manages a progress bar provided by the [R package `progress`](https://cran.r-project.org/package=progress)). By separating the core functionality from the R-specific C++ code it is possible to use the core functionality with other C++ code when not using R.
 
 *Note*: The namespaces `àms3d` and `spatial` contain internal functions, classes, etc. which should not be used in other namespaces. These internal components are indicated by an underscore at the beginning of their name.
 
