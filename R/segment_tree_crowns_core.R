@@ -75,7 +75,6 @@ segment_tree_crowns_core <- function(coordinate_table,
                                      also_return_modes,
                                      also_return_centroids) {
 
-  # Check the coordinate data and try to extract it
   coordinate_values <- extract_coordinate_values(coordinate_table)
 
   # Warn about likely not normalized point clouds
@@ -223,6 +222,9 @@ warn_about_normalization <- function(Z_coordinate_values) {
         "the lowest 1% of points covers a vertical distance of more than 5 m"
     }
 
-    warning(warning_start, reason, " (coordinate units are assumed).)")
+    warning(warning_start, reason, " (units are assumed).)",
+      call. = FALSE,
+      immediate. = TRUE
+    )
   }
 }
