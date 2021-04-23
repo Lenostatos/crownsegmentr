@@ -6,6 +6,8 @@
 \usage{
 segment_tree_crowns_core(
   coordinate_table,
+  segment_crowns_only_above,
+  ground_height,
   crown_diameter_to_tree_height,
   crown_height_to_tree_height,
   verbose,
@@ -20,6 +22,22 @@ segment_tree_crowns_core(
 \arguments{
 \item{coordinate_table}{A \code{data.frame} or \code{data.table} which is a
 valid coordinate table according to \code{validate_coordinate_table}.}
+
+\item{segment_crowns_only_above}{A single positive number denoting the
+minimum height above ground at which crown IDs will be calculated. Note
+that points directly below this threshold will still be considered during
+the segmentation if they are within reach of search cylinders constructed
+at the \code{segment_crowns_only_above} height. See "How the algorithm
+works" to learn about the search cylinders.}
+
+\item{ground_height}{One of
+\itemize{
+\item \code{NULL}, indicating that the point cloud stored in
+\code{coordinate_table} is normalized with ground height at zero.
+\item A \code{\link[raster]{raster}} object providing ground heights for
+the area of the (not normalized) point cloud stored in
+\code{coordinate_table}.
+}}
 
 \item{crown_diameter_to_tree_height}{Single
 Numbers. Approximate crown diameter and crown height to tree height ratios

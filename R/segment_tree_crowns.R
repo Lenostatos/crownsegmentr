@@ -1,8 +1,8 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ
-# Contact: Lenostatos@gmx.de
+# Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+# Contact: Leon.Steinmeier@posteo.net
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,18 +41,25 @@
 #' @param crown_diameter_to_tree_height,crown_height_to_tree_height Single
 #'   Numbers. Approximate crown diameter and crown height to tree height ratios
 #'   of the trees expected to be found in the point cloud.
-#' @param ground_height Under construction - does nothing yet. One of
+#' @param segment_crowns_only_above A single positive number denoting the
+#'   minimum height above ground at which crown IDs will be calculated. Note
+#'   that points directly below this threshold will still be considered during
+#'   the segmentation if they are within reach of search cylinders constructed
+#'   at the \code{segment_crowns_only_above} height. See "How the algorithm
+#'   works" to learn about the search cylinders.
+#' @param ground_height One of
 #'   \itemize{
-#'     \item A single number denoting the overall ground height of a
-#'     *normalized* point cloud, usually zero.
+#'     \item \code{NULL}, indicating that \code{point_cloud} is normalized with
+#'     ground height at zero.
 #'     \item A \code{\link[raster]{raster}} object providing ground heights for
-#'     the area of a *not-normalized* point cloud.
-#'     \item A list of arguments for the \code{\link[lidR]{grid_terrain}}
-#'     function to calculate a ground height grid internally.
+#'     the area of the (not normalized) \code{point_cloud}.
+#'     \item A list of (ideally named) arguments to the
+#'     \code{\link[lidR]{grid_terrain}} function, which will be used to generate
+#'     a ground height grid from \code{point_cloud}. Currently not supported
+#'     with point clouds stored in \code{data.frame}s. The list should not
+#'     contain an argument to the "las" parameter of grid_terrain.
 #'   }
-#' @param segment_points_only_above Under construction - does nothing yet. A
-#'   single number denoting the above-ground height below which no points should
-#'   be used during the tree segmentation.
+#'   Note that points will have NA crown IDs wherever ground heights are NA.
 #' @param crown_id_column_name A character string. The column or attribute name
 #'   under which IDs for segmented bodies should be stored.
 #' @param centroid_convergence_distance A single number. Distance at which it is
@@ -189,11 +196,11 @@ methods::setGeneric("segment_tree_crowns",
   function(point_cloud,
            crown_diameter_to_tree_height,
            crown_height_to_tree_height,
-           ground_height = 0,
-           segment_points_only_above = 0,
+           segment_crowns_only_above = 0,
+           ground_height = NULL,
            crown_id_column_name = "crown_id",
            centroid_convergence_distance = 0.01,
-           max_num_centroids_per_mode = 200,
+           max_num_centroids_per_mode = 500,
            dbscan_neighborhood_radius = 0.3,
            min_num_modes_per_neighborhood = 5,
            ...
@@ -221,8 +228,8 @@ methods::setMethod("segment_tree_crowns",
   function(point_cloud,
            crown_diameter_to_tree_height,
            crown_height_to_tree_height,
+           segment_crowns_only_above,
            ground_height,
-           segment_points_only_above,
            crown_id_column_name,
            centroid_convergence_distance,
            max_num_centroids_per_mode,
@@ -235,6 +242,8 @@ methods::setMethod("segment_tree_crowns",
     validate_coordinate_table(point_cloud)
     validate_crown_diameter_to_tree_height(crown_diameter_to_tree_height)
     validate_crown_height_to_tree_height(crown_height_to_tree_height)
+    validate_segment_crowns_only_above(segment_crowns_only_above)
+    validate_ground_height(ground_height, point_cloud)
     validate_crown_id_column_name(crown_id_column_name, point_cloud)
     validate_centroid_convergence_distance(centroid_convergence_distance)
     validate_max_num_centroids_per_mode(max_num_centroids_per_mode)
@@ -247,6 +256,8 @@ methods::setMethod("segment_tree_crowns",
     # Segment the point cloud
     ids_modes_n_centroids <- segment_tree_crowns_core(
       point_cloud,
+      segment_crowns_only_above,
+      ground_height,
       crown_diameter_to_tree_height,
       crown_height_to_tree_height,
       verbose,
@@ -342,8 +353,8 @@ methods::setMethod("segment_tree_crowns",
   function(point_cloud,
            crown_diameter_to_tree_height,
            crown_height_to_tree_height,
+           segment_crowns_only_above,
            ground_height,
-           segment_points_only_above,
            crown_id_column_name,
            centroid_convergence_distance,
            max_num_centroids_per_mode,
@@ -357,6 +368,8 @@ methods::setMethod("segment_tree_crowns",
 
     validate_crown_diameter_to_tree_height(crown_diameter_to_tree_height)
     validate_crown_height_to_tree_height(crown_height_to_tree_height)
+    validate_segment_crowns_only_above(segment_crowns_only_above)
+    validate_ground_height(ground_height, point_cloud)
     validate_crown_id_column_name(crown_id_column_name, point_cloud@data)
     validate_centroid_convergence_distance(centroid_convergence_distance)
     validate_max_num_centroids_per_mode(max_num_centroids_per_mode)
@@ -368,9 +381,19 @@ methods::setMethod("segment_tree_crowns",
     validate_write_crown_id_also_to_file(write_crown_id_also_to_file)
     validate_crown_id_file_description(crown_id_file_description)
 
+    # If ground_height is a list of arguments, pass them to lidR::grid_terrain
+    # like this:
+    if (is.list(ground_height)) {
+      ground_height <- do.call(lidR::grid_terrain,
+        args = c(las = point_cloud, ground_height)
+      )
+    }
+
     # Segment the point cloud
     ids_modes_n_centroids <- segment_tree_crowns_core(
       point_cloud@data,
+      segment_crowns_only_above,
+      ground_height,
       crown_diameter_to_tree_height,
       crown_height_to_tree_height,
       verbose,
@@ -505,8 +528,8 @@ methods::setMethod("segment_tree_crowns",
   function(point_cloud,
            crown_diameter_to_tree_height,
            crown_height_to_tree_height,
+           segment_crowns_only_above,
            ground_height,
-           segment_points_only_above,
            crown_id_column_name,
            centroid_convergence_distance,
            max_num_centroids_per_mode,
@@ -522,6 +545,8 @@ methods::setMethod("segment_tree_crowns",
     # validate_crown_id_column_name(crown_id_column_name, point_cloud@data)
     # TODO find out whether there is a way to validate this here instead of in
     # the individual calls to the LAS methods.
+    validate_segment_crowns_only_above(segment_crowns_only_above)
+    validate_ground_height(ground_height, point_cloud)
     validate_centroid_convergence_distance(centroid_convergence_distance)
     validate_max_num_centroids_per_mode(max_num_centroids_per_mode)
     validate_dbscan_neighborhood_radius(dbscan_neighborhood_radius)
@@ -553,8 +578,8 @@ methods::setMethod("segment_tree_crowns",
         point_cloud = las,
         crown_diameter_to_tree_height,
         crown_height_to_tree_height,
+        segment_crowns_only_above,
         ground_height,
-        segment_points_only_above,
         crown_id_column_name,
         centroid_convergence_distance,
         max_num_centroids_per_mode,
@@ -652,8 +677,9 @@ methods::setMethod("segment_tree_crowns",
       return(core_trees_n_points)
     }
 
-    return(lidR::catalog_apply(point_cloud,
-      catalog_function,
+    return(lidR::catalog_apply(
+      ctg = point_cloud,
+      FUN = catalog_function,
       .options = list(need_buffer = TRUE, automerge = TRUE, autoread = TRUE)
     ))
   }

@@ -1,8 +1,8 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2021 Leon Steinmeier, Nikolai Knapp, UFZ
-# Contact: Lenostatos@gmx.de
+# Copyright (C) 2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+# Contact: Leon.Steinmeier@posteo.net
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,12 +44,13 @@ validate_crown_diameter_to_tree_height <-
 
     assert_that(
       is.number(crown_diameter_to_tree_height),
+      noNA(crown_diameter_to_tree_height),
       crown_diameter_to_tree_height > 0
     )
 
     if (crown_diameter_to_tree_height > 2) { warning(paste0(
       "A crown diameter to tree height ratio of ", crown_diameter_to_tree_height,
-      " is likely to high."
+      " is likely too high."
     )) }
   }
 
@@ -57,13 +58,84 @@ validate_crown_height_to_tree_height <- function(crown_height_to_tree_height) {
 
   assert_that(
     is.number(crown_height_to_tree_height),
+    noNA(crown_height_to_tree_height),
     crown_height_to_tree_height > 0
   )
 
   if (crown_height_to_tree_height > 2) { warning(paste0(
     "A crown height to tree height ratio of ", crown_height_to_tree_height,
-    " is likely to high."
+    " is likely too high."
   )) }
+}
+
+validate_segment_crowns_only_above <- function(segment_crowns_only_above) {
+  assert_that(
+    is.number(segment_crowns_only_above),
+    noNA(segment_crowns_only_above),
+    segment_crowns_only_above >= 0
+  )
+}
+
+validate_ground_height <- function(ground_height, point_cloud) {
+
+  if (is.null(ground_height)) { # if ground_height is NULL
+    # do nothing
+  } else if (is(ground_height, "RasterLayer")) { # if ground_height is a raster
+
+    if (inherits(point_cloud, "data.frame")) {
+      # if point_cloud is a data.frame(-like) object
+      assert_that(
+        raster::extent(ground_height)@xmin <=
+          min(extract_coordinate_values(point_cloud)[[1]], na.rm = FALSE),
+        raster::extent(ground_height)@ymin <=
+          min(extract_coordinate_values(point_cloud)[[2]], na.rm = FALSE),
+        max(extract_coordinate_values(point_cloud)[[1]], na.rm = FALSE) <=
+          raster::extent(ground_height)@xmax,
+        max(extract_coordinate_values(point_cloud)[[2]], na.rm = FALSE) <=
+          raster::extent(ground_height)@ymax,
+        msg = paste0("ground_height is a raster but does not cover the extent ",
+                     "of the point cloud.")
+      )
+
+    } else if (is(point_cloud, "LAS") || is(point_cloud, "LAScatalog")) {
+      # if point_cloud is a LAS or LAScatalog object
+      assert_that(
+        sf::st_crs(ground_height) == sf::st_crs(point_cloud),
+        msg = paste0("The CRS of the ground height raster and the point cloud ",
+                     "do not match.")
+      )
+      assert_that(
+        raster::extent(ground_height)@xmin <= lidR::extent(point_cloud)@xmin,
+        raster::extent(ground_height)@ymin <= lidR::extent(point_cloud)@ymin,
+        lidR::extent(point_cloud)@xmax <= raster::extent(ground_height)@xmax,
+        lidR::extent(point_cloud)@ymax <= raster::extent(ground_height)@ymax,
+        msg = paste0("ground_height is a raster but does not cover the extent ",
+                     "of the point cloud.")
+      )
+
+    } else {
+      # if point_cloud is none of the above
+      simpleError(paste0(
+        "This shouldn't happen. Your point cloud is neither a LAS or ",
+        "LAScatalog object nor does it inherit from data.frame."))
+    }
+
+  } else if (is.list(ground_height)) { # if ground_height is a list
+    assert_that(!inherits(point_cloud, "data.frame"), msg = paste0(
+      "Passing a list for parameter ground_height is not supported with ",
+      "data.frame(-like) point clouds.")
+    )
+    assert_that(not_empty(ground_height))
+    assert_that(!(ground_height %has_name% "las"), msg = paste0(
+      "Parameter ground_height must not contain an element called \"las\" when",
+      " it is a list (see documentation).")
+    )
+
+  } else { # if ground_height is none of the above
+    simpleError(paste0(
+      "ground_height is neither NULL, nor a raster object, nor a list."
+    ))
+  }
 }
 
 validate_crown_id_column_name <- function(crown_id_column_name,
@@ -72,6 +144,7 @@ validate_crown_id_column_name <- function(crown_id_column_name,
   # Check the data type and validity of the crown ID column name
   assert_that(
     is.string(crown_id_column_name),
+    noNA(crown_id_column_name),
     crown_id_column_name != ""
   )
 
@@ -90,21 +163,21 @@ validate_crown_id_column_name <- function(crown_id_column_name,
 validate_verbose <- function(verbose) {
   assert_that(
     is.flag(verbose),
-    !is.na(verbose)
+    noNA(verbose)
   )
 }
 
 validate_also_return_modes <- function(also_return_modes) {
   assert_that(
     is.flag(also_return_modes),
-    !is.na(also_return_modes)
+    noNA(also_return_modes)
   )
 }
 
 validate_also_return_centroids <- function(also_return_centroids) {
   assert_that(
     is.flag(also_return_centroids),
-    !is.na(also_return_centroids)
+    noNA(also_return_centroids)
   )
 }
 
@@ -112,6 +185,7 @@ validate_centroid_convergence_distance <-
   function(centroid_convergence_distance) {
     assert_that(
       is.number(centroid_convergence_distance),
+      noNA(centroid_convergence_distance),
       centroid_convergence_distance > 0
     )
   }
@@ -126,6 +200,7 @@ validate_max_num_centroids_per_mode <- function(max_num_centroids_per_mode) {
 validate_dbscan_neighborhood_radius <- function(dbscan_neighborhood_radius) {
   assert_that(
     is.number(dbscan_neighborhood_radius),
+    noNA(dbscan_neighborhood_radius),
     dbscan_neighborhood_radius > 0
   )
 }
@@ -141,7 +216,7 @@ validate_min_num_modes_per_neighborhood <-
 validate_write_crown_id_also_to_file <- function(write_crown_id_also_to_file) {
   assert_that(
     is.flag(write_crown_id_also_to_file),
-    !is.na(write_crown_id_also_to_file)
+    noNA(write_crown_id_also_to_file)
   )
 }
 
@@ -176,6 +251,7 @@ validate_write_crown_id_also_to_file_for_LAScatalogs <-
 validate_crown_id_file_description <- function(crown_id_file_description) {
   assert_that(
     is.string(crown_id_file_description),
+    noNA(crown_id_file_description),
     crown_id_file_description != ""
   )
 }

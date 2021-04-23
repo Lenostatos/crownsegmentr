@@ -1,8 +1,8 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2021 Leon Steinmeier, Nikolai Knapp, UFZ
-# Contact: Lenostatos@gmx.de
+# Copyright (C) 2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+# Contact: Leon.Steinmeier@posteo.net
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,16 +36,19 @@ test_that("the core function works with 'normal' arguments", {
   )
 
   # Request the most simple output (i.e. just crown IDs)
-  test_output <- segment_tree_crowns_core(test_point_cloud@data,
-                                          crown_diameter_to_tree_height = 0.3,
-                                          crown_height_to_tree_height = 0.5,
-                                          verbose = TRUE,
-                                          also_return_modes = FALSE,
-                                          also_return_centroids = FALSE,
-                                          centroid_convergence_distance = 0.02,
-                                          max_num_centroids_per_mode = 200,
-                                          dbscan_neighborhood_radius = 0.3,
-                                          min_num_modes_per_neighborhood = 5
+  test_output <- segment_tree_crowns_core(
+    test_point_cloud@data,
+    ground_height = NULL,
+    segment_crowns_only_above = 0,
+    crown_diameter_to_tree_height = 0.3,
+    crown_height_to_tree_height = 0.5,
+    verbose = TRUE,
+    also_return_modes = FALSE,
+    also_return_centroids = FALSE,
+    centroid_convergence_distance = 0.02,
+    max_num_centroids_per_mode = 200,
+    dbscan_neighborhood_radius = 0.3,
+    min_num_modes_per_neighborhood = 5
   )
   expect_length(test_output, 1)
   expect_named(test_output, expected = "crown_ids")
@@ -56,6 +59,8 @@ test_that("the core function works with 'normal' arguments", {
   # Request modes
   test_output <- segment_tree_crowns_core(
     test_point_cloud@data,
+    ground_height = NULL,
+    segment_crowns_only_above = 0,
     crown_diameter_to_tree_height = 0.3,
     crown_height_to_tree_height = 0.5,
     verbose = TRUE,
@@ -88,6 +93,8 @@ test_that("the core function works with 'normal' arguments", {
   # Request centroids
   test_output <- segment_tree_crowns_core(
     test_point_cloud@data,
+    ground_height = NULL,
+    segment_crowns_only_above = 0,
     crown_diameter_to_tree_height = 0.3,
     crown_height_to_tree_height = 0.5,
     verbose = TRUE,
@@ -124,6 +131,8 @@ test_that("the core function works with 'normal' arguments", {
   # Request modes and centroids
   test_output <- segment_tree_crowns_core(
     test_point_cloud@data,
+    ground_height = NULL,
+    segment_crowns_only_above = 0,
     crown_diameter_to_tree_height = 0.3,
     crown_height_to_tree_height = 0.5,
     verbose = TRUE,

@@ -1,8 +1,8 @@
 // This file is part of crownsegmentr, an R package for identifying tree crowns
 // within 3D point clouds.
 //
-// Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ
-// Contact: Lenostatos@gmx.de
+// Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+// Contact: Leon.Steinmeier@posteo.net
 //
 // crownsegmentr is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,24 +22,33 @@
 
 #include "spatial.h"
 
-#include <utility>      // std::move
+#include <utility> // for std::move
 
 namespace ams3d
 {
     spatial::point_3d_t calculate_a_single_mode (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
+        const spatial::coordinate_t &min_point_height_above_ground,
         const double crown_diameter_to_tree_height,
         const double crown_height_to_tree_height,
         const double centroid_convergence_distance,
         const int max_num_centroids_per_mode
     ) {
+        // If any coordinate value of point is non-finite or point lies below
+        // the minimum point height, return an NaN mode.
+        if (spatial::has_non_finite_coordinate_value( point ) ||
+            spatial::get_z( point ) < min_point_height_above_ground)
+        {
+            return spatial::nan_point();
+        }
+
         // Set the current centroid to the starting point because it will be
         // queried in the loop below.
         spatial::point_3d_t current_centroid{ point };
         spatial::point_3d_t former_centroid;
 
-        int num_calculated_centroids{0};
+        int num_calculated_centroids{ 0 };
         do
         {
             // Create a kernel at the current centroid.
@@ -72,11 +81,22 @@ namespace ams3d
     > calculate_a_single_mode_plus_centroids (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
+        const spatial::coordinate_t &min_point_height_above_ground,
         const double crown_diameter_to_tree_height,
         const double crown_height_to_tree_height,
         const spatial::distance_t &centroid_convergence_distance,
         const int max_num_centroids_per_mode
     ) {
+        // If any coordinate value of point is non-finite or point lies below
+        // the minimum point height, return an NaN mode.
+        if (spatial::has_non_finite_coordinate_value( point ) ||
+            spatial::get_z( point ) < min_point_height_above_ground)
+        {
+            return std::pair {
+                spatial::nan_point(), std::vector< spatial::point_3d_t >{}
+            };
+        }
+
         // Set the current centroid to the starting point because it will be
         // queried in the loop below.
         spatial::point_3d_t current_centroid{ point };
@@ -84,9 +104,9 @@ namespace ams3d
 
         // Create an array for calculated centroids.
         std::vector< spatial::point_3d_t > centroids;
-        centroids.reserve(60);
+        centroids.reserve( 60 );
 
-        int num_calculated_centroids{0};
+        int num_calculated_centroids{ 0 };
         do
         {
             // Create a kernel at the previously calculated centroid (which is
@@ -116,7 +136,188 @@ namespace ams3d
         );
 
         // Return the last centroid as the mode plus all centroids in an array.
-        return std::make_pair( current_centroid, centroids );
+        return std::pair{ current_centroid, centroids };
+    }
+
+    spatial::point_3d_t calculate_a_single_mode (
+        const spatial::point_3d_t &point,
+        const spatial::index_for_3d_points_t &indexed_point_cloud,
+        const spatial::coordinate_t &min_point_height_above_ground,
+        const spatial::Raster< spatial::coordinate_t > &ground_height_grid,
+        const double crown_diameter_to_tree_height,
+        const double crown_height_to_tree_height,
+        const double centroid_convergence_distance,
+        const int max_num_centroids_per_mode
+    ) {
+        // If any coordinate value of point is non-finite or point lies below
+        // the minimum point height, return an NaN mode.
+        if (spatial::has_non_finite_coordinate_value( point ) ||
+            spatial::get_z( point ) < min_point_height_above_ground)
+        {
+            return spatial::nan_point();
+        }
+
+        spatial::coordinate_t ground_height_at_point {
+            ground_height_grid.no_throw_value_at (
+                spatial::get_x( point ), spatial::get_y( point )
+            )
+        };
+
+        // If the ground height is non-finite or the point lies below the
+        // minimum above-ground height, return an NaN mode without any centroids.
+        if (!std::isfinite( ground_height_at_point ) ||
+            spatial::get_z( point ) - ground_height_at_point
+                < min_point_height_above_ground )
+        {
+            return spatial::nan_point();
+        }
+
+        // Set the current centroid to the starting point because it will be
+        // queried in the loop below.
+        spatial::point_3d_t current_centroid{ point };
+        spatial::point_3d_t former_centroid;
+
+        int num_calculated_centroids{ 0 };
+        do
+        {
+            // Get the ground height at the current centroid.
+            spatial::coordinate_t ground_height_at_current_centroid {
+                ground_height_grid.no_throw_value_at (
+                    spatial::get_x( current_centroid ),
+                    spatial::get_y( current_centroid )
+                )
+            };
+
+            // If the ground height is non-finite, return an NaN mode without
+            // any centroids.
+            if (!std::isfinite( ground_height_at_current_centroid ))
+            {
+                return spatial::nan_point();
+            }
+
+            // Create a kernel at the previously calculated centroid (which is
+            // the starting point during the first iteration).
+            _Kernel kernel {
+                current_centroid,
+                ground_height_at_current_centroid,
+                crown_diameter_to_tree_height,
+                crown_height_to_tree_height
+            };
+
+            // Store the current centroid and calculate a new centroid with the
+            // new kernel.
+            former_centroid = current_centroid;
+            current_centroid = kernel.calculate_centroid_in(
+                indexed_point_cloud
+            );
+
+            num_calculated_centroids++;
+        }
+        while (
+            spatial::distance( former_centroid, current_centroid ) >
+                centroid_convergence_distance
+            && num_calculated_centroids < max_num_centroids_per_mode
+        );
+
+        return current_centroid;
+    }
+
+    std::pair <
+        spatial::point_3d_t, std::vector< spatial::point_3d_t >
+    > calculate_a_single_mode_plus_centroids (
+        const spatial::point_3d_t &point,
+        const spatial::index_for_3d_points_t &indexed_point_cloud,
+        const spatial::coordinate_t &min_point_height_above_ground,
+        const spatial::Raster< spatial::coordinate_t > &ground_height_grid,
+        const double crown_diameter_to_tree_height,
+        const double crown_height_to_tree_height,
+        const spatial::distance_t &centroid_convergence_distance,
+        const int max_num_centroids_per_mode
+    ) {
+        // If any coordinate value of point is non-finite, return an NaN mode
+        // without any centroids.
+        if (spatial::has_non_finite_coordinate_value( point ))
+        {
+            return std::pair {
+                spatial::nan_point(), std::vector< spatial::point_3d_t >{}
+            };
+        }
+
+        spatial::coordinate_t ground_height_at_point {
+            ground_height_grid.no_throw_value_at (
+                spatial::get_x( point ), spatial::get_y( point )
+            )
+        };
+
+        // If the ground height is non-finite or the point lies below the
+        // minimum above-ground height, return an NaN mode without any centroids.
+        if (!std::isfinite( ground_height_at_point ) ||
+            spatial::get_z( point ) - ground_height_at_point
+                < min_point_height_above_ground )
+        {
+            return std::pair {
+                spatial::nan_point(), std::vector< spatial::point_3d_t >{}
+            };
+        }
+
+        // Set the current centroid to the starting point because it will be
+        // queried in the loop below.
+        spatial::point_3d_t current_centroid{ point };
+        spatial::point_3d_t former_centroid;
+
+        // Create an array for calculated centroids.
+        std::vector< spatial::point_3d_t > centroids;
+        centroids.reserve( 60 );
+
+        int num_calculated_centroids{ 0 };
+        do
+        {
+            // Get the ground height at the current centroid.
+            spatial::coordinate_t ground_height_at_current_centroid {
+                ground_height_grid.no_throw_value_at (
+                    spatial::get_x( current_centroid ),
+                    spatial::get_y( current_centroid )
+                )
+            };
+
+            // If the ground height is non-finite, return an NaN mode without
+            // any centroids.
+            if (!std::isfinite( ground_height_at_current_centroid ))
+            {
+                return std::pair {
+                    spatial::nan_point(), std::vector< spatial::point_3d_t >{}
+                };
+            }
+
+            // Create a kernel at the previously calculated centroid (which is
+            // the starting point during the first iteration).
+            _Kernel kernel {
+                current_centroid,
+                ground_height_at_current_centroid,
+                crown_diameter_to_tree_height,
+                crown_height_to_tree_height
+            };
+
+            // Store the current centroid and calculate a new centroid with the
+            // new kernel.
+            former_centroid = current_centroid;
+            current_centroid = kernel.calculate_centroid_in (
+                indexed_point_cloud
+            );
+
+            // Append the new centroid to the already calculated ones.
+            centroids.push_back( current_centroid );
+
+            num_calculated_centroids++;
+        }
+        while (
+            spatial::distance( former_centroid, current_centroid ) >
+                centroid_convergence_distance
+            && num_calculated_centroids < max_num_centroids_per_mode
+        );
+
+        // Return the last centroid as the mode plus all centroids in an array.
+        return std::pair{ current_centroid, centroids };
     }
 
 
@@ -130,12 +331,41 @@ namespace ams3d
         const double crown_height_to_tree_height
     ):
         _xy_center{ spatial::get_x( center ), spatial::get_y( center ) },
-        _radius{ crown_diameter_to_tree_height * spatial::get_z( center ) * 0.5 },
-        _height{ crown_height_to_tree_height * spatial::get_z( center ) * 0.75 },
+        _center_height_initial{ spatial::get_z( center ) },
+        _radius{ crown_diameter_to_tree_height * _center_height_initial * 0.5 },
+        _height{ crown_height_to_tree_height * _center_height_initial * 0.75 },
 
         // The kernel is positioned vertically asymmetric around center.
-        _top_height   { spatial::get_z( center ) + _height * 2.0/3.0 },
-        _middle_height{ _top_height - _height * 0.5 },
+        _top_height   { _center_height_initial + _height * 2.0/3.0 },
+        _center_height{ _top_height - _height * 0.5 },
+        _bottom_height{ _top_height - _height }
+    {}
+
+
+    _Kernel::_Kernel (
+        const spatial::point_3d_t &center,
+        const spatial::coordinate_t &ground_height_at_center,
+        const double crown_diameter_to_tree_height,
+        const double crown_height_to_tree_height
+    ):
+        _xy_center{ spatial::get_x( center ), spatial::get_y( center ) },
+        _center_height_initial{ spatial::get_z( center ) },
+        _radius
+        {
+            crown_diameter_to_tree_height
+            * (_center_height_initial - ground_height_at_center)
+            * 0.5
+        },
+        _height
+        {
+            crown_height_to_tree_height
+            * (_center_height_initial - ground_height_at_center)
+            * 0.75
+        },
+
+        // The kernel is positioned vertically asymmetric around center.
+        _top_height   { _center_height_initial + _height * 2.0/3.0 },
+        _center_height{ _top_height - _height * 0.5 },
         _bottom_height{ _top_height - _height }
     {}
 
@@ -145,8 +375,8 @@ namespace ams3d
     {
         return spatial::get_points_intersecting_vertical_cylinder (
             point_cloud,
-            this->_xy_center, this->_radius,
-            this->_bottom_height, this->_top_height
+            _xy_center, _radius,
+            _bottom_height, _top_height
         );
     }
 
@@ -156,14 +386,14 @@ namespace ams3d
     {
         spatial::distance_t absolute_distance {
             spatial::distance (
-                this->_xy_center,
+                _xy_center,
                 spatial::point_2d_t {
                     spatial::get_x( point ), spatial::get_y( point )
                 }
             )
         };
 
-        return absolute_distance / this->_radius;
+        return absolute_distance / _radius;
     }
 
     spatial::distance_t _Kernel::_calculate_relative_vertical_distance_of_center_to (
@@ -171,10 +401,10 @@ namespace ams3d
     ) const
     {
         spatial::distance_t absolute_distance {
-            std::abs( this->_middle_height - spatial::get_z( point ) )
+            std::abs( _center_height - spatial::get_z( point ) )
         };
 
-        return absolute_distance / (this->_height * 0.5);
+        return absolute_distance / (_height * 0.5);
     }
 
     double _Kernel::_calculate_point_weight_of (
@@ -199,11 +429,10 @@ namespace ams3d
             _find_intersecting_points_in( point_cloud )
         };
 
-        // Idea: If there are no other points in the kernel, directly return the
-        // symmetric(!) kernel's center as the centroid.
-        // This would mostly be relevant for ground points, so test the
-        // performance impact of this on point clouds without ground points.
-        // -> Doesn't seem to have a positive performance impact.
+        // If there is only one point in the kernel, directly return it as the
+        // centroid.
+        // (This usually concerns (near-)ground points.)
+        if (points_in_kernel.size() == 1) { return points_in_kernel[0]; }
 
         // Set up an array of point weights.
         std::vector<double> point_weights;
@@ -213,7 +442,7 @@ namespace ams3d
         for (const auto &point_in_kernel : points_in_kernel)
         {
             point_weights.push_back (
-                this->_calculate_point_weight_of( point_in_kernel )
+                _calculate_point_weight_of( point_in_kernel )
             );
         }
 

@@ -1,8 +1,8 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ
-# Contact: Lenostatos@gmx.de
+# Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+# Contact: Leon.Steinmeier@posteo.net
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,7 +29,8 @@ test_that("the data.frame/data.table method works", {
     "extdata", "MixedConifer.laz", package = "lidR"
   )
   test_point_cloud_header <- lidR::readLASheader(test_point_cloud_file_path)
-  test_point_cloud <- lidR::clip_rectangle(lidR::readLAS(test_point_cloud_file_path),
+  test_point_cloud <- lidR::clip_rectangle(
+    lidR::readLAS(test_point_cloud_file_path),
     xleft = test_point_cloud_header@PHB$`Min X`,
     ybottom = test_point_cloud_header@PHB$`Min Y`,
     xright = test_point_cloud_header@PHB$`Min X` + 50,

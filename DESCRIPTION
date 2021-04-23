@@ -1,6 +1,6 @@
 Package: crownsegmentr
 Title: Tree Crown Segmentation in Airborne LiDAR Data
-Version: 0.2.1
+Version: 0.3.0
 Authors@R: c(
     person("Leon", "Steinmeier",
         role = c("aut", "cre", "cph"), 
@@ -18,13 +18,17 @@ Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
+Depends:
+    R (>= 3.0.2)
 Imports: 
     assertthat,
     Rcpp,
     data.table,
     dbscan,
     lidR (>= 3.0.0),
-    methods
+    methods,
+    raster,
+    sf
 LinkingTo: 
     BH (>= 1.75.0-0),
     Rcpp,

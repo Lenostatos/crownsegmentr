@@ -1,8 +1,8 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2021 Leon Steinmeier, Nikolai Knapp, UFZ
-# Contact: Lenostatos@gmx.de
+# Copyright (C) 2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+# Contact: Leon.Steinmeier@posteo.net
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +26,14 @@
 #'
 #' @param coordinate_table A \code{data.frame} or \code{data.table} which is a
 #'   valid coordinate table according to \code{validate_coordinate_table}.
-#'
+#' @param ground_height One of
+#'   \itemize{
+#'     \item \code{NULL}, indicating that the point cloud stored in
+#'     \code{coordinate_table} is normalized with ground height at zero.
+#'     \item A \code{\link[raster]{raster}} object providing ground heights for
+#'     the area of the (not normalized) point cloud stored in
+#'     \code{coordinate_table}.
+#'   }
 #' @inheritParams segment_tree_crowns
 #'
 #' @inheritSection segment_tree_crowns How the algorithm works
@@ -65,6 +72,8 @@
 #'
 #' @import assertthat
 segment_tree_crowns_core <- function(coordinate_table,
+                                     segment_crowns_only_above,
+                                     ground_height,
                                      crown_diameter_to_tree_height,
                                      crown_height_to_tree_height,
                                      verbose,
@@ -78,31 +87,77 @@ segment_tree_crowns_core <- function(coordinate_table,
   coordinate_values <- extract_coordinate_values(coordinate_table)
 
   # Warn about likely not normalized point clouds
-  warn_about_normalization(coordinate_table[[3]])
-
-
-  # Call the C++ back-end
-  if (also_return_centroids) { # call the back-end which also returns centroids
-    modes_and_centroids <- calculate_modes_plus_centroids(
-      coordinate_values,
-      crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
-      centroid_convergence_distance,
-      max_num_centroids_per_mode,
-      show_progress_bar = verbose
-    )
-    modes <- modes_and_centroids$mode_coordinates
-  } else { # call the "simple" back-end
-    modes <- calculate_modes(
-      coordinate_values,
-      crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
-      centroid_convergence_distance,
-      max_num_centroids_per_mode,
-      show_progress_bar = verbose
+  if (is.null(ground_height)) {
+    warn_about_normalization(coordinate_table[[3]])
+  } else {
+    # Get the raster values only in the bounding box of the point cloud
+    ground_height <- raster::crop(ground_height, raster::extent(
+      min(coordinate_values[[1]], na.rm = TRUE),
+      max(coordinate_values[[1]], na.rm = TRUE),
+      min(coordinate_values[[2]], na.rm = TRUE),
+      max(coordinate_values[[2]], na.rm = TRUE)
+    ))
+    ground_height <- list(
+      values = raster::values(ground_height),
+      num_rows = raster::nrow(ground_height),
+      num_cols = raster::ncol(ground_height),
+      x_min = raster::xmin(ground_height),
+      x_max = raster::xmax(ground_height),
+      y_min = raster::ymin(ground_height),
+      y_max = raster::ymax(ground_height)
     )
   }
 
+  # Call the C++ back-end
+  if (is.null(ground_height)) { # for normalized point clouds
+    if (also_return_centroids) {
+      modes_and_centroids <- calculate_modes_plus_centroids_normalized(
+        coordinate_values,
+        segment_crowns_only_above,
+        crown_diameter_to_tree_height,
+        crown_height_to_tree_height,
+        centroid_convergence_distance,
+        max_num_centroids_per_mode,
+        show_progress_bar = verbose
+      )
+      modes <- modes_and_centroids$mode_coordinates
+    } else { # only return modes
+      modes <- calculate_modes_normalized(
+        coordinate_values,
+        segment_crowns_only_above,
+        crown_diameter_to_tree_height,
+        crown_height_to_tree_height,
+        centroid_convergence_distance,
+        max_num_centroids_per_mode,
+        show_progress_bar = verbose
+      )
+    }
+  } else { # for not normalized point clouds
+    if (also_return_centroids) {
+      modes_and_centroids <- calculate_modes_plus_centroids_terraneous(
+        coordinate_values,
+        segment_crowns_only_above,
+        ground_height,
+        crown_diameter_to_tree_height,
+        crown_height_to_tree_height,
+        centroid_convergence_distance,
+        max_num_centroids_per_mode,
+        show_progress_bar = verbose
+      )
+      modes <- modes_and_centroids$mode_coordinates
+    } else { # only return modes
+      modes <- calculate_modes_terraneous(
+        coordinate_values,
+        segment_crowns_only_above,
+        ground_height,
+        crown_diameter_to_tree_height,
+        crown_height_to_tree_height,
+        centroid_convergence_distance,
+        max_num_centroids_per_mode,
+        show_progress_bar = verbose
+      )
+    }
+  }
 
   # Find modes with NA coordinate values to exclude them from the DBSCAN
   # clustering and directly set their IDs to NA
@@ -208,8 +263,9 @@ warn_about_normalization <- function(Z_coordinate_values) {
   )) {
 
     warning_start <- paste0(
-      "Have you normalized your point cloud? Currently, this algorithm only ",
-      "works with normalized point clouds.\n",
+      "Your point cloud might not be normalized! If you want to segment trees ",
+      "in not normalized point clouds, you have to provide ground heights via ",
+      "the ground_height parameter.\n",
       "(Your point cloud looks like it's not normalized because "
     )
 

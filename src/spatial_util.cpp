@@ -1,8 +1,8 @@
 // This file is part of crownsegmentr, an R package for identifying tree crowns
 // within 3D point clouds.
 //
-// Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ
-// Contact: Lenostatos@gmx.de
+// Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+// Contact: Leon.Steinmeier@posteo.net
 //
 // crownsegmentr is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 // along with crownsegmentr in a file called "COPYING". If not,
 // see <http://www.gnu.org/licenses/>.
 
-#include "spatial.h"
+#include "spatial_util.h"
 
 #include <iterator> // for std::back_inserter
 #include <numeric>  // for std::accumulate
