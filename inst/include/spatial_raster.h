@@ -25,9 +25,102 @@
 
 namespace spatial
 {
+    /** An abstract raster interface class.
+     *
+     *  Instructions on how to create this class were taken from here:
+     *  https://www.learncpp.com/cpp-tutorial/pure-virtual-functions-abstract-base-classes-and-interface-classes/
+     */
+    template< typename T_value >
+    class I_Raster
+    {
+    public:
+        virtual const std::vector< T_value >& values() const = 0;
+
+        virtual std::unique_ptr< I_Raster< T_value > > copy_w_new_values (
+            const std::vector< T_value > &new_values
+        ) const = 0;
+
+
+        virtual bool has_value_at (
+            const coordinate_t &x, const coordinate_t &y
+        ) const = 0;
+
+        virtual const T_value& value_at (
+            const coordinate_t &x, const coordinate_t &y
+        ) const = 0;
+
+        virtual const T_value& no_throw_value_at (
+            const coordinate_t &x, const coordinate_t &y
+        ) const = 0;
+
+
+        virtual bool has_value_at_xy_of( const point_3d_t &point ) const = 0;
+        virtual const T_value& value_at_xy_of( const point_3d_t &point ) const = 0;
+        virtual const T_value& no_throw_value_at_xy_of( const point_3d_t &point ) const = 0;
+
+        virtual ~I_Raster() {}
+    };
+
+    /** Can be used like a raster but actually just returns the same value every time. */
+    template< typename T_value >
+    class Single_value_pseudo_raster : public I_Raster< T_value >
+    {
+    private:
+        T_value _value;
+        std::vector< T_value > _values;
+
+    public:
+        Single_value_pseudo_raster( const T_value &value )
+        : _value{ value }, _values{ {value} }
+        {}
+
+
+        virtual const std::vector< T_value >& values() const override { return _values; }
+
+        virtual std::unique_ptr< I_Raster< T_value > > copy_w_new_values (
+            const std::vector< T_value > &new_values
+        ) const override
+        {
+            if (new_values.size() != 1)
+            {
+                throw std::runtime_error (
+                    "Tried to copy-create a raster with the wrong number of new values."
+                );
+            }
+
+            return std::make_unique< Single_value_pseudo_raster< T_value > > (
+                new_values[0]
+            );
+        }
+
+
+        virtual bool has_value_at (
+            const coordinate_t &x, const coordinate_t &y
+        ) const override
+            { return true; }
+
+        virtual const T_value& value_at (
+            const coordinate_t &x, const coordinate_t &y
+        ) const override
+            { return _value; }
+
+        virtual const T_value& no_throw_value_at (
+            const coordinate_t &x, const coordinate_t &y
+        ) const override
+            { return _value; }
+
+
+        virtual bool has_value_at_xy_of( const point_3d_t &point ) const override
+            { return true; }
+        virtual const T_value& value_at_xy_of( const point_3d_t &point ) const override
+            { return _value; }
+        virtual const T_value& no_throw_value_at_xy_of( const point_3d_t &point ) const override
+            { return _value; }
+    };
+
     /** Models a rectangular, non-rotated raster. */
     template< typename T_value >
-    class Raster
+    class Raster : public I_Raster< T_value >
     {
     private:
         /** The raster values go from top left to bottom right, row-wise. */
@@ -49,26 +142,53 @@ namespace spatial
             const std::vector< T_value > &values,
             std::size_t num_rows,
             std::size_t num_cols,
-            coordinate_t x_min,
-            coordinate_t x_max,
-            coordinate_t y_min,
-            coordinate_t y_max
+            const coordinate_t &x_min,
+            const coordinate_t &x_max,
+            const coordinate_t &y_min,
+            const coordinate_t &y_max
         ):
-        _values{ values },
-        _num_rows{ num_rows },
-        _num_cols{ num_cols },
-        _x_min{ x_min },
-        _x_max{ x_max },
-        _y_min{ y_min },
-        _y_max{ y_max },
-        _row_height{ (_y_max - _y_min) / _num_rows },
-        _col_width{ (_x_max - _x_min) / _num_cols }
+            _values{ values },
+            _num_rows{ num_rows },
+            _num_cols{ num_cols },
+            _x_min{ x_min },
+            _x_max{ x_max },
+            _y_min{ y_min },
+            _y_max{ y_max },
+            _row_height{ (_y_max - _y_min) / _num_rows },
+            _col_width{ (_x_max - _x_min) / _num_cols }
         {}
 
-        /** Indicates whether the raster has a value at the location x|y. */
-        bool has_value_at( const coordinate_t x, const coordinate_t y ) const
+
+        virtual const std::vector< T_value >& values() const override
+            { return _values; }
+
+        virtual std::unique_ptr< I_Raster< T_value > > copy_w_new_values (
+            const std::vector< T_value > &new_values
+        ) const override
         {
-            return _x_min <= x && x <= _x_max && _y_min <= y && y <= _y_max;
+            if (new_values.size() != _values.size())
+            {
+                throw std::runtime_error (
+                    "Tried to copy-create a raster with the wrong number of new values."
+                );
+            }
+
+            return std::make_unique< Raster< T_value > > (
+                new_values,
+                _num_rows, _num_cols,
+                _x_min, _x_max,
+                _y_min, _y_max
+            );
+        }
+
+
+        /** Indicates whether the raster has a value at the location x|y. */
+        virtual bool has_value_at (
+            const coordinate_t &x, const coordinate_t &y
+        ) const override
+        {
+            return _x_min <= x && x <= _x_max &&
+                   _y_min <= y && y <= _y_max;
         }
 
         /** \brief Returns the raster value at the location x|y.
@@ -76,7 +196,9 @@ namespace spatial
          *  Throws an exception if x or y are NaN or the location x|y lies
          *      outside of the raster's extent.
          */
-        T_value value_at( const coordinate_t x, const coordinate_t y ) const
+        virtual const T_value& value_at (
+            const coordinate_t &x, const coordinate_t &y
+        ) const override
         {
             if (std::isnan( x ) || std::isnan( y ))
             {
@@ -99,9 +221,9 @@ namespace spatial
          *      values and locations outside the raster, the behavior of this
          *      method is undefined.
          */
-        T_value no_throw_value_at (
-            const coordinate_t x, const coordinate_t y
-        ) const
+        virtual const T_value& no_throw_value_at (
+            const coordinate_t &x, const coordinate_t &y
+        ) const override
         {
             std::size_t row_index {
                 static_cast< std::size_t >( (_y_max - y) / _row_height )
@@ -112,6 +234,63 @@ namespace spatial
             std::size_t col_index {
                 static_cast< std::size_t >( (x - _x_min) / _col_width )
             };
+            // if x == _x_max, the column index is too big by one
+            if (col_index == _num_cols) { --col_index; }
+
+            return _values[_num_cols * row_index + col_index];
+        }
+
+        /** Indicates whether the raster has a value at the xy-coordinates of
+         *      \p point.
+         */
+        virtual bool has_value_at_xy_of( const point_3d_t &point ) const override
+        {
+            return _x_min <= _geom::get<0>( point ) &&
+                             _geom::get<0>( point ) <= _x_max &&
+                   _y_min <= _geom::get<1>( point ) &&
+                             _geom::get<1>( point ) <= _y_max;
+        }
+
+        /** \brief Returns the raster value at the xy-coordinates of \p point.
+         *
+         *  Throws an exception if x or y are NaN or the location x|y lies
+         *      outside of the raster's extent.
+         */
+        virtual const T_value& value_at_xy_of( const point_3d_t &point ) const override
+        {
+            if (std::isnan( _geom::get<0>( point ) ) ||
+                std::isnan( _geom::get<1>( point ) ))
+            {
+                throw std::runtime_error (
+                    "Tried to access raster value with NaN xy-coordinates."
+                );
+            }
+
+            if (!this->has_value_at_xy_of( point ))
+            {
+                throw std::out_of_range (
+                    "Tried to access raster value outside of raster extent."
+                );
+            }
+
+            return no_throw_value_at_xy_of( point );
+        }
+
+        /** Same as value_at_xy_of but does not throw exceptions. For NaN
+         *      coordinate values and locations outside the raster, the behavior
+         *      of this method is undefined.
+         */
+        virtual const T_value& no_throw_value_at_xy_of( const point_3d_t &point ) const override
+        {
+            std::size_t row_index { static_cast< std::size_t > (
+                (_y_max - _geom::get<1>( point )) / _row_height
+            ) };
+            // if y == _y_min, the row index is too big by one
+            if (row_index == _num_rows) { --row_index; }
+
+            std::size_t col_index { static_cast< std::size_t > (
+                (_geom::get<0>( point ) - _x_min) / _col_width
+            ) };
             // if x == _x_max, the column index is too big by one
             if (col_index == _num_cols) { --col_index; }
 

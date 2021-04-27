@@ -83,15 +83,19 @@ columns by looking for the first numeric columns named "x"/"X", "y"/"Y", or
 next available numeric column in the table and issues a warning.}
 
 \item{crown_diameter_to_tree_height, crown_height_to_tree_height}{Single
-Numbers. Approximate crown diameter and crown height to tree height ratios
-of the trees expected to be found in the point cloud.}
+numbers or \code{\link[raster]{raster}} objects covering the area of the
+\code{point_cloud}. The values should be approximate crown diameter and
+crown height to tree height ratios of the trees expected to be found in the
+point cloud. Points will not be segmented wherever a raster contains
+\code{NA} values.}
 
 \item{segment_crowns_only_above}{A single positive number denoting the
-minimum height above ground at which crown IDs will be calculated. Note
-that points directly below this threshold will still be considered during
-the segmentation if they are within reach of search cylinders constructed
-at the \code{segment_crowns_only_above} height. See "How the algorithm
-works" to learn about the search cylinders.}
+minimum height above ground at which crown IDs will be calculated.
+
+Note that points directly below this threshold will still be considered
+during the segmentation if they are within reach of search cylinders
+constructed at the \code{segment_crowns_only_above} height. See "How the
+algorithm works" to learn about the search cylinders.}
 
 \item{ground_height}{One of
 \itemize{
@@ -105,7 +109,7 @@ a ground height grid from \code{point_cloud}. Currently not supported
 with point clouds stored in \code{data.frame}s. The list should not
 contain an argument to the "las" parameter of grid_terrain.
 }
-Note that points will have NA crown IDs wherever ground heights are NA.}
+Note that points will not be segmented wherever ground heights are NA.}
 
 \item{crown_id_column_name}{A character string. The column or attribute name
 under which IDs for segmented bodies should be stored.}
@@ -178,19 +182,19 @@ to \code{FALSE}.
 }
 \item{modes}{
 If \code{also_return_modes} was set to \code{TRUE}, a point cloud of
-the same type as the input point cloud. Holds modes calculated with the
-AMS3D algorithm and two additional columns/attributes. One
-column/attribute holds IDs of the segmented bodies that the modes
-belong to and the other (named "point_index") holds indices to the
-points in the input point cloud.
+the same type as the input point cloud holding the modes calculated
+with the AMS3D algorithm and two additional columns/attributes. One of
+these columns/attributes holds IDs of the segmented bodies that the
+modes belong to and the other (named "point_index") holds indices to
+the points in the input point cloud.
 }
 \item{centroids}{
 If \code{also_return_centroids} was set to \code{TRUE}, a point cloud
-of the same type as the input point cloud. Holds centroids calculated
-with the AMS3D algorithm and two additional columns/attributes. One
-column/attribute holds IDs of the segmented bodies that the centroids
-belong to and the other (named "point_index") holds indices to the
-points in the input point cloud.
+of the same type as the input point cloud holding the centroids
+calculated with the AMS3D algorithm and two additional
+columns/attributes. One of these columns/attributes holds IDs of the
+segmented bodies that the centroids belong to and the other (named
+"point_index") holds indices to the points in the input point cloud.
 }
 }
 

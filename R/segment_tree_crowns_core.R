@@ -97,6 +97,7 @@ segment_tree_crowns_core <- function(coordinate_table,
       min(coordinate_values[[2]], na.rm = TRUE),
       max(coordinate_values[[2]], na.rm = TRUE)
     ))
+    # Create a list with raster data that can be used by the C++ back-end
     ground_height <- list(
       values = raster::values(ground_height),
       num_rows = raster::nrow(ground_height),
@@ -108,12 +109,73 @@ segment_tree_crowns_core <- function(coordinate_table,
     )
   }
 
+  # If either of the crown diameter or crown height to tree height ratios is a
+  # raster, convert both of them and the ground height to lists for the C++
+  # back-end.
+  if (methods::is(crown_diameter_to_tree_height, "RasterLayer") ||
+      methods::is(crown_height_to_tree_height, "RasterLayer")) {
+
+    if (methods::is(crown_diameter_to_tree_height, "RasterLayer")) {
+      crown_diameter_to_tree_height <-
+        raster::crop(crown_diameter_to_tree_height, raster::extent(
+          min(coordinate_values[[1]], na.rm = TRUE),
+          max(coordinate_values[[1]], na.rm = TRUE),
+          min(coordinate_values[[2]], na.rm = TRUE),
+          max(coordinate_values[[2]], na.rm = TRUE)
+        ))
+      crown_diameter_to_tree_height <- list(
+        values = raster::values(crown_diameter_to_tree_height),
+        num_rows = raster::nrow(crown_diameter_to_tree_height),
+        num_cols = raster::ncol(crown_diameter_to_tree_height),
+        x_min = raster::xmin(crown_diameter_to_tree_height),
+        x_max = raster::xmax(crown_diameter_to_tree_height),
+        y_min = raster::ymin(crown_diameter_to_tree_height),
+        y_max = raster::ymax(crown_diameter_to_tree_height)
+      )
+    } else {
+      crown_diameter_to_tree_height <- list(
+        value = crown_diameter_to_tree_height
+      )
+    }
+
+    if (methods::is(crown_height_to_tree_height, "RasterLayer")) {
+      crown_height_to_tree_height <-
+        raster::crop(crown_height_to_tree_height, raster::extent(
+          min(coordinate_values[[1]], na.rm = TRUE),
+          max(coordinate_values[[1]], na.rm = TRUE),
+          min(coordinate_values[[2]], na.rm = TRUE),
+          max(coordinate_values[[2]], na.rm = TRUE)
+        ))
+      crown_height_to_tree_height <- list(
+        values = raster::values(crown_height_to_tree_height),
+        num_rows = raster::nrow(crown_height_to_tree_height),
+        num_cols = raster::ncol(crown_height_to_tree_height),
+        x_min = raster::xmin(crown_height_to_tree_height),
+        x_max = raster::xmax(crown_height_to_tree_height),
+        y_min = raster::ymin(crown_height_to_tree_height),
+        y_max = raster::ymax(crown_height_to_tree_height)
+      )
+    } else {
+      crown_height_to_tree_height <- list(
+        value = crown_height_to_tree_height
+      )
+    }
+
+    if (is.null(ground_height)) {
+      ground_height <- list(value = 0)
+    }
+  }
+
+
   # Call the C++ back-end
-  if (is.null(ground_height)) { # for normalized point clouds
+
+  # If crown_diameter_to_tree_height is a list, call the "flexible" C++ back-end
+  if (is.list(crown_diameter_to_tree_height)) {
     if (also_return_centroids) {
-      modes_and_centroids <- calculate_modes_plus_centroids_normalized(
+      modes_and_centroids <- calculate_modes_plus_centroids_flexible(
         coordinate_values,
-        segment_crowns_only_above,
+        min_point_height_above_ground = segment_crowns_only_above,
+        ground_height,
         crown_diameter_to_tree_height,
         crown_height_to_tree_height,
         centroid_convergence_distance,
@@ -121,10 +183,11 @@ segment_tree_crowns_core <- function(coordinate_table,
         show_progress_bar = verbose
       )
       modes <- modes_and_centroids$mode_coordinates
-    } else { # only return modes
-      modes <- calculate_modes_normalized(
+    } else {
+      modes <- calculate_modes_flexible(
         coordinate_values,
-        segment_crowns_only_above,
+        min_point_height_above_ground = segment_crowns_only_above,
+        ground_height,
         crown_diameter_to_tree_height,
         crown_height_to_tree_height,
         centroid_convergence_distance,
@@ -132,11 +195,38 @@ segment_tree_crowns_core <- function(coordinate_table,
         show_progress_bar = verbose
       )
     }
-  } else { # for not normalized point clouds
+
+  # Call the C++ back-end for normalized point clouds
+  } else if (is.null(ground_height)) {
+    if (also_return_centroids) {
+      modes_and_centroids <- calculate_modes_plus_centroids_normalized(
+        coordinate_values,
+        min_point_height_above_ground = segment_crowns_only_above,
+        crown_diameter_to_tree_height,
+        crown_height_to_tree_height,
+        centroid_convergence_distance,
+        max_num_centroids_per_mode,
+        show_progress_bar = verbose
+      )
+      modes <- modes_and_centroids$mode_coordinates
+    } else {
+      modes <- calculate_modes_normalized(
+        coordinate_values,
+        min_point_height_above_ground = segment_crowns_only_above,
+        crown_diameter_to_tree_height,
+        crown_height_to_tree_height,
+        centroid_convergence_distance,
+        max_num_centroids_per_mode,
+        show_progress_bar = verbose
+      )
+    }
+
+  # Call the C++ back-end for not normalized point clouds
+  } else {
     if (also_return_centroids) {
       modes_and_centroids <- calculate_modes_plus_centroids_terraneous(
         coordinate_values,
-        segment_crowns_only_above,
+        min_point_height_above_ground = segment_crowns_only_above,
         ground_height,
         crown_diameter_to_tree_height,
         crown_height_to_tree_height,
@@ -148,7 +238,7 @@ segment_tree_crowns_core <- function(coordinate_table,
     } else { # only return modes
       modes <- calculate_modes_terraneous(
         coordinate_values,
-        segment_crowns_only_above,
+        min_point_height_above_ground = segment_crowns_only_above,
         ground_height,
         crown_diameter_to_tree_height,
         crown_height_to_tree_height,
@@ -250,7 +340,7 @@ segment_tree_crowns_core <- function(coordinate_table,
 warn_about_normalization <- function(Z_coordinate_values) {
 
   # Get min, max, and 1% Z values
-  z_percentiles <- quantile(Z_coordinate_values, probs = c(0, 0.01, 1))
+  z_percentiles <- stats::quantile(Z_coordinate_values, probs = c(0, 0.01, 1))
 
   lowest_point_too_high <- z_percentiles[[1]] > 100
   highest_point_too_high <- z_percentiles[[3]] > 100

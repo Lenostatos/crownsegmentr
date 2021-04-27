@@ -23,7 +23,7 @@ This method just calls the core function and binds the returned crown IDs to the
 Similar to the `data.frame`/`data.table` method in that it extends the input object with a crown ID attribute and, if requested, returns the modes and centroids as separate `lidR::LAS` objects. The mode and centroid objects are assigned the metadata of the input point cloud.
 
 #### `lidR::LAScatalog` Method
-For context: The [`lidR` R package](https://cran.r-project.org/package=lidR) offers a framework for processing point clouds of large areas, possibly stored in multiple files and referenced by so called [`LAScatalog`s](https://cran.r-project.org/package=lidR/vignettes/lidR-LAScatalog-class.html). `LAScatalog`s organize point clouds in adjacent chunks which are processed individually. The chunks each get a buffer area around them so that edge effects can be accounted for. In this case, edge effects would be that tree crowns are cut off at the edge of a chunk when not using a buffer. Parallel processing of the chunks is also supported.
+For context: The [`lidR` R package](https://cran.r-project.org/package=lidR) offers a framework for processing point clouds of large areas, possibly stored in multiple files and referenced by so called [`LAScatalog`s](https://cran.r-project.org/package=lidR/vignettes/lidR-LAScatalog-class.html). `LAScatalog`s organize point clouds in adjacent chunks which are processed individually. The chunks each get a buffer area around them so that edge effects can be accounted for. In the case of individual tree segmentation, edge effects would be that tree crowns are cut off at the edge of a chunk when not using a buffer. Parallel processing of the chunks is also supported.
 
 The `segment_tree_crowns` method for `lidR::LAScatalog`s internally defines a function which segments a chunk of a `LAScatalog`. This function is then applied to all chunks of the `LAScatalog` provided by the user. The "chunk function" first passes the chunk to the `lidR::LAS` method. Afterwards, it excludes both tree crowns and unsegmented points in the buffer area. Since crown IDs overlap across chunks (the IDs in each chunk start at 1), the chunk function also calculates unique replacements for the crown IDs based on the apices' absolute coordinates.
 
@@ -36,27 +36,33 @@ The `segment_tree_crowns` method for `lidR::LAScatalog`s internally defines a fu
 ### C++ Back-End
 The back-end is a small C++ library which implements the AMS3D algorithm. The core functionality can be found in:
 
-- `namespace ams3d`: An implementation for calculating a single mode with the AMS3D algorithm ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d.h) and [source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d.cpp)), and
-- `namespace spatial`: a facade to the [Boost Geometry](https://www.boost.org/doc/libs/1_75_0/libs/geometry/doc/html/geometry/introduction.html) library which provides e.g. the spatial index used for finding points inside cylinders ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial.h) and [source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/spatial.cpp)).
+- `namespace ams3d`: Functionality for calculating a single mode with the AMS3D algorithm ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d.h)), and
+- `namespace spatial`: a facade to the [Boost Geometry](https://www.boost.org/doc/libs/1_75_0/libs/geometry/doc/html/geometry/introduction.html) library which provides e.g. the spatial index used for finding points inside cylinders ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial.h)).
 
-There is also some interface code outside of any namespace called "ams3d_R_interface" ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d_R_interface.h) and [source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface.cpp)). This code loops over the points which it gets from R and calls the C++ functions exposed by `ams3d` and `spatial` to calculate modes for these points. This interface is not contained in any namespace, since this is a requirement of the [`Rcpp`](https://cran.r-project.org/package=Rcpp) package which is used to actually connect the interface to R. It is also the only part of the C++ code which calls R-specific functions (a.o. it manages a progress bar provided by the [R package `progress`](https://cran.r-project.org/package=progress)). By separating the core functionality from the R-specific C++ code it is possible to use the core functionality with other C++ code when not using R.
+There is also some interface code outside of any namespace called "ams3d_R_interface" ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d_R_interface.h), main sources [1](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_normalized.cpp),
+[2](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_terraneous.cpp),
+[3](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_flexible.cpp), and [utility source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_util.cpp)). This code loops over the points which it gets from R and calls the functionality exposed by `ams3d` and `spatial` to calculate modes for these points. This interface is not contained in any namespace, since this is a requirement of the [`Rcpp`](https://cran.r-project.org/package=Rcpp) package which is used to actually connect the interface to R. It is also the only part of the C++ code which calls R-specific functions (a.o. it manages a progress bar provided by the [R package `progress`](https://cran.r-project.org/package=progress)). By separating the core functionality from the R-specific C++ code it is possible to use the core functionality with other C++ code when not using R.
 
-*Note*: The namespaces `àms3d` and `spatial` contain internal functions, classes, etc. which should not be used in other namespaces. These internal components are indicated by an underscore at the beginning of their name.
+*Note*: The namespaces `ams3d` and `spatial` contain internal functions, classes, etc. which should not be used in other namespaces. These internal components are indicated by an underscore at the beginning of their name.
 
 #### `namespace ams3d`
-This namespace only exposes two functions:
+This namespace only exposes two functions ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d.h)):
 
 - `calculate_a_single_mode`
 - `calculate_a_single_mode_plus_centroids`
 
-They do exactly the same thing, i.e. calculate the mode of a point, except that the `*_plus_centroids` variant also returns the centroids which were calculated during the process. 
+They do exactly the same thing, i.e. calculate the mode of a point, except that the `*_plus_centroids` variant also returns the centroids which were calculated during the process. Both functions are overloaded three times:
 
-There is also an internal `_Kernel` class that models the cylinder used to find points in the neighborhood of a point or centroid. It also contains the logic to calculate the weighted centroid of all points inside the cylinder. A `Kernel` object is instantiated with a point or centroid and the crown-diameter-to-tree-height and crown-height-to-tree-height parameters. It features only one public method: `calculate_centroid_in( point_cloud )`. Cylinder dimensions are calculated in the constructor and the centroid calculation logic is implemented in a few private methods.
+1. The most simple overload assumes a normalized point cloud with ground height at zero and takes single numbers for the `crown_diameter_to_tree_height` and `crown_height_to_tree_height` arguments ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_normalized.cpp)).
+2. The second overload can deal with not normalized point clouds by reading ground heights from a raster ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_terraneous.cpp)).
+3. The third overload reads both ground height and cylinder dimension parameters from rasters ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_flexible.cpp)).
+
+There is also an internal `_Kernel` class ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_kernel.cpp)) that models the cylinder used to find points in the neighborhood of a point or centroid. It also contains the logic to calculate the weighted centroid of all points inside the cylinder. A `_Kernel` object is instantiated with a point or centroid and the crown-diameter-to-tree-height and crown-height-to-tree-height parameters. It features only one public method: `calculate_centroid_in( point_cloud )`. Cylinder dimensions are calculated in the constructor and the centroid calculation logic is implemented in a few private methods.
 
 There is one more very small internal namespace in `ams3d` called `_math_functions` that contains the gaussian and epanechnikov functions used for weighing the points inside a cylinder during centroid calculation.
 
 #### `namespace spatial`
-This namespace exposes functionality of and based on `boost::geometry` for dealing with point data. Most of this functionality consists of data types but there are also some functions and one functor.
+This namespace mainly exposes functionality of and based on [`boost::geometry`](https://www.boost.org/doc/libs/1_75_0/libs/geometry/doc/html/index.html) for dealing with point data. Most of this functionality consists of data types ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_types.h)) but there are also some functions and one functor ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_util.h) and [source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/spatial_util.cpp)). Additionally, there is some simple raster functionality ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_raster.h)) and a few custom iterators for inserting points into the spatial index ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_index_creation.h)) provided by the Boost Geometry library (an R*-tree).
 
 The data types are:
 
@@ -66,24 +72,36 @@ The data types are:
 - `index_for_3d_points_t` for R*-tree index structures, and
 - `box_t` for 3D boxes.
 
-There are also a few simple functions which are directly forwarded from `boost::geometry`:
+A few simple functions are directly forwarded from `boost::geometry`:
 
 - `distance( geometry1, geometry2 )` returns the distance between two geometric objects and
-- `get_x( point )`, `get_y( point )`, and `get_z( point )` return the respective coordinate values of a point.
+- `get_x( point )`, `get_y( point )`, and `get_z( point )` return the respective coordinate value of a point.
 
 Exposed functions with own logic are
 
-- `create_index_of( points )` which creates an R*-tree index,
-- `get_points_intersecting_vertical_cylinder( <cylinder dimensions and an index structure> )` which searches an R*-tree index, and
+- `get_points_intersecting_vertical_cylinder( <cylinder dimensions and an index structure> )` which searches an R*-tree index and
 - `weighted_mean_of( points, weights )` which calculates a weighted average position of a collection of points.
 
-There is one more internal functor class called `_within_xy_distance_functor` whose objects are needed for queries to the R*-tree index. Functors are objects with a `()`-operator, i.e. they are some kind of function objects because they can be used like functions with that operator.
+In addition there is an internal functor class called `_within_xy_distance_functor` whose objects are needed for queries to the R*-tree index. Functors are function objects, i.e. objects with a `()`-operator that makes them usable like functions.
 
+For handling raster data in the C++ back-end, a small set of three raster classes was set up ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_raster.h)):
 
+- `I_Raster` an interface class which defines methods that every raster object should have.
+- `Raster` a normal raster class which implements the methods demanded by `I_Raster`.
+- `Single_value_pseudo_raster` also implements the methods demanded by `I_Raster` but internally stores just one value. It can return this value faster than a `Raster` object could if it was used for storing just one value.
+
+The raster classes were set up like this to make it possible to pass either a single value or an actual raster to the same function argument. Without this it would be necessary to code every combination of function parameters where the ground height and the `crown_diameter_to_tree_height` and `crown_height_to_tree_height` parameters can be either a single value or a raster of values. With the `I_Raster` class it is possible to pass either `Single_value_pseudo_raster` or `Raster` objects to the same function parameter of type `I_Raster`.
+
+The spatial index provided by the Boost Geometry library can be constructed with a packing algorithm that results in faster queries. In order to use this feature, the index constructor needs to be passed all of the points it should use in the form of a begin and end iterator. In order to skip points with non-finite coordinate values and points below certain heights, custom iterators for `std::vector< point_3d_t >` ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_index_creation.h)) are used by a few public functions to set up spatial indices:
+
+- `create_index_of_finite( points, min_height )` skips points with non-finite coordinate values and points below `min_height`
+- `create_index_of_above_ground( points, min_height_above_ground, ground_height_grid )` same as above but does not assume a normalized point cloud and instead reads ground heights from a raster
+- `create_index_of_above_ground( points, min_height_above_ground_grid, ground_height_grid )` same as above but reads minimum above-ground heights also from a raster
+ 
 ## Coding Practices
 
 ### C++
-There may be a few syntax constructs in the C++ code which appear unfamiliar to R users. This section gives the rationale for some of these constructs. Most of it is based on information found at the [learncpp.com](https://www.learncpp.com/) website.
+There may be a few syntax constructs in the C++ code which appear unfamiliar to R users. This section gives the rationale for some of these constructs. Most of it is based on information found at the website [learncpp.com](https://www.learncpp.com/).
 
 #### Object Instantiation with `{}`
 There are a few different ways to create and assign a value to objects in C++:
@@ -96,7 +114,7 @@ There are a few different ways to create and assign a value to objects in C++:
 According to [learncpp.com](https://www.learncpp.com/cpp-tutorial/variable-assignment-and-initialization/), list initialization is the preferred option. However, as you can see in the examples, it works a little bit differently for array-like objects like e.g. `std::vector`s or `Rcpp::List`s. So if you want to create a vector with a certain size instead of with some elements, you need to use direct initialization instead, e.g. `Rcpp::NumericVector foos( <size of the vector> );` for `Rcpp` vectors.
 
 #### Constructors with Member Initializer Lists
-Instances (i.e. objects) of a class are initialized by constructors. Constructors are basically functions without a return value which internally assign values to the properties of an object. According to [learncpp.com](https://www.learncpp.com/cpp-tutorial/constructor-member-initializer-lists/) the most direct way to do these assignments is to use member initializer lists. The syntax of these initializers looks like this:
+Instances (i.e. objects) of a class are initialized by constructors. Constructors are basically functions without a return value which internally assign values to the properties of an object. According to [learncpp.com](https://www.learncpp.com/cpp-tutorial/constructor-member-initializer-lists/), the most direct way to do these assignments is to use member initializer lists. The syntax of these initializer lists looks like this:
 
     some_class (
         <arguments to constructor>

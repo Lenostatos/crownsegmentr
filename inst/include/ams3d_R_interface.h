@@ -30,6 +30,8 @@
 // (RProgress seems to rely on Rinternal.h which is probably loaded implicitly
 // by "#include <Rcpp.h>".)
 
+# include <memory> // for std::unique_ptr
+
 Rcpp::DataFrame calculate_modes_normalized (
     const Rcpp::DataFrame &coordinate_table,
     const spatial::coordinate_t &min_point_height_above_ground,
@@ -72,6 +74,28 @@ Rcpp::List calculate_modes_plus_centroids_terraneous (
     const bool show_progress_bar = true
 );
 
+Rcpp::DataFrame calculate_modes_flexible (
+    const Rcpp::DataFrame &coordinate_table,
+    const spatial::coordinate_t &min_point_height_above_ground,
+    const Rcpp::List &ground_height_data,
+    const Rcpp::List &crown_diameter_to_tree_height_data,
+    const Rcpp::List &crown_height_to_tree_height_data,
+    const spatial::distance_t &centroid_convergence_distance,
+    const int max_num_centroids_per_mode,
+    const bool show_progress_bar = true
+  );
+
+Rcpp::List calculate_modes_plus_centroids_flexible (
+    const Rcpp::DataFrame &coordinate_table,
+    const spatial::coordinate_t &min_point_height_above_ground,
+    const Rcpp::List &ground_height_data,
+    const Rcpp::List &crown_diameter_to_tree_height_data,
+    const Rcpp::List &crown_height_to_tree_height_data,
+    const spatial::distance_t &centroid_convergence_distance,
+    const int max_num_centroids_per_mode,
+    const bool show_progress_bar = true
+);
+
 namespace ams3d_R_interface_constants
 {
     /** The number of modes which have to be calculated before the progress bar
@@ -90,6 +114,21 @@ namespace ams3d_R_interface_util
     );
 
     RProgress::RProgress create_progress_bar( double total );
+
+    /** If \p list contains an element named "value", a
+     *      Single_value_pseudo_raster< double > is created with the value
+     *      stored in that element and returned. Otherwise, a Raster< double >
+     *      object is created from raster data stored in \p list.
+     */
+    std::unique_ptr< spatial::I_Raster< double > >
+    convert_list_argument_to_raster_double (
+        const Rcpp::List &list
+      );
+
+//     template< typename T >
+//     std::unique_ptr< spatial::I_Raster< T > > convert_list_argument_to_raster (
+//         const Rcpp::List &list
+//     );
 }
 
 #endif  // define AMS3D_R_INTERFACE_H

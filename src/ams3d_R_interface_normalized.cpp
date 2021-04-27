@@ -82,7 +82,7 @@ Rcpp::DataFrame calculate_modes_normalized (
     };
 
     // Set up an array for the to-be-calculated modes.
-    std::vector< spatial::point_3d_t > modes;
+    std::vector< spatial::point_3d_t > modes{};
     modes.reserve( points.size() );
 
     // Optionally set up a progress bar.
@@ -91,7 +91,7 @@ Rcpp::DataFrame calculate_modes_normalized (
         progress_bar = ams3d_R_interface_util::create_progress_bar (
             points.size()
         );
-        progress_bar.tick(0);
+        progress_bar.tick( 0 );
     };
 
     // Calculate modes for all points in the point cloud.
@@ -136,7 +136,7 @@ Rcpp::DataFrame calculate_modes_normalized (
     // mode_calculation loop increases performance.
 
     // Fill the R vectors.
-    for (std::size_t i{0}; i < modes.size(); i++)
+    for (std::size_t i{ 0 }; i < modes.size(); i++)
     {
         mode_x_coords[i] = spatial::get_x( modes[i] );
         mode_y_coords[i] = spatial::get_y( modes[i] );
@@ -190,12 +190,12 @@ Rcpp::List calculate_modes_plus_centroids_normalized (
     };
 
     // Set up an array for the to-be-calculated modes.
-    std::vector< spatial::point_3d_t > modes;
+    std::vector< spatial::point_3d_t > modes{};
     modes.reserve( points.size() );
 
     // Set up arrays for the to-be-calculated centroids and their point indices.
-    std::vector< spatial::point_3d_t > centroids;
-    std::vector< int > point_indices;
+    std::vector< spatial::point_3d_t > centroids{};
+    std::vector< int > point_indices{};
 
     // Optionally set up a progress bar.
     RProgress::RProgress progress_bar;
@@ -203,10 +203,10 @@ Rcpp::List calculate_modes_plus_centroids_normalized (
         progress_bar = ams3d_R_interface_util::create_progress_bar (
             points.size()
         );
-        progress_bar.tick(0);
+        progress_bar.tick( 0 );
     };
 
-    int point_index{1}; // 1-based point index for use in R
+    int point_index{ 1 }; // 1-based point index for use in R
 
     // Iterate over all points in the input point cloud to calculate modes for them
     for (const auto &point : points)

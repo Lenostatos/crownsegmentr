@@ -67,4 +67,69 @@ namespace ams3d_R_interface_util
             false // clear
         };
     }
+
+    std::unique_ptr< spatial::I_Raster< double > >
+    convert_list_argument_to_raster_double (
+        const Rcpp::List &list
+    ) {
+        // Get the list elements' names.
+        std::vector< std::string > list_element_names( list.names() );
+
+        // The following condition reads:
+        // If any of the list elements' names are equal to "value".
+        if (std::any_of (
+            list_element_names.begin(),
+            list_element_names.end(),
+            [](const std::string &name) { return name == "value"; } ))
+        {
+            return std::make_unique< spatial::Single_value_pseudo_raster< double > > (
+                Rcpp::as< double >( list["value"] )
+            );
+        }
+        else
+        {
+            return std::make_unique< spatial::Raster< double > > (
+                Rcpp::as< std::vector< double > >( list["values"] ),
+                Rcpp::as< std::size_t >( list["num_rows"] ),
+                Rcpp::as< std::size_t >( list["num_cols"] ),
+                Rcpp::as< spatial::coordinate_t >( list["x_min"] ),
+                Rcpp::as< spatial::coordinate_t >( list["x_max"] ),
+                Rcpp::as< spatial::coordinate_t >( list["y_min"] ),
+                Rcpp::as< spatial::coordinate_t >( list["y_max"] )
+            );
+        }
+    }
+
+    // TODO The following would be nice-to-have but doesn't work for some reason
+//     template< typename T >
+//     std::unique_ptr< spatial::I_Raster< T > > convert_list_argument_to_raster (
+//         const Rcpp::List &list
+//     ) {
+//         // Get the list elements' names.
+//         std::vector< std::string > list_element_names( list.names() );
+//
+//         // The following condition reads:
+//         // If any of the list elements' names are equal to "value".
+//         if (std::any_of (
+//             list_element_names.begin(),
+//             list_element_names.end(),
+//             [](const std::string &name) { return name == "value"; } ))
+//         {
+//             return std::make_unique< spatial::Single_value_pseudo_raster< T > > (
+//                 Rcpp::as< T >( list["value"] )
+//             );
+//         }
+//         else
+//         {
+//             return std::make_unique< spatial::Raster< T > > (
+//                 Rcpp::as< std::vector< T > >( list["values"] ),
+//                 Rcpp::as< std::size_t >( list["num_rows"] ),
+//                 Rcpp::as< std::size_t >( list["num_cols"] ),
+//                 Rcpp::as< spatial::coordinate_t >( list["x_min"] ),
+//                 Rcpp::as< spatial::coordinate_t >( list["x_max"] ),
+//                 Rcpp::as< spatial::coordinate_t >( list["y_min"] ),
+//                 Rcpp::as< spatial::coordinate_t >( list["y_max"] )
+//             );
+//         }
+//     }
 }

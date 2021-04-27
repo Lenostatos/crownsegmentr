@@ -24,11 +24,12 @@ segment_tree_crowns_core(
 valid coordinate table according to \code{validate_coordinate_table}.}
 
 \item{segment_crowns_only_above}{A single positive number denoting the
-minimum height above ground at which crown IDs will be calculated. Note
-that points directly below this threshold will still be considered during
-the segmentation if they are within reach of search cylinders constructed
-at the \code{segment_crowns_only_above} height. See "How the algorithm
-works" to learn about the search cylinders.}
+minimum height above ground at which crown IDs will be calculated.
+
+Note that points directly below this threshold will still be considered
+during the segmentation if they are within reach of search cylinders
+constructed at the \code{segment_crowns_only_above} height. See "How the
+algorithm works" to learn about the search cylinders.}
 
 \item{ground_height}{One of
 \itemize{
@@ -40,12 +41,18 @@ the area of the (not normalized) point cloud stored in
 }}
 
 \item{crown_diameter_to_tree_height}{Single
-Numbers. Approximate crown diameter and crown height to tree height ratios
-of the trees expected to be found in the point cloud.}
+numbers or \code{\link[raster]{raster}} objects covering the area of the
+\code{point_cloud}. The values should be approximate crown diameter and
+crown height to tree height ratios of the trees expected to be found in the
+point cloud. Points will not be segmented wherever a raster contains
+\code{NA} values.}
 
 \item{crown_height_to_tree_height}{Single
-Numbers. Approximate crown diameter and crown height to tree height ratios
-of the trees expected to be found in the point cloud.}
+numbers or \code{\link[raster]{raster}} objects covering the area of the
+\code{point_cloud}. The values should be approximate crown diameter and
+crown height to tree height ratios of the trees expected to be found in the
+point cloud. Points will not be segmented wherever a raster contains
+\code{NA} values.}
 
 \item{verbose}{\code{TRUE} or \code{FALSE}. Should the function show a
 progress bar and other runtime information in the console?}

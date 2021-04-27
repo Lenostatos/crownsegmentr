@@ -23,14 +23,34 @@
 #include "spatial.h"
 #include "ams3d.h"
 
-//' @describeIn calculate_modes_normalized Use a ground height raster to segment
-//'     non-normalized point clouds.
+//' @describeIn calculate_modes_normalized Can take either a single value or
+//'     raster data for both the ground height and the
+//'     \code{crown_diameter_to_tree_height} and
+//'     \code{crown_height_to_tree_height} parameters.
 //'
-//' @param ground_height_grid_data Ground height raster data across the area
-//'     covered by the point cloud. Has to be a list with the following named
+//' @param ground_height_data A list containing either a single ground height
+//'     value (named "value") or a set of elements that make up a ground height
+//'     raster covering the whole area of the point cloud. Such a set has to
+//'     consist of the named elements described in the section "Raster argument
+//'     structure" below.
+//' @param crown_diameter_to_tree_height_data A list containing either a single
+//'     numeric value (named "value") or the data for a raster of values (see
+//'     section "Raster argument structure" below for how the raster data has to
+//'     be stored in the list). The values indicate the estimated ratio of crown
+//'     diameter to tree height for the whole plot or individual raster pixels
+//'     respectively.
+//' @param crown_height_to_tree_height_data A list containing either a single
+//'     numeric value (named "value") or the data for a raster of values (see
+//'     section "Raster argument structure" below for how the raster data has to
+//'     be stored in the list). The values indicate the estimated ratio of crown
+//'     height to tree height for the whole plot or individual raster pixels
+//'     respectively.
+//'
+//' @section Raster argument structure:
+//'     Raster data has to be passed as a list comprising the following named
 //'     elements:
 //'     \itemize{
-//'         \item values: Numeric vector holding ground heights.
+//'         \item values: Numeric vector holding the values.
 //'         \item num_rows: Integer number indicating the number of rows.
 //'         \item num_cols: Integer number indicating the number of columns.
 //'         \item x_min: Number indicating the lowest x coordinate covered.
@@ -39,12 +59,12 @@
 //'         \item y_max: Number indicating the largest y coordinate covered.
 //'     }
 // [[Rcpp::export]]
-Rcpp::DataFrame calculate_modes_terraneous (
+Rcpp::DataFrame calculate_modes_flexible (
     const Rcpp::DataFrame &coordinate_table,
     const spatial::coordinate_t &min_point_height_above_ground,
-    const Rcpp::List &ground_height_grid_data,
-    const double crown_diameter_to_tree_height,
-    const double crown_height_to_tree_height,
+    const Rcpp::List &ground_height_data,
+    const Rcpp::List &crown_diameter_to_tree_height_data,
+    const Rcpp::List &crown_height_to_tree_height_data,
     const spatial::distance_t &centroid_convergence_distance,
     const int max_num_centroids_per_mode,
     const bool show_progress_bar
@@ -54,16 +74,38 @@ Rcpp::DataFrame calculate_modes_terraneous (
         ams3d_R_interface_util::create_point_objects_from( coordinate_table )
     };
 
-    // Convert the ground height grid data to a Raster object
-    auto ground_height_grid_ptr {
-        std::make_shared< spatial::Raster< spatial::coordinate_t > > (
-            ground_height_grid_data["values"],
-            ground_height_grid_data["num_rows"],
-            ground_height_grid_data["num_cols"],
-            ground_height_grid_data["x_min"],
-            ground_height_grid_data["x_max"],
-            ground_height_grid_data["y_min"],
-            ground_height_grid_data["y_max"]
+    // Convert the ground height data into a shared pointer to a raster object.
+    std::shared_ptr< spatial::I_Raster< spatial::coordinate_t > >
+    ground_height_grid_ptr {
+            ams3d_R_interface_util::convert_list_argument_to_raster_double (
+            ground_height_data
+        )
+    };
+
+    // Convert the crown diameter to tree height data into a unique pointer to a
+    // raster object.
+    std::unique_ptr< spatial::I_Raster< double > >
+    crown_diameter_to_tree_height_grid_ptr {
+        ams3d_R_interface_util::convert_list_argument_to_raster_double (
+            crown_diameter_to_tree_height_data
+        )
+    };
+
+    // Convert the crown height to tree height data into a unique pointer to a
+    // raster object.
+    std::unique_ptr< spatial::I_Raster< double > >
+    crown_height_to_tree_height_grid_ptr {
+        ams3d_R_interface_util::convert_list_argument_to_raster_double (
+            crown_height_to_tree_height_data
+        )
+    };
+
+    // Create a raster of kernel bottom heights above ground.
+    std::shared_ptr< spatial::I_Raster< spatial::coordinate_t > >
+    kernel_bottom_height_above_ground_grid_ptr {
+        ams3d::_Kernel::bottom_height_above_ground_grid_with (
+            min_point_height_above_ground,
+            *crown_height_to_tree_height_grid_ptr
         )
     };
 
@@ -71,10 +113,7 @@ Rcpp::DataFrame calculate_modes_terraneous (
     spatial::index_for_3d_points_t point_cloud_index {
         spatial::create_index_of_above_ground (
             points,
-            ams3d::_Kernel::bottom_height_above_ground_with (
-                min_point_height_above_ground,
-                crown_height_to_tree_height
-            ),
+            kernel_bottom_height_above_ground_grid_ptr,
             ground_height_grid_ptr
         )
     };
@@ -89,7 +128,7 @@ Rcpp::DataFrame calculate_modes_terraneous (
         progress_bar = ams3d_R_interface_util::create_progress_bar (
             points.size()
         );
-        progress_bar.tick( 0 );
+        progress_bar.tick(0);
     };
 
     // Calculate modes for all points in the point cloud.
@@ -102,8 +141,8 @@ Rcpp::DataFrame calculate_modes_terraneous (
                 point_cloud_index,
                 min_point_height_above_ground,
                 *ground_height_grid_ptr,
-                crown_diameter_to_tree_height,
-                crown_height_to_tree_height,
+                *crown_diameter_to_tree_height_grid_ptr,
+                *crown_height_to_tree_height_grid_ptr,
                 centroid_convergence_distance,
                 max_num_centroids_per_mode
             )
@@ -135,7 +174,7 @@ Rcpp::DataFrame calculate_modes_terraneous (
     // mode_calculation loop increases performance.
 
     // Fill the R vectors.
-    for (std::size_t i{ 0 }; i < modes.size(); i++)
+    for (std::size_t i{0}; i < modes.size(); i++)
     {
         mode_x_coords[i] = spatial::get_x( modes[i] );
         mode_y_coords[i] = spatial::get_y( modes[i] );
@@ -150,17 +189,19 @@ Rcpp::DataFrame calculate_modes_terraneous (
     );
 }
 
-//' @describeIn calculate_modes_normalized Use a ground height raster to segment
-//'     non-normalized point clouds and also returns centroids calculated during
-//'     the mode finding.
+//' @describeIn calculate_modes_normalized Can take either a single value or
+//'     raster data for both the ground height and the
+//'     \code{crown_diameter_to_tree_height} and
+//'     \code{crown_height_to_tree_height} parameters and also returns centroids
+//'     calculated during the mode finding.
 //'
 // [[Rcpp::export]]
-Rcpp::List calculate_modes_plus_centroids_terraneous (
+Rcpp::List calculate_modes_plus_centroids_flexible (
     const Rcpp::DataFrame &coordinate_table,
     const spatial::coordinate_t &min_point_height_above_ground,
-    const Rcpp::List &ground_height_grid_data,
-    const double crown_diameter_to_tree_height,
-    const double crown_height_to_tree_height,
+    const Rcpp::List &ground_height_data,
+    const Rcpp::List &crown_diameter_to_tree_height_data,
+    const Rcpp::List &crown_height_to_tree_height_data,
     const spatial::distance_t &centroid_convergence_distance,
     const int max_num_centroids_per_mode,
     const bool show_progress_bar
@@ -170,16 +211,38 @@ Rcpp::List calculate_modes_plus_centroids_terraneous (
         ams3d_R_interface_util::create_point_objects_from( coordinate_table )
     };
 
-    // Convert the ground height grid data to a Raster object
-    auto ground_height_grid_ptr {
-        std::make_shared< spatial::Raster< spatial::coordinate_t > > (
-            ground_height_grid_data["values"],
-            ground_height_grid_data["num_rows"],
-            ground_height_grid_data["num_cols"],
-            ground_height_grid_data["x_min"],
-            ground_height_grid_data["x_max"],
-            ground_height_grid_data["y_min"],
-            ground_height_grid_data["y_max"]
+    // Convert the ground height data into a shared pointer to a raster object.
+    std::shared_ptr< spatial::I_Raster< spatial::coordinate_t > >
+    ground_height_grid_ptr {
+        ams3d_R_interface_util::convert_list_argument_to_raster_double (
+            ground_height_data
+        )
+    };
+
+    // Convert the crown diameter to tree height data into a unique pointer to a
+    // raster object.
+    std::unique_ptr< spatial::I_Raster< double > >
+    crown_diameter_to_tree_height_grid_ptr {
+        ams3d_R_interface_util::convert_list_argument_to_raster_double (
+            crown_diameter_to_tree_height_data
+        )
+    };
+
+    // Convert the crown height to tree height data into a unique pointer to a
+    // raster object.
+    std::unique_ptr< spatial::I_Raster< double > >
+    crown_height_to_tree_height_grid_ptr {
+        ams3d_R_interface_util::convert_list_argument_to_raster_double (
+            crown_height_to_tree_height_data
+        )
+    };
+
+    // Create a raster of kernel bottom heights above ground.
+    std::shared_ptr< spatial::I_Raster< spatial::coordinate_t > >
+    kernel_bottom_height_above_ground_grid_ptr {
+        ams3d::_Kernel::bottom_height_above_ground_grid_with (
+            min_point_height_above_ground,
+            *crown_height_to_tree_height_grid_ptr
         )
     };
 
@@ -187,10 +250,7 @@ Rcpp::List calculate_modes_plus_centroids_terraneous (
     spatial::index_for_3d_points_t point_cloud_index {
         spatial::create_index_of_above_ground (
             points,
-            ams3d::_Kernel::bottom_height_above_ground_with (
-                min_point_height_above_ground,
-                crown_height_to_tree_height
-            ),
+            kernel_bottom_height_above_ground_grid_ptr,
             ground_height_grid_ptr
         )
     };
@@ -217,16 +277,15 @@ Rcpp::List calculate_modes_plus_centroids_terraneous (
     // Iterate over all points in the input point cloud to calculate modes for them
     for (const auto &point : points)
     {
-        std::pair <
-            spatial::point_3d_t, std::vector< spatial::point_3d_t >
-        > mode_and_centroids {
+        std::pair< spatial::point_3d_t, std::vector< spatial::point_3d_t > >
+        mode_and_centroids {
             ams3d::calculate_a_single_mode_plus_centroids (
                 point,
                 point_cloud_index,
                 min_point_height_above_ground,
                 *ground_height_grid_ptr,
-                crown_diameter_to_tree_height,
-                crown_height_to_tree_height,
+                *crown_diameter_to_tree_height_grid_ptr,
+                *crown_height_to_tree_height_grid_ptr,
                 centroid_convergence_distance,
                 max_num_centroids_per_mode
             )
