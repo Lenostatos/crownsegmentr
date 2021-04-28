@@ -35,13 +35,13 @@ namespace ams3d_R_interface_util
         Rcpp::NumericVector z_coords( coordinate_table[2] );
 
         // Set up an array for point objects.
-        std::vector< spatial::point_3d_t > point_cloud;
-        point_cloud.reserve( coordinate_table.nrow() );
+        std::vector< spatial::point_3d_t > points;
+        points.reserve( coordinate_table.nrow() );
 
         // Create point objects from the coordinate table.
         for (int i{ 0 }; i < coordinate_table.nrow(); i++)
         {
-            point_cloud.push_back (
+            points.push_back (
                 spatial::point_3d_t{
                     x_coords[i],
                     y_coords[i],
@@ -50,7 +50,7 @@ namespace ams3d_R_interface_util
             );
         }
 
-        return point_cloud;
+        return points;
     }
 
     RProgress::RProgress create_progress_bar( double total )
@@ -68,12 +68,87 @@ namespace ams3d_R_interface_util
         };
     }
 
+    Rcpp::List create_return_data (
+        const bool also_return_centroids,
+        const std::vector< spatial::point_3d_t > &modes,
+        const std::vector< spatial::point_3d_t > &centroids,
+        const std::vector< int > &point_indices
+    ) {
+
+        // Set up mode coordinate arrays.
+        Rcpp::NumericVector mode_x_coords( modes.size() );
+        Rcpp::NumericVector mode_y_coords( modes.size() );
+        Rcpp::NumericVector mode_z_coords( modes.size() );
+
+        // Fill the mode coordinate arrays.
+        for (std::size_t i{ 0 }; i < modes.size(); i++)
+        {
+            mode_x_coords[i] = spatial::get_x( modes[i] );
+            mode_y_coords[i] = spatial::get_y( modes[i] );
+            mode_z_coords[i] = spatial::get_z( modes[i] );
+        }
+
+        // Set up centroid coordinate arrays (This will do nothing if the
+        // centroids array is empty).
+        Rcpp::NumericVector centroid_x_coords( centroids.size() );
+        Rcpp::NumericVector centroid_y_coords( centroids.size() );
+        Rcpp::NumericVector centroid_z_coords( centroids.size() );
+
+        // Fill the coordinate arrays (This will do nothing if the centroids
+        // array is empty).
+        for (std::size_t i{ 0 }; i < centroids.size(); i++)
+        {
+            centroid_x_coords[i] = spatial::get_x( centroids[i] );
+            centroid_y_coords[i] = spatial::get_y( centroids[i] );
+            centroid_z_coords[i] = spatial::get_z( centroids[i] );
+        }
+
+        Rcpp::DataFrame mode_coordinates{ Rcpp::DataFrame::create (
+            Rcpp::Named("x") = mode_x_coords,
+            Rcpp::Named("y") = mode_y_coords,
+            Rcpp::Named("z") = mode_z_coords
+        ) };
+
+        if (also_return_centroids)
+        {
+            return Rcpp::List::create (
+                Rcpp::Named("mode_coordinates") = mode_coordinates,
+                Rcpp::Named("centroid_coordinates") = Rcpp::DataFrame::create (
+                    Rcpp::Named("x") = centroid_x_coords,
+                    Rcpp::Named("y") = centroid_y_coords,
+                    Rcpp::Named("z") = centroid_z_coords,
+                    Rcpp::Named("point_index") = point_indices
+                )
+            );
+        }
+        else
+        {
+            return Rcpp::List::create (
+                Rcpp::Named("mode_coordinates") = mode_coordinates
+            );
+        }
+    }
+
+    spatial::Raster< double > convert_list_argument_to_double_raster (
+        const Rcpp::List &list
+    ) {
+        return spatial::Raster< double > {
+            Rcpp::as< std::vector< double > >( list["values"] ),
+            Rcpp::as< std::size_t >( list["num_rows"] ),
+            Rcpp::as< std::size_t >( list["num_cols"] ),
+            Rcpp::as< spatial::coordinate_t >( list["x_min"] ),
+            Rcpp::as< spatial::coordinate_t >( list["x_max"] ),
+            Rcpp::as< spatial::coordinate_t >( list["y_min"] ),
+            Rcpp::as< spatial::coordinate_t >( list["y_max"] )
+        };
+    }
+
     std::unique_ptr< spatial::I_Raster< double > >
-    convert_list_argument_to_raster_double (
+    convert_list_argument_to_double_raster_ptr (
         const Rcpp::List &list
     ) {
         // Get the list elements' names.
-        std::vector< std::string > list_element_names( list.names() );
+        auto list_element_names{ Rcpp::as< std::vector< std::string > >( list.names() ) };
 
         // The following condition reads:
         // If any of the list elements' names are equal to "value".
@@ -100,13 +175,15 @@ namespace ams3d_R_interface_util
         }
     }
 
-    // TODO The following would be nice-to-have but doesn't work for some reason
+    // TODO The following would be nice-to-have but doesn't work for some reason.
+    // Maybe because T is not resolved at compile time?
+    // Maybe because the Rcpp code has a problem with the template mechanic?
 //     template< typename T >
-//     std::unique_ptr< spatial::I_Raster< T > > convert_list_argument_to_raster (
+//     std::unique_ptr< spatial::I_Raster< T > > convert_list_argument_to_raster_ptr (
 //         const Rcpp::List &list
 //     ) {
 //         // Get the list elements' names.
-//         std::vector< std::string > list_element_names( list.names() );
+//         auto list_element_names{ Rcpp::as< std::vector< std::string > >( list.names() ) };
 //
 //         // The following condition reads:
 //         // If any of the list elements' names are equal to "value".

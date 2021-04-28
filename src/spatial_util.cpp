@@ -31,8 +31,10 @@ namespace spatial
      */
     std::vector< point_3d_t > get_points_intersecting_vertical_cylinder (
         const index_for_3d_points_t &point_cloud,
-        const point_2d_t &xy_center, distance_t radius,
-        distance_t bottom_height, distance_t top_height
+        const point_2d_t &xy_center,
+        distance_t radius,
+        distance_t bottom_height,
+        distance_t top_height
     ) {
 
         // Construct a box around the cylinder.
@@ -49,29 +51,16 @@ namespace spatial
 
         box_t cylinder_box{ min_corner_point, max_corner_point };
 
-        // It would be nice to also use the box enclosed by the cylinder for a
-        // faster query but it seems to be too complicated to do this here
-
-        // It might be possible but not necessarily much faster to insert the
-        // points within the outer box into another R-tree, remove all points
-        // which intersect with the inner box, and then query only the remaining
-        // points for whether they are in the cylinder or not.
-
-        // Construct a box inside the cylinder
-        // 0.7071068 = sin(45°) multiplied with the radius this should be the
-        // correct shortest distance between cylinder center and inner box
-//         double half_side_length_of_inner_box{ 0.707 * radius };
-//
-//         point_3d_t inner_min_corner_point {
-//             _geom::get<0>( xy_center ) - half_side_length_of_inner_box,
-//             _geom::get<1>( xy_center ) - half_side_length_of_inner_box,
-//             bottom_height
-//         };
-//         point_3d_t inner_max_corner_point {
-//             _geom::get<0>( xy_center ) + half_side_length_of_inner_box,
-//             _geom::get<1>( xy_center ) + half_side_length_of_inner_box,
-//             top_height
-//         };
+        // Set up a vector for storing the points inside the cylinder.
+        std::vector< point_3d_t > intersecting_points{};
+        // This is a "magic number" guessed from experience
+        // TODO make more meaningful estimates based on the point cloud density
+        // Keep in mind that the default allocation strategy of std::vectors is
+        // likely quadratic. I.e. if you reserve a capacity of 1000 at the
+        // beginning, the vector will allocate twice as much (2000) when it is
+        // asked to insert the 1001th element. When it is asked to insert the
+        // 2001th element it will allocate capacity for 4000 elements and so on.
+        intersecting_points.reserve( 1000 );
 
         // Set up a unary predicate object.
         _within_xy_distance_functor within_xy_distance {
@@ -79,8 +68,6 @@ namespace spatial
         };
 
         // Query the point cloud.
-        std::vector< point_3d_t > intersecting_points;
-
         point_cloud.query (
             _geom::index::intersects( cylinder_box )
                 && _geom::index::satisfies( within_xy_distance ),
@@ -98,7 +85,7 @@ namespace spatial
         point_3d_t mean_point{ 0, 0 ,0 };
 
         // Weigh all points and add them together
-        for(std::size_t i{0}; i < points.size(); i++)
+        for(std::size_t i{ 0 }; i < points.size(); i++)
         {
             _geom::add_point (
                 mean_point,
@@ -113,7 +100,7 @@ namespace spatial
         // Divide the sum of all weighted points by the sum of the weights
         _geom::divide_value(
             mean_point,
-            std::accumulate( weights.begin(), weights.end(), double{0} )
+            std::accumulate( weights.begin(), weights.end(), double{ 0 } )
         );
 
         return mean_point;

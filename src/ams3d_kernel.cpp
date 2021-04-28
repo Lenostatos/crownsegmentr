@@ -84,14 +84,8 @@ namespace ams3d
     ) const
     {
         spatial::distance_t absolute_distance {
-            spatial::distance (
-                _xy_center,
-                spatial::point_2d_t {
-                    spatial::get_x( point ), spatial::get_y( point )
-                }
-            )
+            spatial::distance( _xy_center, spatial::get_xy_point( point ) )
         };
-
         return absolute_distance / _radius;
     }
 
@@ -102,7 +96,6 @@ namespace ams3d
         spatial::distance_t absolute_distance {
             std::abs( _center_height - spatial::get_z( point ) )
         };
-
         return absolute_distance / (_height * 0.5);
     }
 
@@ -134,7 +127,7 @@ namespace ams3d
         if (points_in_kernel.size() == 1) { return points_in_kernel[0]; }
 
         // Set up an array of point weights.
-        std::vector<double> point_weights;
+        std::vector<double> point_weights{};
         point_weights.reserve( points_in_kernel.size() );
 
         // Calculate point weights.
@@ -146,8 +139,6 @@ namespace ams3d
         }
 
         // Return the weighted mean point of all points in the kernel.
-        return spatial::weighted_mean_of (
-            points_in_kernel, point_weights
-        );
+        return spatial::weighted_mean_of( points_in_kernel, point_weights );
     }
 }

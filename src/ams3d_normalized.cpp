@@ -44,7 +44,7 @@ namespace ams3d
         // Set the current centroid to the starting point because it will be
         // queried in the loop below.
         spatial::point_3d_t current_centroid{ point };
-        spatial::point_3d_t former_centroid;
+        spatial::point_3d_t former_centroid{};
 
         int num_calculated_centroids{ 0 };
         do
@@ -98,7 +98,7 @@ namespace ams3d
         // Set the current centroid to the starting point because it will be
         // queried in the loop below.
         spatial::point_3d_t current_centroid{ point };
-        spatial::point_3d_t former_centroid;
+        spatial::point_3d_t former_centroid{};
 
         // Create an array for calculated centroids.
         std::vector< spatial::point_3d_t > centroids;

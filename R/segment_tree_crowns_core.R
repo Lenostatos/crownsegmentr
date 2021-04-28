@@ -171,8 +171,7 @@ segment_tree_crowns_core <- function(coordinate_table,
 
   # If crown_diameter_to_tree_height is a list, call the "flexible" C++ back-end
   if (is.list(crown_diameter_to_tree_height)) {
-    if (also_return_centroids) {
-      modes_and_centroids <- calculate_modes_plus_centroids_flexible(
+      modes_and_centroids <- calculate_modes_flexible(
         coordinate_values,
         min_point_height_above_ground = segment_crowns_only_above,
         ground_height,
@@ -180,51 +179,26 @@ segment_tree_crowns_core <- function(coordinate_table,
         crown_height_to_tree_height,
         centroid_convergence_distance,
         max_num_centroids_per_mode,
+        also_return_centroids,
         show_progress_bar = verbose
       )
-      modes <- modes_and_centroids$mode_coordinates
-    } else {
-      modes <- calculate_modes_flexible(
-        coordinate_values,
-        min_point_height_above_ground = segment_crowns_only_above,
-        ground_height,
-        crown_diameter_to_tree_height,
-        crown_height_to_tree_height,
-        centroid_convergence_distance,
-        max_num_centroids_per_mode,
-        show_progress_bar = verbose
-      )
-    }
 
   # Call the C++ back-end for normalized point clouds
   } else if (is.null(ground_height)) {
-    if (also_return_centroids) {
-      modes_and_centroids <- calculate_modes_plus_centroids_normalized(
+      modes_and_centroids <- calculate_modes_normalized(
         coordinate_values,
         min_point_height_above_ground = segment_crowns_only_above,
         crown_diameter_to_tree_height,
         crown_height_to_tree_height,
         centroid_convergence_distance,
         max_num_centroids_per_mode,
+        also_return_centroids,
         show_progress_bar = verbose
       )
-      modes <- modes_and_centroids$mode_coordinates
-    } else {
-      modes <- calculate_modes_normalized(
-        coordinate_values,
-        min_point_height_above_ground = segment_crowns_only_above,
-        crown_diameter_to_tree_height,
-        crown_height_to_tree_height,
-        centroid_convergence_distance,
-        max_num_centroids_per_mode,
-        show_progress_bar = verbose
-      )
-    }
 
   # Call the C++ back-end for not normalized point clouds
   } else {
-    if (also_return_centroids) {
-      modes_and_centroids <- calculate_modes_plus_centroids_terraneous(
+      modes_and_centroids <- calculate_modes_terraneous(
         coordinate_values,
         min_point_height_above_ground = segment_crowns_only_above,
         ground_height,
@@ -232,28 +206,18 @@ segment_tree_crowns_core <- function(coordinate_table,
         crown_height_to_tree_height,
         centroid_convergence_distance,
         max_num_centroids_per_mode,
+        also_return_centroids,
         show_progress_bar = verbose
       )
-      modes <- modes_and_centroids$mode_coordinates
-    } else { # only return modes
-      modes <- calculate_modes_terraneous(
-        coordinate_values,
-        min_point_height_above_ground = segment_crowns_only_above,
-        ground_height,
-        crown_diameter_to_tree_height,
-        crown_height_to_tree_height,
-        centroid_convergence_distance,
-        max_num_centroids_per_mode,
-        show_progress_bar = verbose
-      )
-    }
   }
+
+  modes <- modes_and_centroids$mode_coordinates
 
   # Find modes with NA coordinate values to exclude them from the DBSCAN
   # clustering and directly set their IDs to NA
   is_na_mode_row <- is.na(modes$x) | is.na(modes$y) | is.na(modes$z)
 
-  if (verbose) cat("  Finding mode clusters...")
+  if (verbose) message("  Finding mode clusters...", appendLF = FALSE)
 
   # Set up a vector for the crown IDs
   crown_ids <- vector(mode = "integer", length = nrow(modes))
@@ -288,7 +252,7 @@ segment_tree_crowns_core <- function(coordinate_table,
   # set these IDs to NA
   crown_ids[which(crown_ids %in% ids_with_too_few_points)] <- NA_integer_
 
-  if (verbose) cat("done.\n") # ...with the mode clustering
+  if (verbose) message("done.") # ...with the mode clustering
 
 
   # Create the to-be-returned list

@@ -75,12 +75,14 @@ namespace spatial
 
     std::vector< point_3d_t > get_points_intersecting_vertical_cylinder (
         const index_for_3d_points_t &point_cloud,
-        const point_2d_t &xy_center, distance_t radius,
-        distance_t bottom_height, distance_t top_height
+        const point_2d_t &xy_center,
+        distance_t radius,
+        distance_t bottom_height,
+        distance_t top_height
     );
 
     /** Get the x and y value of a 3D point and return them as a 2D point. */
-    inline point_2d_t _get_xy_point( const point_3d_t & point_3d )
+    inline point_2d_t get_xy_point ( const point_3d_t & point_3d )
     {
         return { _geom::get<0>( point_3d ), _geom::get<1>( point_3d ) };
     }
@@ -98,16 +100,16 @@ namespace spatial
         _within_xy_distance_functor (
             const point_2d_t &xy_point, const distance_t distance
         ):
-        _xy_point{ xy_point },
-        _comparable_distance{ _geom::comparable_distance (
-            point_2d_t{ 0, 0 }, point_2d_t{ 0, distance }
-        ) }
+            _xy_point{ xy_point },
+            _comparable_distance{ _geom::comparable_distance (
+                point_2d_t{ 0, 0 }, point_2d_t{ 0, distance }
+            ) }
         {}
 
         bool operator()( const point_3d_t &point ) const
         {
-            return _geom::comparable_distance( _get_xy_point( point ), _xy_point )
-            <= _comparable_distance;
+            return _geom::comparable_distance( get_xy_point( point ), _xy_point )
+                        <= _comparable_distance;
         }
     };
 

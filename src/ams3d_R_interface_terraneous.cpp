@@ -23,23 +23,16 @@
 #include "spatial.h"
 #include "ams3d.h"
 
-//' @describeIn calculate_modes_normalized Use a ground height raster to segment
-//'     non-normalized point clouds.
+//' @describeIn calculate_modes_normalized Use a ground height raster to find
+//'     modes in a non-normalized point cloud.
 //'
-//' @param ground_height_grid_data Ground height raster data across the area
-//'     covered by the point cloud. Has to be a list with the following named
-//'     elements:
-//'     \itemize{
-//'         \item values: Numeric vector holding ground heights.
-//'         \item num_rows: Integer number indicating the number of rows.
-//'         \item num_cols: Integer number indicating the number of columns.
-//'         \item x_min: Number indicating the lowest x coordinate covered.
-//'         \item x_max: Number indicating the largest x coordinate covered.
-//'         \item y_min: Number indicating the lowest y coordinate covered.
-//'         \item y_max: Number indicating the largest y coordinate covered.
-//'     }
+//' @param ground_height_grid_data A list containing a set of elements that make
+//'     up a ground height raster covering the whole area of the point cloud.
+//'     The set has to consist of the named elements described in the section
+//'     "Raster argument structure" below.
+//'
 // [[Rcpp::export]]
-Rcpp::DataFrame calculate_modes_terraneous (
+Rcpp::List calculate_modes_terraneous (
     const Rcpp::DataFrame &coordinate_table,
     const spatial::coordinate_t &min_point_height_above_ground,
     const Rcpp::List &ground_height_grid_data,
@@ -47,6 +40,7 @@ Rcpp::DataFrame calculate_modes_terraneous (
     const double crown_height_to_tree_height,
     const spatial::distance_t &centroid_convergence_distance,
     const int max_num_centroids_per_mode,
+    const bool also_return_centroids,
     const bool show_progress_bar
 ) {
     // Convert the coordinate table to an array of point objects.
@@ -57,13 +51,9 @@ Rcpp::DataFrame calculate_modes_terraneous (
     // Convert the ground height grid data to a Raster object
     auto ground_height_grid_ptr {
         std::make_shared< spatial::Raster< spatial::coordinate_t > > (
-            ground_height_grid_data["values"],
-            ground_height_grid_data["num_rows"],
-            ground_height_grid_data["num_cols"],
-            ground_height_grid_data["x_min"],
-            ground_height_grid_data["x_max"],
-            ground_height_grid_data["y_min"],
-            ground_height_grid_data["y_max"]
+            ams3d_R_interface_util::convert_list_argument_to_double_raster (
+                ground_height_grid_data
+            )
         )
     };
 
@@ -92,226 +82,109 @@ Rcpp::DataFrame calculate_modes_terraneous (
         progress_bar.tick( 0 );
     };
 
-    // Calculate modes for all points in the point cloud.
-    for (const auto &point : points)
-    {
-        // Calculate the mode.
-        modes.push_back (
-            ams3d::calculate_a_single_mode (
-                point,
-                point_cloud_index,
-                min_point_height_above_ground,
-                *ground_height_grid_ptr,
-                crown_diameter_to_tree_height,
-                crown_height_to_tree_height,
-                centroid_convergence_distance,
-                max_num_centroids_per_mode
-            )
-        );
-
-        if (modes.size() % ams3d_R_interface_constants::num_modes_per_tick == 0)
-        {
-            // Check whether the R user wants to abort the computation
-            Rcpp::checkUserInterrupt();
-
-            // Advance the progress bar.
-            if (show_progress_bar)
-                { progress_bar.tick(ams3d_R_interface_constants::num_modes_per_tick); }
-        }
-    }
-
-    // Finish the progress bar.
-    if (show_progress_bar) { progress_bar.tick( points.size() ); }
-
-
-    // Set up R vectors for storing the mode coordinates.
-    Rcpp::NumericVector mode_x_coords( modes.size() );
-    Rcpp::NumericVector mode_y_coords( modes.size() );
-    Rcpp::NumericVector mode_z_coords( modes.size() );
-    // According to this:
-    // https://stackoverflow.com/questions/41602024/should-i-prefer-rcppnumericvector-over-stdvector
-    // converting std::vector from and to NumericVector entails a deep copy.
-    // TODO Test whether filling the mode_*_coords vectors within the
-    // mode_calculation loop increases performance.
-
-    // Fill the R vectors.
-    for (std::size_t i{ 0 }; i < modes.size(); i++)
-    {
-        mode_x_coords[i] = spatial::get_x( modes[i] );
-        mode_y_coords[i] = spatial::get_y( modes[i] );
-        mode_z_coords[i] = spatial::get_z( modes[i] );
-    }
-
-    // Return the modes as an R data.frame.
-    return Rcpp::DataFrame::create (
-        Rcpp::Named("x") = mode_x_coords,
-        Rcpp::Named("y") = mode_y_coords,
-        Rcpp::Named("z") = mode_z_coords
-    );
-}
-
-//' @describeIn calculate_modes_normalized Use a ground height raster to segment
-//'     non-normalized point clouds and also returns centroids calculated during
-//'     the mode finding.
-//'
-// [[Rcpp::export]]
-Rcpp::List calculate_modes_plus_centroids_terraneous (
-    const Rcpp::DataFrame &coordinate_table,
-    const spatial::coordinate_t &min_point_height_above_ground,
-    const Rcpp::List &ground_height_grid_data,
-    const double crown_diameter_to_tree_height,
-    const double crown_height_to_tree_height,
-    const spatial::distance_t &centroid_convergence_distance,
-    const int max_num_centroids_per_mode,
-    const bool show_progress_bar
-) {
-    // Convert the coordinate table to an array of point objects.
-    std::vector< spatial::point_3d_t > points {
-        ams3d_R_interface_util::create_point_objects_from( coordinate_table )
-    };
-
-    // Convert the ground height grid data to a Raster object
-    auto ground_height_grid_ptr {
-        std::make_shared< spatial::Raster< spatial::coordinate_t > > (
-            ground_height_grid_data["values"],
-            ground_height_grid_data["num_rows"],
-            ground_height_grid_data["num_cols"],
-            ground_height_grid_data["x_min"],
-            ground_height_grid_data["x_max"],
-            ground_height_grid_data["y_min"],
-            ground_height_grid_data["y_max"]
-        )
-    };
-
-    // Set up a spatial index for the point objects.
-    spatial::index_for_3d_points_t point_cloud_index {
-        spatial::create_index_of_above_ground (
-            points,
-            ams3d::_Kernel::bottom_height_above_ground_with (
-                min_point_height_above_ground,
-                crown_height_to_tree_height
-            ),
-            ground_height_grid_ptr
-        )
-    };
-
-    // Set up an array for the to-be-calculated modes.
-    std::vector< spatial::point_3d_t > modes{};
-    modes.reserve( points.size() );
-
-    // Set up arrays for the to-be-calculated centroids and their point indices.
+    // Set up arrays for the optionally returned centroids and their point indices.
     std::vector< spatial::point_3d_t > centroids{};
     std::vector< int > point_indices{};
 
-    // Optionally set up a progress bar.
-    RProgress::RProgress progress_bar;
-    if (show_progress_bar) {
-        progress_bar = ams3d_R_interface_util::create_progress_bar (
-            points.size()
-        );
-        progress_bar.tick( 0 );
-    };
+    int point_index{ 1 }; // 1-based point index for use with the centroids in R
 
-    int point_index{ 1 }; // 1-based point index for use in R
-
-    // Iterate over all points in the input point cloud to calculate modes for them
-    for (const auto &point : points)
+    if (also_return_centroids)
     {
-        std::pair <
-            spatial::point_3d_t, std::vector< spatial::point_3d_t >
-        > mode_and_centroids {
-            ams3d::calculate_a_single_mode_plus_centroids (
-                point,
-                point_cloud_index,
-                min_point_height_above_ground,
-                *ground_height_grid_ptr,
-                crown_diameter_to_tree_height,
-                crown_height_to_tree_height,
-                centroid_convergence_distance,
-                max_num_centroids_per_mode
-            )
-        };
-
-        // Store the calculated mode.
-        modes.push_back( mode_and_centroids.first );
-
-        // Store the calculated centroids.
-        centroids.insert (
-            centroids.end(), // append at the end of centroids
-            mode_and_centroids.second.begin(),
-            mode_and_centroids.second.end()
-        );
-
-        // Store the current point index as many times as there are centroids.
-        point_indices.insert (
-            point_indices.end(), // append at the end of mode_indices
-            mode_and_centroids.second.size(), // for the number of centroids...
-            point_index // ...repeat this value
-        );
-
-        point_index++;
-
-        if (modes.size() % ams3d_R_interface_constants::num_modes_per_tick == 0)
+        // For all points in the input point cloud...
+        for (const auto &point : points)
         {
-            // Check whether the R user wants to abort the computation
-            Rcpp::checkUserInterrupt();
+            // ...calculate their mode and get the centroids as well.
+            std::pair< spatial::point_3d_t, std::vector< spatial::point_3d_t > >
+            mode_and_centroids {
+                ams3d::calculate_a_single_mode_plus_centroids (
+                    point,
+                    point_cloud_index,
+                    min_point_height_above_ground,
+                    *ground_height_grid_ptr,
+                    crown_diameter_to_tree_height,
+                    crown_height_to_tree_height,
+                    centroid_convergence_distance,
+                    max_num_centroids_per_mode
+                )
+            };
 
-            // Advance the progress bar.
-            if (show_progress_bar)
-                { progress_bar.tick( ams3d_R_interface_constants::num_modes_per_tick ); }
+            // Store the calculated mode.
+            modes.push_back( mode_and_centroids.first );
+
+            // Store the calculated centroids.
+            centroids.insert (
+                centroids.end(), // append at the end of centroids
+                mode_and_centroids.second.begin(),
+                mode_and_centroids.second.end()
+            );
+
+            // Store the current point index as many times as there are centroids.
+            point_indices.insert (
+                point_indices.end(), // Append at the end of point_indices...
+                mode_and_centroids.second.size(), // ...n_centroid times...
+                point_index // ...this value.
+            );
+
+            point_index++;
+
+            if (modes.size() % ams3d_R_interface_constants::num_modes_per_tick == 0)
+            {
+                // Check whether the R user wants to abort the computation
+                Rcpp::checkUserInterrupt();
+
+                // Advance the progress bar.
+                if (show_progress_bar)
+                {
+                    progress_bar.tick (
+                        ams3d_R_interface_constants::num_modes_per_tick
+                    );
+                }
+            }
+        }
+    }
+    else // Do not return centroids.
+    {
+        // For all points in the input point cloud...
+        for (const auto &point : points)
+        {
+            // ...calculate their mode.
+            modes.push_back (
+                ams3d::calculate_a_single_mode (
+                    point,
+                    point_cloud_index,
+                    min_point_height_above_ground,
+                    *ground_height_grid_ptr,
+                    crown_diameter_to_tree_height,
+                    crown_height_to_tree_height,
+                    centroid_convergence_distance,
+                    max_num_centroids_per_mode
+                )
+            );
+
+            if (modes.size() % ams3d_R_interface_constants::num_modes_per_tick == 0)
+            {
+                // Check whether the R user wants to abort the computation
+                Rcpp::checkUserInterrupt();
+
+                // Advance the progress bar.
+                if (show_progress_bar)
+                {
+                    progress_bar.tick (
+                        ams3d_R_interface_constants::num_modes_per_tick
+                    );
+                }
+            }
         }
     }
 
     // Finish the progress bar.
     if (show_progress_bar) { progress_bar.tick( points.size() ); }
 
-
-    // Return the modes and centroids to R
-
-    // Set up mode coordinate arrays.
-    Rcpp::NumericVector mode_x_coords( modes.size() );
-    Rcpp::NumericVector mode_y_coords( modes.size() );
-    Rcpp::NumericVector mode_z_coords( modes.size() );
-
-    // Fill the mode coordinate arrays.
-    for (std::size_t i{ 0 }; i < modes.size(); i++)
-    {
-        mode_x_coords[i] = spatial::get_x( modes[i] );
-        mode_y_coords[i] = spatial::get_y( modes[i] );
-        mode_z_coords[i] = spatial::get_z( modes[i] );
-    }
-
-    // Create a DataFrame with the mode coordinate arrays.
-    Rcpp::DataFrame mode_coords{ Rcpp::DataFrame::create (
-        Rcpp::Named("x") = mode_x_coords,
-        Rcpp::Named("y") = mode_y_coords,
-        Rcpp::Named("z") = mode_z_coords
-    ) };
-
-    // Set up centroid coordinate arrays.
-    Rcpp::NumericVector centroid_x_coords( centroids.size() );
-    Rcpp::NumericVector centroid_y_coords( centroids.size() );
-    Rcpp::NumericVector centroid_z_coords( centroids.size() );
-
-    // Fill the centroid coordinate arrays.
-    for (std::size_t i{ 0 }; i < centroids.size(); i++)
-    {
-        centroid_x_coords[i] = spatial::get_x( centroids[i] );
-        centroid_y_coords[i] = spatial::get_y( centroids[i] );
-        centroid_z_coords[i] = spatial::get_z( centroids[i] );
-    }
-
-    // Create a DataFrame with the centroid coordinate arrays.
-    Rcpp::DataFrame centroid_coords{ Rcpp::DataFrame::create (
-        Rcpp::Named("x") = centroid_x_coords,
-        Rcpp::Named("y") = centroid_y_coords,
-        Rcpp::Named("z") = centroid_z_coords,
-        Rcpp::Named("point_index") = point_indices
-    ) };
-
-    // Return the mode and centroid DataFrames in a list.
-    return Rcpp::List::create (
-        Rcpp::Named("mode_coordinates") = mode_coords,
-        Rcpp::Named("centroid_coordinates") = centroid_coords
+    // Return the modes (and optionally also centroids) to R
+    return ams3d_R_interface_util::create_return_data (
+        also_return_centroids,
+        modes,
+        centroids,
+        point_indices
     );
 }

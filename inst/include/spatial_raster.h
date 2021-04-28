@@ -36,23 +36,10 @@ namespace spatial
     public:
         virtual const std::vector< T_value >& values() const = 0;
 
+        // Can't return an I_Raster by value because it's an abstract type
         virtual std::unique_ptr< I_Raster< T_value > > copy_w_new_values (
             const std::vector< T_value > &new_values
         ) const = 0;
-
-
-        virtual bool has_value_at (
-            const coordinate_t &x, const coordinate_t &y
-        ) const = 0;
-
-        virtual const T_value& value_at (
-            const coordinate_t &x, const coordinate_t &y
-        ) const = 0;
-
-        virtual const T_value& no_throw_value_at (
-            const coordinate_t &x, const coordinate_t &y
-        ) const = 0;
-
 
         virtual bool has_value_at_xy_of( const point_3d_t &point ) const = 0;
         virtual const T_value& value_at_xy_of( const point_3d_t &point ) const = 0;
@@ -92,23 +79,6 @@ namespace spatial
                 new_values[0]
             );
         }
-
-
-        virtual bool has_value_at (
-            const coordinate_t &x, const coordinate_t &y
-        ) const override
-            { return true; }
-
-        virtual const T_value& value_at (
-            const coordinate_t &x, const coordinate_t &y
-        ) const override
-            { return _value; }
-
-        virtual const T_value& no_throw_value_at (
-            const coordinate_t &x, const coordinate_t &y
-        ) const override
-            { return _value; }
-
 
         virtual bool has_value_at_xy_of( const point_3d_t &point ) const override
             { return true; }
@@ -179,65 +149,6 @@ namespace spatial
                 _x_min, _x_max,
                 _y_min, _y_max
             );
-        }
-
-
-        /** Indicates whether the raster has a value at the location x|y. */
-        virtual bool has_value_at (
-            const coordinate_t &x, const coordinate_t &y
-        ) const override
-        {
-            return _x_min <= x && x <= _x_max &&
-                   _y_min <= y && y <= _y_max;
-        }
-
-        /** \brief Returns the raster value at the location x|y.
-         *
-         *  Throws an exception if x or y are NaN or the location x|y lies
-         *      outside of the raster's extent.
-         */
-        virtual const T_value& value_at (
-            const coordinate_t &x, const coordinate_t &y
-        ) const override
-        {
-            if (std::isnan( x ) || std::isnan( y ))
-            {
-                throw std::runtime_error (
-                    "Tried to access raster value with NaN xy-coordinates."
-                );
-            }
-
-            if (!this->has_value_at(x, y))
-            {
-                throw std::out_of_range (
-                    "Tried to access raster value outside of raster extent."
-                );
-            }
-
-            return no_throw_value_at(x, y);
-        }
-
-        /** Same as value_at but does not throw exceptions. For NaN coordinate
-         *      values and locations outside the raster, the behavior of this
-         *      method is undefined.
-         */
-        virtual const T_value& no_throw_value_at (
-            const coordinate_t &x, const coordinate_t &y
-        ) const override
-        {
-            std::size_t row_index {
-                static_cast< std::size_t >( (_y_max - y) / _row_height )
-            };
-            // if y == _y_min, the row index is too big by one
-            if (row_index == _num_rows) { --row_index; }
-
-            std::size_t col_index {
-                static_cast< std::size_t >( (x - _x_min) / _col_width )
-            };
-            // if x == _x_max, the column index is too big by one
-            if (col_index == _num_cols) { --col_index; }
-
-            return _values[_num_cols * row_index + col_index];
         }
 
         /** Indicates whether the raster has a value at the xy-coordinates of

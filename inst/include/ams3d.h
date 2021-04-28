@@ -174,11 +174,11 @@ namespace ams3d
      *      ratios.
      *
      *  \param crown_diameter_to_tree_height_grid A raster object expected to
-     *      hold finite(!) crown diameter to tree height ratio values for the
-     *      entire area of the point cloud.
+     *      hold crown diameter to tree height ratio values for the entire area
+     *      of the point cloud.
      *  \param crown_height_to_tree_height_grid A raster object expected to hold
-     *      finite(!) crown diameter to tree height ratio values for the entire
-     *      area of the point cloud.
+     *      crown diameter to tree height ratio values for the entire area of
+     *      the point cloud.
      *
      *  \return The mode of \p point. If any coordinate value of \p point is
      *      non-finite, \p point lies below \p min_point_height_above_ground, or
@@ -203,11 +203,11 @@ namespace ams3d
      *      to tree height ratios.
      *
      *  \param crown_diameter_to_tree_height_grid A raster object expected to
-     *      hold finite(!) crown diameter to tree height ratio values for the
-     *      entire area of the point cloud.
+     *      hold crown diameter to tree height ratio values for the entire area
+     *      of the point cloud.
      *  \param crown_height_to_tree_height_grid A raster object expected to hold
-     *      finite(!) crown diameter to tree height ratio values for the entire
-     *      area of the point cloud.
+     *      crown diameter to tree height ratio values for the entire area of
+     *      the point cloud.
      *
      *  \return A pair with the calculated mode at the first position and an
      *      array of the calculated centroids at the second position. If any

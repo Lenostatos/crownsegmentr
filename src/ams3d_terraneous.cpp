@@ -39,14 +39,14 @@ namespace ams3d
             { return spatial::nan_point(); }
 
         // Get the ground height at point.
-        spatial::coordinate_t ground_height_at_point {
+        spatial::coordinate_t ground_height {
             ground_height_grid.no_throw_value_at_xy_of( point )
         };
 
         // If the ground height is non-finite or the point lies below the
         // minimum above-ground height, return an NaN mode.
-        if (!std::isfinite( ground_height_at_point ) ||
-            spatial::get_z( point ) - ground_height_at_point
+        if (!std::isfinite( ground_height ) ||
+            spatial::get_z( point ) - ground_height
                 < min_point_height_above_ground )
         {
             return spatial::nan_point();
@@ -55,25 +55,25 @@ namespace ams3d
         // Set the current centroid to the starting point because it will be
         // queried in the loop below.
         spatial::point_3d_t current_centroid{ point };
-        spatial::point_3d_t former_centroid;
+        spatial::point_3d_t former_centroid{};
 
         int num_calculated_centroids{ 0 };
         do
         {
             // Get the ground height at the current centroid.
-            spatial::coordinate_t ground_height_at_current_centroid {
-                ground_height_grid.no_throw_value_at_xy_of( current_centroid )
-            };
+            ground_height = ground_height_grid.no_throw_value_at_xy_of (
+                current_centroid
+            );
 
             // If the ground height is non-finite, return an NaN mode.
-            if (!std::isfinite( ground_height_at_current_centroid ))
+            if (!std::isfinite( ground_height ))
                 { return spatial::nan_point(); }
 
             // Create a kernel at the previously calculated centroid (which is
             // the starting point during the first iteration).
             _Kernel kernel {
                 current_centroid,
-                ground_height_at_current_centroid,
+                ground_height,
                 crown_diameter_to_tree_height,
                 crown_height_to_tree_height
             };
@@ -118,15 +118,15 @@ namespace ams3d
         }
 
         // Get the ground height at point.
-        spatial::coordinate_t ground_height_at_point {
+        spatial::coordinate_t ground_height {
             ground_height_grid.no_throw_value_at_xy_of( point )
         };
 
         // If the ground height is non-finite or the point lies below the
         // minimum above-ground height, return an NaN mode without any centroids.
-        if (!std::isfinite( ground_height_at_point ) ||
-            spatial::get_z( point ) - ground_height_at_point
-                < min_point_height_above_ground )
+        if (!std::isfinite( ground_height ) ||
+            spatial::get_z( point ) - ground_height
+                < min_point_height_above_ground)
         {
             return std::pair {
                 spatial::nan_point(), std::vector< spatial::point_3d_t >{}
@@ -136,7 +136,7 @@ namespace ams3d
         // Set the current centroid to the starting point because it will be
         // queried in the loop below.
         spatial::point_3d_t current_centroid{ point };
-        spatial::point_3d_t former_centroid;
+        spatial::point_3d_t former_centroid{};
 
         // Create an array for calculated centroids.
         std::vector< spatial::point_3d_t > centroids;
@@ -146,13 +146,13 @@ namespace ams3d
         do
         {
             // Get the ground height at the current centroid.
-            spatial::coordinate_t ground_height_at_current_centroid {
-                ground_height_grid.no_throw_value_at_xy_of( current_centroid )
-            };
+            ground_height = ground_height_grid.no_throw_value_at_xy_of (
+                current_centroid
+            );
 
             // If the ground height is non-finite, return an NaN mode without
             // any centroids.
-            if (!std::isfinite( ground_height_at_current_centroid ))
+            if (!std::isfinite( ground_height ))
             {
                 return std::pair {
                     spatial::nan_point(), std::vector< spatial::point_3d_t >{}
@@ -163,7 +163,7 @@ namespace ams3d
             // the starting point during the first iteration).
             _Kernel kernel {
                 current_centroid,
-                ground_height_at_current_centroid,
+                ground_height,
                 crown_diameter_to_tree_height,
                 crown_height_to_tree_height
             };

@@ -153,42 +153,35 @@ namespace spatial
         pointer _ptr;
         pointer _end_ptr;
         coordinate_t _min_height_above_ground;
-        std::shared_ptr< const I_Raster< coordinate_t > > _ground_height_grid_ptr;
+        std::shared_ptr< const Raster< coordinate_t > > _ground_height_grid_ptr;
 
         bool _skip_current_point()
         {
-            if (_ptr == _end_ptr)
-            {
-                return false;
-            }
+            // Don't skip the end pointer.
+            if (_ptr == _end_ptr) { return false; }
 
-            if (has_non_finite_coordinate_value( *_ptr ) ||
-                !_ground_height_grid_ptr->has_value_at (
-                    _geom::get<0>( *_ptr ), _geom::get<1>( *_ptr )
-                ))
-            {
-                return true;
-            }
+            // Skip points with non-finite coordinate values.
+            if (has_non_finite_coordinate_value( *_ptr )) { return true; }
 
-            coordinate_t height_above_ground {
+            coordinate_t point_height_above_ground {
                 // The calculation below reads:
                 // "absolute point height minus ground height at point location"
                 _geom::get<2>( *_ptr ) -
-                _ground_height_grid_ptr->no_throw_value_at (
-                    _geom::get<0>( *_ptr ), _geom::get<1>( *_ptr )
-                )
+                _ground_height_grid_ptr->no_throw_value_at_xy_of( *_ptr )
             };
 
+            // Skip points at non-finite ground heights and points below the
+            // minimum height.
             return
-                std::isnan( height_above_ground ) ||
-                height_above_ground < _min_height_above_ground;
+                !std::isfinite( point_height_above_ground ) ||
+                point_height_above_ground < _min_height_above_ground;
         }
 
         _Finite_points_above_ground_iterator (
             pointer ptr,
             pointer end_ptr,
             const coordinate_t min_height_above_ground,
-            const std::shared_ptr< const I_Raster< coordinate_t > > &ground_height_grid_ptr
+            const std::shared_ptr< const Raster< coordinate_t > > &ground_height_grid_ptr
         ):
             _ptr{ ptr },
             _end_ptr{ end_ptr },
@@ -203,7 +196,7 @@ namespace spatial
         static _Finite_points_above_ground_iterator cbegin (
             const std::vector< point_3d_t > &points,
             const coordinate_t min_height_above_ground,
-            const std::shared_ptr< const I_Raster< coordinate_t > > &ground_height_grid_ptr
+            const std::shared_ptr< const Raster< coordinate_t > > &ground_height_grid_ptr
         ) {
             return _Finite_points_above_ground_iterator {
                 &(*points.cbegin()), &(*points.cend()),
@@ -280,16 +273,13 @@ namespace spatial
 
         bool _skip_current_point()
         {
-            if (_ptr == _end_ptr)
-            {
-                return false;
-            }
+            // Don't skip the end pointer.
+            if (_ptr == _end_ptr) { return false; }
 
-            if (has_non_finite_coordinate_value( *_ptr ) ||
-                !_ground_height_grid_ptr->has_value_at_xy_of ( *_ptr ))
-            { return true; }
+            // Skip points with non-finite coordinate values.
+            if (has_non_finite_coordinate_value( *_ptr )) { return true; }
 
-            coordinate_t height_above_ground {
+            coordinate_t point_height_above_ground {
                 // The calculation below reads:
                 // "absolute point height minus ground height at point location"
                 _geom::get<2>( *_ptr ) -
@@ -300,10 +290,13 @@ namespace spatial
                 _min_height_above_ground_grid->no_throw_value_at_xy_of( *_ptr )
             };
 
+            // Skip points wherever the ground height or the minimum
+            // above-ground height are non-finite and where the points'
+            // above-ground height lies below the minimum above-ground height.
             return
-                std::isnan( height_above_ground ) ||
-                std::isnan( min_height_above_ground ) ||
-                height_above_ground < min_height_above_ground;
+                !std::isfinite( point_height_above_ground ) ||
+                !std::isfinite( min_height_above_ground ) ||
+                point_height_above_ground < min_height_above_ground;
         }
 
         _Finite_points_above_height_grid_iterator (
@@ -395,7 +388,7 @@ namespace spatial
     inline index_for_3d_points_t create_index_of_above_ground (
         const std::vector< point_3d_t > &points,
         const coordinate_t min_height_above_ground,
-        const std::shared_ptr< I_Raster< coordinate_t > > &ground_height_grid_ptr
+        const std::shared_ptr< Raster< coordinate_t > > &ground_height_grid_ptr
     ) {
         return index_for_3d_points_t {
             _Finite_points_above_ground_iterator::cbegin (

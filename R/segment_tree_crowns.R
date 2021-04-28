@@ -62,7 +62,7 @@
 #'     with point clouds stored in \code{data.frame}s. The list should not
 #'     contain an argument to the "las" parameter of grid_terrain.
 #'   }
-#'   Note that points will not be segmented wherever ground heights are NA.
+#'   Points will not be segmented wherever ground heights are NA.
 #' @param crown_id_column_name A character string. The column or attribute name
 #'   under which IDs for segmented bodies should be stored.
 #' @param centroid_convergence_distance A single number. Distance at which it is

@@ -374,3 +374,84 @@ test_that("the calculation of unique crown IDs works for LAScatalog", {
   #   color = "crown_id"
   # )
 })
+
+
+# Different C++ back-ends -------------------------------------------------
+test_that("The terraneous and flexible C++ back-ends work", {
+
+  test_points <- lidR::readLAS(
+    system.file("extdata/Topography.laz", package = "lidR")
+  )
+
+  # The terraneous back-end
+  ground_height_grid <- lidR::grid_terrain(test_points, algorithm = lidR::tin())
+
+  segmented_points <- crownsegmentr::segment_tree_crowns(
+    point_cloud = test_points,
+    crown_diameter_to_tree_height = 0.5,
+    crown_height_to_tree_height = 1,
+    segment_crowns_only_above = 2,
+    ground_height = ground_height_grid
+  )
+
+  segmented_points <- crownsegmentr::segment_tree_crowns(
+    point_cloud = test_points,
+    crown_diameter_to_tree_height = 0.5,
+    crown_height_to_tree_height = 1,
+    segment_crowns_only_above = 2,
+    ground_height = list(algorithm = lidR::tin())
+  )
+
+  # The flexible back-end
+  crown_height_to_tree_height_grid <- raster::raster(
+    matrix(c(0.5, 1), ncol = 2),
+    xmn = lidR::extent(test_points)@xmin,
+    xmx = lidR::extent(test_points)@xmax,
+    ymn = lidR::extent(test_points)@ymin,
+    ymx = lidR::extent(test_points)@ymax,
+    crs = lidR::crs(test_points)
+  )
+
+  segmented_points <- crownsegmentr::segment_tree_crowns(
+    point_cloud = test_points,
+    crown_diameter_to_tree_height = 0.5,
+    crown_height_to_tree_height = crown_height_to_tree_height_grid,
+    ground_height = list(algorithm = lidR::tin())
+  )
+
+  # The flexible back-end with a normalized point cloud
+  test_points <- lidR::readLAS(
+    system.file("extdata/MixedConifer.laz", package = "lidR")
+  )
+
+  crown_diameter_to_tree_height_grid <- raster::raster(
+    matrix(c(0.3, 0.8), ncol = 2),
+    xmn = lidR::extent(test_points)@xmin,
+    xmx = lidR::extent(test_points)@xmax,
+    ymn = lidR::extent(test_points)@ymin,
+    ymx = lidR::extent(test_points)@ymax,
+    crs = lidR::crs(test_points)
+  )
+
+  segmented_points <- crownsegmentr::segment_tree_crowns(
+    point_cloud = test_points,
+    crown_diameter_to_tree_height = crown_diameter_to_tree_height_grid,
+    crown_height_to_tree_height = 0.8
+  )
+
+
+  # # Plot segmentation results (for manual testing only)
+  #
+  # # Generate Crown Colors
+  # crown_colors <- lidR::random.colors(
+  #   n = data.table::uniqueN(segmented_points@data$crown_id) - 1
+  # )
+  #
+  # # Plot the segmented point cloud
+  # lidR::plot(
+  #   lidR::filter_poi(segmented_points, !(Classification %in% c(2, 9))),
+  #   color = "crown_id",
+  #   colorPalette = crown_colors,
+  #   size = 5
+  # )
+})

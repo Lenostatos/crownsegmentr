@@ -32,27 +32,18 @@
 
 # include <memory> // for std::unique_ptr
 
-Rcpp::DataFrame calculate_modes_normalized (
+Rcpp::List calculate_modes_normalized (
     const Rcpp::DataFrame &coordinate_table,
     const spatial::coordinate_t &min_point_height_above_ground,
     const double crown_diameter_to_tree_height,
     const double crown_height_to_tree_height,
     const spatial::distance_t &centroid_convergence_distance,
     const int max_num_centroids_per_mode,
-    const bool show_progress_bar = true
+    const bool also_return_centroids,
+    const bool show_progress_bar
 );
 
-Rcpp::List calculate_modes_plus_centroids_normalized (
-    const Rcpp::DataFrame &coordinate_table,
-    const spatial::coordinate_t &min_point_height_above_ground,
-    const double crown_diameter_to_tree_height,
-    const double crown_height_to_tree_height,
-    const spatial::distance_t &centroid_convergence_distance,
-    const int max_num_centroids_per_mode,
-    const bool show_progress_bar = true
-);
-
-Rcpp::DataFrame calculate_modes_terraneous (
+Rcpp::List calculate_modes_terraneous (
     const Rcpp::DataFrame &coordinate_table,
     const spatial::coordinate_t &min_point_height_above_ground,
     const Rcpp::List &ground_height_grid_data,
@@ -60,21 +51,11 @@ Rcpp::DataFrame calculate_modes_terraneous (
     const double crown_height_to_tree_height,
     const spatial::distance_t &centroid_convergence_distance,
     const int max_num_centroids_per_mode,
-    const bool show_progress_bar = true
+    const bool also_return_centroids,
+    const bool show_progress_bar
 );
 
-Rcpp::List calculate_modes_plus_centroids_terraneous (
-    const Rcpp::DataFrame &coordinate_table,
-    const spatial::coordinate_t &min_point_height_above_ground,
-    const Rcpp::List &ground_height_grid_data,
-    const double crown_diameter_to_tree_height,
-    const double crown_height_to_tree_height,
-    const spatial::distance_t &centroid_convergence_distance,
-    const int max_num_centroids_per_mode,
-    const bool show_progress_bar = true
-);
-
-Rcpp::DataFrame calculate_modes_flexible (
+Rcpp::List calculate_modes_flexible (
     const Rcpp::DataFrame &coordinate_table,
     const spatial::coordinate_t &min_point_height_above_ground,
     const Rcpp::List &ground_height_data,
@@ -82,18 +63,8 @@ Rcpp::DataFrame calculate_modes_flexible (
     const Rcpp::List &crown_height_to_tree_height_data,
     const spatial::distance_t &centroid_convergence_distance,
     const int max_num_centroids_per_mode,
-    const bool show_progress_bar = true
-  );
-
-Rcpp::List calculate_modes_plus_centroids_flexible (
-    const Rcpp::DataFrame &coordinate_table,
-    const spatial::coordinate_t &min_point_height_above_ground,
-    const Rcpp::List &ground_height_data,
-    const Rcpp::List &crown_diameter_to_tree_height_data,
-    const Rcpp::List &crown_height_to_tree_height_data,
-    const spatial::distance_t &centroid_convergence_distance,
-    const int max_num_centroids_per_mode,
-    const bool show_progress_bar = true
+    const bool also_return_centroids,
+    const bool show_progress_bar
 );
 
 namespace ams3d_R_interface_constants
@@ -104,7 +75,7 @@ namespace ams3d_R_interface_constants
      *      performance drop in R (possibly because the R console cannot handle
      *      too frequent updates as easily).
      */
-    inline constexpr std::size_t num_modes_per_tick{ 10000 };
+    inline constexpr std::size_t num_modes_per_tick{ 2000 };
 }
 
 namespace ams3d_R_interface_util
@@ -115,18 +86,29 @@ namespace ams3d_R_interface_util
 
     RProgress::RProgress create_progress_bar( double total );
 
+    Rcpp::List create_return_data (
+        const bool also_return_centroids,
+        const std::vector< spatial::point_3d_t > &modes,
+        const std::vector< spatial::point_3d_t > &centroids,
+        const std::vector< int > &point_indices
+    );
+
+    spatial::Raster< double > convert_list_argument_to_double_raster (
+        const Rcpp::List &list
+    );
+
     /** If \p list contains an element named "value", a
      *      Single_value_pseudo_raster< double > is created with the value
      *      stored in that element and returned. Otherwise, a Raster< double >
      *      object is created from raster data stored in \p list.
      */
     std::unique_ptr< spatial::I_Raster< double > >
-    convert_list_argument_to_raster_double (
+    convert_list_argument_to_double_raster_ptr (
         const Rcpp::List &list
-      );
+    );
 
 //     template< typename T >
-//     std::unique_ptr< spatial::I_Raster< T > > convert_list_argument_to_raster (
+//     std::unique_ptr< spatial::I_Raster< T > > convert_list_argument_to_raster_ptr (
 //         const Rcpp::List &list
 //     );
 }
