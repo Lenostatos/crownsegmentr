@@ -98,16 +98,16 @@ namespace spatial
         _within_xy_distance_functor (
             const point_2d_t &xy_point, const distance_t distance
         ):
-        _xy_point{ xy_point },
-        _comparable_distance{ _geom::comparable_distance (
-            point_2d_t{ 0, 0 }, point_2d_t{ 0, distance }
-        ) }
+            _xy_point{ xy_point },
+            _comparable_distance{ _geom::comparable_distance (
+                point_2d_t{ 0, 0 }, point_2d_t{ 0, distance }
+            ) }
         {}
 
         bool operator()( const point_3d_t &point ) const
         {
             return _geom::comparable_distance( _get_xy_point( point ), _xy_point )
-            <= _comparable_distance;
+                        <= _comparable_distance;
         }
     };
 

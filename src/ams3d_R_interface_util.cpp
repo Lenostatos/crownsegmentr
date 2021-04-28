@@ -35,13 +35,13 @@ namespace ams3d_R_interface_util
         Rcpp::NumericVector z_coords( coordinate_table[2] );
 
         // Set up an array for point objects.
-        std::vector< spatial::point_3d_t > point_cloud;
-        point_cloud.reserve( coordinate_table.nrow() );
+        std::vector< spatial::point_3d_t > points;
+        points.reserve( coordinate_table.nrow() );
 
         // Create point objects from the coordinate table.
         for (int i{ 0 }; i < coordinate_table.nrow(); i++)
         {
-            point_cloud.push_back (
+            points.push_back (
                 spatial::point_3d_t{
                     x_coords[i],
                     y_coords[i],
@@ -50,7 +50,7 @@ namespace ams3d_R_interface_util
             );
         }
 
-        return point_cloud;
+        return points;
     }
 
     RProgress::RProgress create_progress_bar( double total )
@@ -73,7 +73,7 @@ namespace ams3d_R_interface_util
         const Rcpp::List &list
     ) {
         // Get the list elements' names.
-        std::vector< std::string > list_element_names( list.names() );
+        auto list_element_names{ Rcpp::as< std::vector< std::string > >( list.names() ) };
 
         // The following condition reads:
         // If any of the list elements' names are equal to "value".
@@ -106,7 +106,7 @@ namespace ams3d_R_interface_util
 //         const Rcpp::List &list
 //     ) {
 //         // Get the list elements' names.
-//         std::vector< std::string > list_element_names( list.names() );
+//         auto list_element_names{ Rcpp::as< std::vector< std::string > >( list.names() ) };
 //
 //         // The following condition reads:
 //         // If any of the list elements' names are equal to "value".
