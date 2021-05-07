@@ -1,6 +1,6 @@
 Package: crownsegmentr
 Title: Tree Crown Segmentation in Airborne LiDAR Data
-Version: 0.4.3
+Version: 0.4.4
 Authors@R: c(
     person("Leon", "Steinmeier",
         role = c("aut", "cre", "cph"), 
@@ -22,18 +22,18 @@ Depends:
     R (>= 3.0.2)
 Imports:
     assertthat,
-    Rcpp,
     data.table,
     dbscan,
     lidR (>= 3.0.0),
     methods,
     raster,
+    Rcpp,
     sf
 LinkingTo:
     BH (>= 1.69.0-1),
-    Rcpp,
-    progress
+    progress,
+    Rcpp
 SystemRequirements: C++17, GNU make
 Suggests:
-    testthat,
-    future
+    future,
+    testthat

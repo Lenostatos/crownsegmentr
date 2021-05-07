@@ -34,6 +34,10 @@ namespace ams3d
         _radius{ crown_diameter_to_tree_height * _center_height_initial * 0.5 },
         _height{ crown_height_to_tree_height * _center_height_initial * 0.75 },
 
+        _half_height        { _height * 0.5 },
+        _half_height_squared{ std::pow( _half_height, 2 ) },
+        _radius_squared     { std::pow(_radius, 2) },
+
         // The kernel is positioned vertically asymmetric around center.
         _top_height   { _center_height_initial + _height * 2.0/3.0 },
         _center_height{ _top_height - _height * 0.5 },
@@ -62,6 +66,10 @@ namespace ams3d
             * 0.75
         },
 
+        _half_height        { _height * 0.5 },
+        _half_height_squared{ std::pow( _half_height, 2 ) },
+        _radius_squared     { std::pow(_radius, 2) },
+
         // The kernel is positioned vertically asymmetric around center.
         _top_height   { _center_height_initial + _height * 2.0/3.0 },
         _center_height{ _top_height - _height * 0.5 },
@@ -79,24 +87,24 @@ namespace ams3d
         );
     }
 
-    spatial::distance_t _Kernel::_calculate_relative_horizontal_distance_of_center_to (
+    spatial::distance_t
+    _Kernel::_calculate_squared_relative_horizontal_distance_of_center_to (
         const spatial::point_3d_t &point
     ) const
     {
-        spatial::distance_t absolute_distance {
-            spatial::distance( _xy_center, spatial::get_xy_point( point ) )
-        };
-        return absolute_distance / _radius;
+        return (
+            std::pow( spatial::get_x( _xy_center ) - spatial::get_x( point ), 2 )
+          + std::pow( spatial::get_y( _xy_center ) - spatial::get_y( point ), 2 )
+        ) / _radius_squared;
     }
 
-    spatial::distance_t _Kernel::_calculate_relative_vertical_distance_of_center_to (
+    spatial::distance_t
+    _Kernel::_calculate_squared_relative_vertical_distance_of_center_to (
         const spatial::point_3d_t &point
     ) const
     {
-        spatial::distance_t absolute_distance {
-            std::abs( _center_height - spatial::get_z( point ) )
-        };
-        return absolute_distance / (_height * 0.5);
+        return std::pow( _center_height - spatial::get_z( point ), 2 )
+            / _half_height_squared;
     }
 
     double _Kernel::_calculate_point_weight_of (
@@ -104,11 +112,11 @@ namespace ams3d
     ) const
     {
         return
-            _math_functions::gauss (
-                _calculate_relative_horizontal_distance_of_center_to( point )
+            _math_functions::gauss_unsquared (
+                _calculate_squared_relative_horizontal_distance_of_center_to( point )
             )
-            * _math_functions::epanechnikov (
-                _calculate_relative_vertical_distance_of_center_to( point )
+          * _math_functions::epanechnikov_unsquared (
+                _calculate_squared_relative_vertical_distance_of_center_to( point )
             );
     }
 

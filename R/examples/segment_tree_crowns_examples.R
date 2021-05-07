@@ -49,7 +49,7 @@ segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
 plot_segmented_point_cloud(segmented_point_cloud)
 
 
-# Segment Terraneous Point Clouds -----------------------------------------
+# Segment Terraneous (i.e. Non-Normalized) Point Clouds -------------------
 
 terraneous_point_cloud <- lidR::readLAS(system.file(
   "extdata/Topography.laz", package = "lidR"

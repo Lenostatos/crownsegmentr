@@ -56,7 +56,7 @@ namespace spatial
         // This is a "magic number" guessed from experience
         // TODO make more meaningful estimates based on the point cloud density
         // Keep in mind that the default allocation strategy of std::vectors is
-        // likely quadratic. I.e. if you reserve a capacity of 1000 at the
+        // likely quadratic. I.e. if you reserve a capacity of e.g. 1000 at the
         // beginning, the vector will allocate twice as much (2000) when it is
         // asked to insert the 1001th element. When it is asked to insert the
         // 2001th element it will allocate capacity for 4000 elements and so on.
@@ -69,7 +69,7 @@ namespace spatial
 
         // Query the point cloud.
         point_cloud.query (
-            _geom::index::intersects( cylinder_box )
+                   _geom::index::intersects( cylinder_box )
                 && _geom::index::satisfies( within_xy_distance ),
             std::back_inserter( intersecting_points )
         );

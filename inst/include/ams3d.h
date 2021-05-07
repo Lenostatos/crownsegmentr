@@ -77,6 +77,12 @@
  *  the relative distance to the kernel's center.
  *      In this implementation the relative vertical distance to the kernel's
  *  center is calculated directly.
+ *      Also when passing relative distances to the Gaussian and Epanechnikov
+ *  functions some redundant calculations were omitted. I.e. calculating
+ *  distances requires to square values and then take the square root of them.
+ *  However, since the profile functions square their arguments anyways, the
+ *  distance calculations directly pass squared values to the Gaussian and
+ *  Epanechnikov functions.
  */
 namespace ams3d
 {
@@ -247,6 +253,13 @@ namespace ams3d
         const spatial::distance_t _radius;
         /** Distance between kernel's top and bottom. */
         const spatial::distance_t _height;
+
+        // The following values are computed upon kernel construction because
+        // they are used frequently during the centroid calculation.
+        const spatial::distance_t _half_height;
+        const spatial::distance_t _half_height_squared;
+        const spatial::distance_t _radius_squared;
+
         /** Absolute height of the kernel's top end. */
         const spatial::coordinate_t _top_height;
         /** Absolute height of the kernel's center. */
@@ -261,23 +274,25 @@ namespace ams3d
             const spatial::index_for_3d_points_t &point_cloud
         ) const;
 
-        /** Calculate \p point's distance to the kernel's center on the
-         *  x-y-plane, normalized with the kernel's radius.
+        /** Calculate \p point's squared distance to the kernel's center on the
+         *  x-y-plane, normalized with the kernel's squared radius.
          *
          *  Analogous to the argument to the function g^s in equation (15)
          *  in Ferraz et al. 2012.
          */
-        spatial::distance_t _calculate_relative_horizontal_distance_of_center_to (
+        spatial::distance_t
+        _calculate_squared_relative_horizontal_distance_of_center_to (
             const spatial::point_3d_t &point
         ) const;
 
-        /** Calculate \p point's distance to the kernel center along the
-         *  z-axis, normalized with half the kernel's height.
+        /** Calculate \p point's squared distance to the kernel center along the
+         *  z-axis, normalized with half the kernel's height squared.
          *
          *  Analogous to parts of equation (13) and (14) in
          *  Ferraz et al. 2012.
          */
-        spatial::distance_t _calculate_relative_vertical_distance_of_center_to (
+        spatial::distance_t
+        _calculate_squared_relative_vertical_distance_of_center_to (
             const spatial::point_3d_t &point
         ) const;
 
@@ -371,22 +386,23 @@ namespace ams3d
 
     namespace _math_functions
     {
-        inline constexpr double gaussian_gamma{-5};
+        inline constexpr double gaussian_gamma{ -5 };
 
-        /** The gaussian function f(x) = exp(gaussian_gamma * x^2).
+        /** The gaussian function f(x) = exp(gaussian_gamma * x^2) but without
+         *      squaring x.
          *
          *  Analogous to equation (11) in Ferraz et al. 2012.
          */
-        inline double gauss( const double x ) {
-            return std::exp( gaussian_gamma * std::pow(x, 2) );
+        inline double gauss_unsquared( const double x ) {
+            return std::exp( gaussian_gamma * x );
         }
 
-        /** The epanechnikov distribution function f(x) = 1 - x^2 .
+        /** The epanechnikov function f(x) = 1 - x^2 but without squaring x.
          *
          *  Analogous to parts of equation (14) in Ferraz et al. 2012.
          */
-        inline double epanechnikov( const double x ) {
-            return 1 - std::pow( x, 2 );
+        inline double epanechnikov_unsquared( const double x ) {
+            return 1 - x;
         }
     }
 }

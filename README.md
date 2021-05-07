@@ -1,5 +1,5 @@
 # crownsegmentr
-An R package with a C++ implementation of the AMS3D algorithm [(Ferraz et. al, 2016)](#ferraz2016) for tree crown segmentation in airborne lidar data. For a general description of how the tree segmentation works, see the documentation of the [`segment_tree_crowns` generic](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R). Pseudo code of the AMS3D algorithm is listed [below](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/README.md#pseudo-code-of-the-ams3d-algorithm).
+crownsegmentr is an R package with a C++ implementation of the AMS3D algorithm [(Ferraz et. al, 2016)](#ferraz2016) for tree crown segmentation in airborne lidar data. For a general description of how the tree segmentation works, see the documentation of the [`segment_tree_crowns`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R) generic. Pseudo code of the AMS3D algorithm is listed [below](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/README.md#pseudo-code-of-the-ams3d-algorithm).
 
 ## Code Structure
 The code base is split into an R "front-end" and a C++ "back-end".
@@ -8,22 +8,22 @@ The code base is split into an R "front-end" and a C++ "back-end".
 The front-end exposes just one R function called [`segment_tree_crowns`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R). This function is an [S4 generic](https://adv-r.hadley.nz/s4.html#s4-generics), i.e. it can be passed point cloud data stored in different data types and behaves differently according to that type. More specifically, the generic function chooses one out of several so called "methods" based on the input data type. There currently are methods for
 
 - `data.frame`s/`data.table`s,
-- [`lidR::LAS` objects](https://github.com/Jean-Romain/lidR/blob/HEAD/R/Class-LAS.R), and
-- [`lidR::LAScatalog`s](https://github.com/Jean-Romain/lidR/blob/HEAD/R/Class-LAScatalog.R).
+- [`lidR::LAS`](https://github.com/Jean-Romain/lidR/blob/HEAD/R/Class-LAS.R) objects, and
+- [`lidR::LAScatalog`](https://github.com/Jean-Romain/lidR/blob/HEAD/R/Class-LAScatalog.R)s.
 
 All of these methods just deal with specifics of their data type. The actual segmentation is done by the internal core function [`segment_tree_crowns_core`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns_core.R), which is used by the `data.frame`/`data.table` and `lidR::LAS` methods. The `lidR::LAScatalog` method internally calls the `lidR::LAS` method.
 
-#### `segment_tree_crowns_core`
-This function performs the segmentation by first calling the C++ back-end to calculate modes and by then clustering these modes with the DBSCAN algorithm (as implemented in the [`dbscan::dbscan` function](https://cran.r-project.org/package=dbscan)). It takes point cloud data in the tabular form of a `data.frame` or `data.table` and returns a list with at most three elements. The first element always contains a vector of crown IDs with one ID for each point (i.e. row) in the input data. The second and third elements are optional and contain mode and centroid coordinates together with crown IDs and (row) indices of the points they belong to.
+#### segment_tree_crowns_core
+This function performs the segmentation by first calling the C++ back-end to calculate modes and by then clustering these modes with the DBSCAN algorithm (as implemented in the [`dbscan::dbscan`](https://cran.r-project.org/package=dbscan) function). It takes point cloud data in the tabular form of a `data.frame` or `data.table` and returns a list with at most three elements. The first element always contains a vector of crown IDs with one ID for each point (i.e. row) in the input data. The second and third elements are optional and contain mode and centroid coordinates together with crown IDs and (row) indices of the points they belong to.
 
-#### `data.frame`/`data.table` Method
+#### data.frame/data.table Method
 This method just calls the core function and binds the returned crown IDs to the input table. It returns this extended table and, if requested, also the modes and/or centroids returned by the core function.
 
-#### `lidR::LAS` Method
-Similar to the `data.frame`/`data.table` method in that it extends the input object with a crown ID attribute and, if requested, returns the modes and centroids as separate `lidR::LAS` objects. The mode and centroid objects are assigned the metadata of the input point cloud.
+#### lidR::LAS Method
+Similar to the `data.frame`/`data.table` method in that it extends the input object with a crown ID attribute and, if requested, returns the modes and centroids as separate `lidR::LAS` objects. The mode and centroid objects are assigned the metadata of the input object.
 
-#### `lidR::LAScatalog` Method
-For context: The [`lidR` R package](https://cran.r-project.org/package=lidR) offers a framework for processing point clouds of large areas, possibly stored in multiple files and referenced by so called [`LAScatalog`s](https://cran.r-project.org/package=lidR/vignettes/lidR-LAScatalog-class.html). `LAScatalog`s organize point clouds in adjacent chunks which are processed individually. The chunks each get a buffer area around them so that edge effects can be accounted for. In the case of individual tree segmentation, edge effects would be that tree crowns are cut off at the edge of a chunk when not using a buffer. Parallel processing of the chunks is also supported.
+#### lidR::LAScatalog Method
+For context: The [`lidR` R package](https://cran.r-project.org/package=lidR) offers a framework for processing point clouds of large areas, possibly stored in multiple files and referenced by so called [`LAScatalog`](https://cran.r-project.org/package=lidR/vignettes/lidR-LAScatalog-class.html)s. `LAScatalog`s organize point clouds in adjacent chunks which are processed individually. The chunks each get a buffer area around them so that edge effects can be accounted for. In the case of individual tree segmentation, edge effects would be that tree crowns are cut off at the edge of a chunk when not using a buffer. Parallel processing of the chunks is also supported.
 
 The `segment_tree_crowns` method for `lidR::LAScatalog`s internally defines a function which segments a chunk of a `LAScatalog`. This function is then applied to all chunks of the `LAScatalog` provided by the user. The "chunk function" first passes the chunk to the `lidR::LAS` method. Afterwards, it excludes both tree crowns and unsegmented points in the buffer area. Since crown IDs overlap across chunks (the IDs in each chunk start at 1), the chunk function also calculates unique replacements for the crown IDs based on the apices' absolute coordinates.
 
@@ -39,13 +39,26 @@ The back-end is a small C++ library which implements the AMS3D algorithm. The co
 - `namespace ams3d`: Functionality for calculating a single mode with the AMS3D algorithm ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d.h)), and
 - `namespace spatial`: a facade to the [Boost Geometry](https://www.boost.org/doc/libs/1_75_0/libs/geometry/doc/html/geometry/introduction.html) library which provides e.g. the spatial index used for finding points inside cylinders ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial.h)).
 
-There is also some interface code outside of any namespace called "ams3d_R_interface" ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d_R_interface.h), main sources [1](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_normalized.cpp),
-[2](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_terraneous.cpp),
-[3](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_flexible.cpp), and [utility source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_util.cpp)). This code loops over the points which it gets from R and calls the functionality exposed by `ams3d` and `spatial` to calculate modes for these points. This interface is not contained in any namespace, since this is a requirement of the [`Rcpp`](https://cran.r-project.org/package=Rcpp) package which is used to actually connect the interface to R. It is also the only part of the C++ code which calls R-specific functions (a.o. it manages a progress bar provided by the [R package `progress`](https://cran.r-project.org/package=progress)). By separating the core functionality from the R-specific C++ code it is possible to use the core functionality with other C++ code when not using R.
+There is also some R interface code outside of any namespace called 
+
+- `ams3d_R_interface` ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d_R_interface.h)).
 
 *Note*: The namespaces `ams3d` and `spatial` contain internal functions, classes, etc. which should not be used in other namespaces. These internal components are indicated by an underscore at the beginning of their name.
 
-#### `namespace ams3d`
+#### ams3d_R_interface
+This code contains the C++ functions that are callable from R. They are not contained in any namespace, since this is a requirement of the [`Rcpp`](https://cran.r-project.org/package=Rcpp) package which does the actual exposition to R. The functions are
+
+- `calculate_modes_normalized` ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_normalized.cpp)) for processing normalized point clouds,
+- `calculate_modes_terraneous` ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_terraneous.cpp)) for processing non-normalized point clouds, and
+- `calculate_modes_flexible` ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_flexible.cpp)) for processing both normalized and non-normalized while possibly also using rasters for the crown diameter and crown height to tree height parameters.
+
+They are all doing basically the same thing, which is looping over points they get from R and call the functionality exposed by `ams3d` and `spatial` to calculate modes for these points. 
+
+In addition, there are also some helper functions in the `namespace ams3d_R_interface_util` ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_util.cpp)).
+
+The `ams3d_R_interface` is the only part of the C++ code which calls R-specific functions (a.o. it manages a progress bar provided by the R package [`progress`](https://cran.r-project.org/package=progress)). By separating the core functionality from the R-specific C++ code it is possible to use the core functionality with other C++ code when not using R.
+
+#### namespace ams3d
 This namespace only exposes two functions ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d.h)):
 
 - `calculate_a_single_mode`
@@ -61,8 +74,8 @@ There is also an internal `_Kernel` class ([source](https://github.com/Lenostato
 
 There is one more very small internal namespace in `ams3d` called `_math_functions` that contains the gaussian and epanechnikov functions used for weighing the points inside a cylinder during centroid calculation.
 
-#### `namespace spatial`
-This namespace mainly exposes functionality of and based on [`boost::geometry`](https://www.boost.org/doc/libs/1_75_0/libs/geometry/doc/html/index.html) for dealing with point data. Most of this functionality consists of data types ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_types.h)) but there are also some functions and one functor ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_util.h) and [source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/spatial_util.cpp)). Additionally, there is some simple raster functionality ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_raster.h)) and a few custom iterators for inserting points into the spatial index ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_index_creation.h)) provided by the Boost Geometry library (an R*-tree).
+#### namespace spatial
+This namespace mainly exposes functionality of and based on the C++ library [`Boost Geometry`](https://www.boost.org/doc/libs/1_75_0/libs/geometry/doc/html/index.html) for dealing with point data. Most of this functionality consists of data types ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_types.h)) but there are also some functions and one functor ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_util.h) and [source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/spatial_util.cpp)). Additionally, there is some raster functionality ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_raster.h)) and a few custom iterators ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_index_creation.h)) for inserting points into the spatial index provided by the Boost Geometry library (an R*-tree).
 
 The data types are:
 
@@ -72,17 +85,18 @@ The data types are:
 - `index_for_3d_points_t` for R*-tree index structures, and
 - `box_t` for 3D boxes.
 
-A few simple functions are directly forwarded from `boost::geometry`:
+A few simple functions of `boost::geometry` are directly forwarded:
 
-- `distance( geometry1, geometry2 )` returns the distance between two geometric objects and
-- `get_x( point )`, `get_y( point )`, and `get_z( point )` return the respective coordinate value of a point.
+- `distance( geometry1, geometry2 )` returns the distance between two geometric objects,
+- `get_x( point )`, `get_y( point )`, and `get_z( point )` return the respective coordinate value of a point, and
+- `get_xy_point( point )` returns a point's xy-coordinates as a 2D point.
 
 Exposed functions with own logic are
 
 - `get_points_intersecting_vertical_cylinder( <cylinder dimensions and an index structure> )` which searches an R*-tree index and
 - `weighted_mean_of( points, weights )` which calculates a weighted average position of a collection of points.
 
-In addition there is an internal functor class called `_within_xy_distance_functor` whose objects are needed for queries to the R*-tree index. Functors are function objects, i.e. objects with a `()`-operator that makes them usable like functions.
+In addition there is an internal functor class called `_within_xy_distance_functor` whose objects are needed for queries to the R*-tree index. Functors are function objects, i.e. objects with a `()`-operator, making it possible to use such an object like a function.
 
 For handling raster data in the C++ back-end, a small set of three raster classes was set up ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_raster.h)):
 
