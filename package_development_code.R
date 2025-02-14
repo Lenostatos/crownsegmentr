@@ -19,33 +19,43 @@
 # see <http://www.gnu.org/licenses/>.
 
 # Set up renv for package management
-install.packages("remotes")
-remotes::install_github("rstudio/renv")
+install.packages("renv")
 renv::init()
 
 # Install packages needed for development
-install.packages(c("roxygen2", "testthat", "knitr"))
-remotes::install_github("r-lib/devtools")
-remotes::install_github("r-lib/usethis")
-
+install.packages(c("devtools", "roxygen2", "testthat", "knitr"))
 install.packages("styler")
 
 # Create bare-bones package structure
-usethis::create_package(".")
+usethis::create_tidy_package(".")
 
 # Ignore this file
 usethis::use_build_ignore("package_development_code.R")
 
+# Use git
+usethis::use_git(message = "")
+
 # Add a license
 usethis::use_gpl3_license(name = "Leon Steinmeier")
 
-# Install packages that this package uses
+# Add a README
+usethis::use_readme_md()
+
+# Use unit tests
+usethis::use_testthat()
+
+# Use C++ with Rcpp
+usethis::use_rcpp()
+
+usethis::use_r(name = "crownsegmentr-package.R")
+# The following stackoverflow post provides valuable info on the Makevars file:
+# https://stackoverflow.com/questions/43597632/understanding-the-contents-of-the-makevars-file-in-r-macros-variables-r-ma
+
+# Use other packages
 usethis::use_package("assertthat")
 
-install.packages("dbscan")
 usethis::use_package("dbscan")
 
-install.packages("data.table")
 usethis::use_package("data.table")
 
 usethis::use_package("BH", type = "LinkingTo")
@@ -55,12 +65,7 @@ usethis::use_package("methods")
 usethis::use_package("lidR")
 usethis::use_package("future", type = "Suggests")
 
-usethis::use_rcpp()
-usethis::use_r(name = "crownsegmentr-package.R")
-
-# The following stackoverflow post provides valuable info on the Makevars file:
-# https://stackoverflow.com/questions/43597632/understanding-the-contents-of-the-makevars-file-in-r-macros-variables-r-ma
-
+# Create R files
 usethis::use_r(name = "try_to_extract_coordinate_data.R")
 
 usethis::use_r(name = "segment_tree_crowns.R")
@@ -87,3 +92,4 @@ usethis::use_r(name = "segment_tree_crowns.R")
 #   of the package that can be installed on any OS as long as the required
 #   compiler toolchain is installed (RTools on Windows and Mac OS and something
 #   equivalent on Linux)
+# + use devtools::dev_sitrep() from time to time to check for dependency updates

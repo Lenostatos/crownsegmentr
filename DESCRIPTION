@@ -1,0 +1,26 @@
+Package: crownsegmentr
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Leon", "Steinmeier",
+        role = c("aut", "cre"), 
+        email = "Leon.Steinmeier@posteo.net",
+        comment = c(ORCID = "0000-0001-9040-636X", "Created the package as part of his master thesis.")),
+    person("Nikolai", "Knapp", 
+        role = c("aut"), 
+        email = "nikolai.knapp@thuenen.de",
+        comment = "Initialized and motivated the development of the package and provided an R draft of the AMS3D algorithm."))
+Description: Provides a function that performs the adaptive mean shift algorithm
+    for individual tree crown delineation in 3D point clouds as proposed by 
+    Ferraz et. al, 2016.
+License: GPL (>= 3)
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+LinkingTo: 
+    Rcpp
+Imports: 
+    Rcpp
