@@ -18,13 +18,30 @@
 # along with crownsegmentr in a file called "COPYING". If not,
 # see <http://www.gnu.org/licenses/>.
 
+
+# Maintenance -------------------------------------------------------------
+
+# For conveniently updating version numbers:
+usethis::use_version()
+
+# Use X to do Y:
+# + Use usethis::use_tidy_style() to style all code according to the tidyverse
+#   style guide.
+# + Use devtools::dev_sitrep() from time to time to check for dependency
+#   updates.
+# + Use usethis::use_tidy_description() to format DESCRIPTION.
+
+
+# Initial development -----------------------------------------------------
+
 # Set up renv for package management
 install.packages("renv")
 renv::init()
 
 # Install packages needed for development
-install.packages(c("devtools", "roxygen2", "testthat", "knitr"))
-install.packages("styler")
+install.packages(c("devtools", "roxygen2", "knitr", "styler"))
+
+usethis::use_testthat(3)
 
 # Create bare-bones package structure
 usethis::create_tidy_package(".")
@@ -36,13 +53,34 @@ usethis::use_build_ignore("package_development_code.R")
 usethis::use_git(message = "")
 
 # Add a license
-usethis::use_gpl3_license(name = "Leon Steinmeier")
+usethis::use_gpl_license(version = 3)
+
+# Add author metadata
+usethis::use_author("Leon", "Steinmeier",
+  email = "Leon.Steinmeier@posteo.net",
+  comment = c(ORCID = "0000-0001-9040-636X", "Created the package as part of his master thesis."),
+  role = c("aut", "cre")
+)
+
+usethis::use_author("Nikolai", "Knapp",
+  email = "nikolai.knapp@thuenen.de",
+  comment = "Initialized and motivated the development of the package and provided an R draft of the AMS3D algorithm.",
+  role = "aut"
+)
+
+# Add citation information
+usethis::use_citation()
+# Read the ?bibentry help topic on how to fill in this information.
 
 # Add a README
 usethis::use_readme_md()
 
 # Use unit tests
 usethis::use_testthat()
+
+# Require R version with new enough C++ version support
+usethis::use_package("R", type = "Depends", min_version = "4.0.0")
+# |> operator available from R 4.1.0 onward
 
 # Use C++ with Rcpp
 usethis::use_rcpp()
@@ -52,18 +90,26 @@ usethis::use_r(name = "crownsegmentr-package.R")
 # https://stackoverflow.com/questions/43597632/understanding-the-contents-of-the-makevars-file-in-r-macros-variables-r-ma
 
 # Use other packages
+usethis::use_package("BH", type = "LinkingTo", min_version = "1.75.0-0")
+
+usethis::use_package("progress", type = "LinkingTo")
+
 usethis::use_package("assertthat")
+usethis::use_import_from("assertthat", "assert_that")
+
+usethis::use_package("methods")
 
 usethis::use_package("dbscan")
 
 usethis::use_package("data.table")
 
-usethis::use_package("BH", type = "LinkingTo")
-
-usethis::use_package("methods")
+usethis::use_package("terra")
 
 usethis::use_package("lidR")
+
 usethis::use_package("future", type = "Suggests")
+
+usethis::use_tidy_description()
 
 # Create R files
 usethis::use_r(name = "try_to_extract_coordinate_data.R")
@@ -73,23 +119,31 @@ usethis::use_r(name = "segment_tree_crowns.R")
 # Make usethis functions available on the command line without package prefix.
 # usethis::use_usethis()
 
+# Package development workflow summary:
+# + devtools::document()
+# + devtools::load_all()
+# + Run some examples interactively.
+# + devtools::test()
+# + devtools::check()
+# Source: https://r-pkgs.org/code.html#constant-health-checks
+
 # Use X after doing Y:
+# + Use devtools::document() after adding functions in order to add those
+#   functions to the NAMESAPCE file.
 # + Use devtools::load_all() or Ctrl+Shift+L after changing R code to reinstall
-#   package
+#   package.
 # + Use "Install and restart" in the Build tab or Ctrl+Shift+B after changing
 #   C/C++ code in order to do perform an installation with source compilation.
+# + Use devtools::check() to regularly perform R CMD check
 # + Use devtools::document() or Ctrl+Shift+D after changing documentation.
 # + Use usethis::use_test() when editing an R source file in order to create a
 #   test file (or switch to it if it already exists).
 # + Use usethis::use_r() when editing a test file in order to switch back to the
 #   respective R source file.
-# + Use usethis::use_tidy_style() to style all code according to the tidyverse
-#   style guide.
 # + Use devtools::build(binary = TRUE) after updating the package in order to
 #   create a compiled bundle of the package that can be installed without
 #   devtools and RTools, but only on the OS that it was compiled on.
 # + Use devtools::build() after updating the package in order to create a bundle
 #   of the package that can be installed on any OS as long as the required
 #   compiler toolchain is installed (RTools on Windows and Mac OS and something
-#   equivalent on Linux)
-# + use devtools::dev_sitrep() from time to time to check for dependency updates
+#   equivalent on Linux).
