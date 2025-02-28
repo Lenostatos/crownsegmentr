@@ -23,6 +23,7 @@ Imports:
     Rcpp (>= 0.11.0),
     terra
 Suggests: 
+    future,
     testthat (>= 3.0.0)
 LinkingTo: 
     BH (>= 1.75.0-0),
