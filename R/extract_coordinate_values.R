@@ -18,13 +18,17 @@
 # along with crownsegmentr in a file called "COPYING". If not,
 # see <http://www.gnu.org/licenses/>.
 
+
 #' Find all exact matches with at least one of the provided patterns
 #'
 #' @param patterns Objects which will be matched to `targets` via the `==`
 #'   operator.
+#' @param targets Objects which will be matched to each of the `patterns`.
 #'
 #' @returns A boolean vector of the same length as `targets`.
 match_any <- function(patterns, targets) {
+  assert_that(is.vector(patterns), is.vector(targets))
+
   matches <- list()
 
   # match each pattern
@@ -50,14 +54,12 @@ match_any <- function(patterns, targets) {
 #' possible, columns which are named x/X, y/Y, or z/Z.
 #'
 #' @param coordinate_table An object which is valid according to
-#'   [validate_coordinate_table()] (i.e. data.frame-like and contains at least
+#'   `validate_coordinate_table()` (i.e. data.frame-like and contains at least
 #'   three numeric columns).
 #'
 #' @returns A [base::data.frame()] with just three columns that are expected to
 #'   hold the x-, y-, and z-coordinates in that order.
 extract_coordinate_values <- function(coordinate_table) {
-  # coordinate_table <- data.frame(x = 2, Y = 1, b = c(T, F), foo = c(5, 65))
-
   # Define coordinate column names to search for
   xyz_chars <- list(x = c("x", "X"), y = c("y", "Y"), z = c("z", "Z"))
 
@@ -116,5 +118,5 @@ extract_coordinate_values <- function(coordinate_table) {
   }
 
   # Return the columns which are assumed to hold the coordinate values
-  return(as.data.frame(coordinate_table[is_numeric_col][xyz_numeric_col_pos]))
+  return(as.data.frame(coordinate_table)[is_numeric_col][xyz_numeric_col_pos])
 }

@@ -1,9 +1,7 @@
 ## usethis namespace: start
+#' @importFrom assertthat assert_that
+#' @importFrom data.table :=
 #' @importFrom Rcpp sourceCpp
-## usethis namespace: end
-NULL
-
-## usethis namespace: start
 #' @useDynLib crownsegmentr, .registration = TRUE
 ## usethis namespace: end
 NULL

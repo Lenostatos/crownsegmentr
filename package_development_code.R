@@ -102,6 +102,7 @@ usethis::use_package("methods")
 usethis::use_package("dbscan")
 
 usethis::use_package("data.table")
+usethis::use_import_from("data.table", ":=")
 
 usethis::use_package("terra")
 
