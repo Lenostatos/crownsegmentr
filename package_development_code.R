@@ -106,7 +106,7 @@ usethis::use_import_from("data.table", ":=")
 
 usethis::use_package("terra")
 
-usethis::use_package("lidR")
+usethis::use_package("lidR", min_version = "4.0.0")
 
 usethis::use_package("future", type = "Suggests")
 

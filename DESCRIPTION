@@ -18,7 +18,7 @@ Imports:
     assertthat,
     data.table,
     dbscan,
-    lidR,
+    lidR (>= 4.0.0),
     methods,
     Rcpp (>= 0.11.0),
     terra
