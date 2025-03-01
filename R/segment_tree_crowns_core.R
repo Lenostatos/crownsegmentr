@@ -103,9 +103,9 @@ segment_tree_crowns_core <- function(
   # If either of the crown diameter or crown height to tree height ratios is a
   # raster, convert both of them and the ground height to lists for the C++
   # back-end.
-  if (methods::is(crown_diameter_to_tree_height, "RasterLayer") ||
-    methods::is(crown_height_to_tree_height, "RasterLayer")) {
-    if (methods::is(crown_diameter_to_tree_height, "RasterLayer")) {
+  if (methods::is(crown_diameter_to_tree_height, "SpatRaster") ||
+    methods::is(crown_height_to_tree_height, "SpatRaster")) {
+    if (methods::is(crown_diameter_to_tree_height, "SpatRaster")) {
       crown_diameter_to_tree_height <- crop_raster_with_coordinates_extent(
         crown_diameter_to_tree_height, coordinate_values
       )
@@ -119,7 +119,7 @@ segment_tree_crowns_core <- function(
       )
     }
 
-    if (methods::is(crown_height_to_tree_height, "RasterLayer")) {
+    if (methods::is(crown_height_to_tree_height, "SpatRaster")) {
       crown_height_to_tree_height <- crop_raster_with_coordinates_extent(
         crown_height_to_tree_height, coordinate_values
       )

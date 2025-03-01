@@ -125,7 +125,7 @@ assert_that_raster_has_numeric_values <- function(raster, raster_name) {
     )
   } else {
     assert_that(
-      terra::datatype(crown_diameter_to_tree_height)[1] %in% c("FLT4S", "FLT8S"),
+      terra::datatype(raster)[1] %in% c("FLT4S", "FLT8S"),
       msg = paste(
         raster_name, "does not contain numeric values."
       )

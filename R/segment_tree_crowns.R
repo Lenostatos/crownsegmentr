@@ -625,8 +625,8 @@ methods::setMethod(
         by = crown_id_column_name
       ][
         # filter the apices that are inside the core area
-        bbox@xmin <= X & X < bbox@xmax &
-          bbox@ymin <= Y & Y < bbox@ymax,
+        bbox$xmin <= X & X < bbox$xmax &
+          bbox$ymin <= Y & Y < bbox$ymax,
       ]
       # -> I could use the buffer atrribute here instead but I have observed
       # that lidR sometimes produces duplicated trees on chunk borders and
