@@ -18,6 +18,7 @@
 # along with crownsegmentr in a file called "COPYING". If not,
 # see <http://www.gnu.org/licenses/>.
 
+
 test_that(
   "the any pattern matching works correctly with one pattern",
   {

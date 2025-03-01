@@ -18,6 +18,7 @@
 // along with crownsegmentr in a file called "COPYING". If not,
 // see <http://www.gnu.org/licenses/>.
 
+
 #ifndef SPATIAL_H
 #define SPATIAL_H
 
