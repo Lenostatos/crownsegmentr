@@ -103,11 +103,11 @@ zero.
 \item A \link[terra:SpatRaster-class]{SpatRaster} providing ground heights for the area
 of the (not normalized) \code{point_cloud}.
 \item A list of (ideally named) arguments to the
-\code{\link[lidR:rasterize]{lidR::rasterize_terrain()}} function, which will be used to generate
-a ground height grid from \code{point_cloud}. Currently not supported
-with point clouds stored in \link[=data.frame]{data.frames}. The list should
-not contain an argument to the "las" parameter of
-\code{\link[lidR:rasterize]{lidR::rasterize_terrain()}}.
+\link[lidR:rasterize]{lidR rasterize_terrain()} function, which
+will be used to generate a ground height grid from \code{point_cloud}.
+Currently not supported with point clouds stored in
+\link[=data.frame]{data.frames}. The list should not contain an argument to
+the "las" parameter of \link[lidR:rasterize]{rasterize_terrain()}.
 }
 
 Points will not be segmented wherever ground heights are NA.}
@@ -150,8 +150,9 @@ input point cloud.}
 
 \item{write_crown_id_also_to_file}{\code{TRUE} or \code{FALSE}. When writing
 the returned LAS object to disk, should the IDs of segmented bodies be
-written into that file as well? See \code{\link[lidR:add_attribute]{lidR::add_lasattribute()}}
-for additional details. Will also be used for all attributes of the
+written into that file as well? See the
+\link[lidR:add_attribute]{lidR function add_lasattribute()} for additional
+details. Will also be used for all attributes of the
 \link[lidR:LAS-class]{LAS object(s)} which are returned if \code{also_return_modes}
 and/or \code{also_return_centroids} were set to \code{TRUE}.
 
@@ -163,8 +164,9 @@ IDs of segmented bodies will always be written to these files as well.}
 \item{crown_id_file_description}{A character string. If
 \code{write_crown_id_also_to_file} is set to \code{TRUE} this will be used
 as an additional description of the IDs of segmented bodies when the LAS
-object is written to disk. See the "desc" parameter of
-\code{\link[lidR:add_attribute]{lidR::add_lasattribute()}} for additional details.}
+object is written to disk. See the "desc" parameter of the
+\link[lidR:add_attribute]{lidR function add_lasattribute()} for additional
+details.}
 }
 \value{
 The point cloud which was passed to the function but extended with a
@@ -353,7 +355,7 @@ terraneous_point_cloud <- lidR::readLAS(system.file(
   package = "lidR"
 ))
 
-# Either pass arguments for the lidR::grid_terrain() function
+# Either pass arguments for the lidR::rasterize_terrain() function
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   terraneous_point_cloud,
   crown_diameter_to_tree_height = 0.5,

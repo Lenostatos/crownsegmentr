@@ -92,21 +92,22 @@ The set has to consist of the named elements described in the section
 "Raster argument structure" below.}
 }
 \value{
-A list with either one or two elements. The first element (named
+A list with either one or two elements:
+\itemize{
+\item The first element (named
 "mode_coordinates") contains the modes for all points in the
 \code{coordinate_table}. The modes are stored in a \code{data.frame}
 with three columns that hold the x-, y-, and z-coordinates and they are
 stored in the same order as their respective points in the
 \code{coordinate_table}.
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{The second element (named "centroid_coordinates") is only present if
+\item The second element (named "centroid_coordinates") is only present if
 \code{also_return_centroids} was set to \code{TRUE} and contains the
 centroids calculated during the mode finding process. The centroids are
 stored in a \code{data.frame} with xyz-coordinate columns like the
 modes. To enable grouping of these centroids by the point they belong
 to, there is one additional column (named "point_index") which holds row
 indices of the corresponding points in the \code{coordinate_table}.
-}\if{html}{\out{</div>}}
+}
 }
 \description{
 Employs the 3D adaptive mean shift algorithm (Ferraz et al., 2016) to

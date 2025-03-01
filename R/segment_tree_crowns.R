@@ -55,11 +55,11 @@
 #'   * A [SpatRaster][terra::SpatRaster] providing ground heights for the area
 #'     of the (not normalized) `point_cloud`.
 #'   * A list of (ideally named) arguments to the
-#'     [lidR::rasterize_terrain()] function, which will be used to generate
-#'     a ground height grid from `point_cloud`. Currently not supported
-#'     with point clouds stored in [data.frames][data.frame()]. The list should
-#'     not contain an argument to the "las" parameter of
-#'     [lidR::rasterize_terrain()].
+#'     [lidR rasterize_terrain()][lidR::rasterize_terrain()] function, which
+#'     will be used to generate a ground height grid from `point_cloud`.
+#'     Currently not supported with point clouds stored in
+#'     [data.frames][data.frame()]. The list should not contain an argument to
+#'     the "las" parameter of [rasterize_terrain()][lidR::rasterize_terrain()].
 #'
 #'   Points will not be segmented wherever ground heights are NA.
 #' @param crown_id_column_name A character string. The column or attribute name
@@ -338,8 +338,9 @@ methods::setMethod(
 #'
 #' @param write_crown_id_also_to_file `TRUE` or `FALSE`. When writing
 #'   the returned LAS object to disk, should the IDs of segmented bodies be
-#'   written into that file as well? See [lidR::add_lasattribute()]
-#'   for additional details. Will also be used for all attributes of the
+#'   written into that file as well? See the
+#'   [lidR function add_lasattribute()][lidR::add_lasattribute()] for additional
+#'   details. Will also be used for all attributes of the
 #'   [LAS object(s)][lidR::LAS-class] which are returned if `also_return_modes`
 #'   and/or `also_return_centroids` were set to `TRUE`.
 #'
@@ -351,8 +352,9 @@ methods::setMethod(
 #' @param crown_id_file_description A character string. If
 #'   `write_crown_id_also_to_file` is set to `TRUE` this will be used
 #'   as an additional description of the IDs of segmented bodies when the LAS
-#'   object is written to disk. See the "desc" parameter of
-#'   [lidR::add_lasattribute()] for additional details.
+#'   object is written to disk. See the "desc" parameter of the
+#'   [lidR function add_lasattribute()][lidR::add_lasattribute()] for additional
+#'   details.
 #'
 #' @importClassesFrom lidR LAS
 methods::setMethod(
