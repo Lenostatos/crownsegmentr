@@ -20,7 +20,7 @@ Imports:
     dbscan,
     lidR (>= 4.0.0),
     methods,
-    Rcpp (>= 0.11.0),
+    Rcpp (>= 1.0.0),
     terra
 Suggests: 
     future,
@@ -28,7 +28,7 @@ Suggests:
 LinkingTo: 
     BH (>= 1.75.0-0),
     progress,
-    Rcpp
+    Rcpp (>= 1.0.0)
 Config/testthat/edition: 3
 Contact: Leon.Steinmeier@posteo.net, nikolai.knapp@thuenen.de
 Encoding: UTF-8

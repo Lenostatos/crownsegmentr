@@ -89,6 +89,9 @@ usethis::use_r(name = "crownsegmentr-package.R")
 # The following stackoverflow post provides valuable info on the Makevars file:
 # https://stackoverflow.com/questions/43597632/understanding-the-contents-of-the-makevars-file-in-r-macros-variables-r-ma
 
+usethis::use_package("Rcpp", min_version = "1.0.0")
+usethis::use_package("Rcpp", min_version = "1.0.0", type = "LinkingTo")
+
 # Use other packages
 usethis::use_package("BH", type = "LinkingTo", min_version = "1.75.0-0")
 
