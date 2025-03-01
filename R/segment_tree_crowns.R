@@ -444,6 +444,9 @@ methods::setMethod(
 
       res <- list(segmented_point_cloud = res)
 
+      # For R CMD check which sees variables in data.table syntax as global
+      . <- x <- y <- z <- NULL
+
       if (also_return_modes) {
         # Create a LAS object storing the mode coordinates
         res[["modes"]] <- suppressWarnings(
@@ -617,6 +620,9 @@ methods::setMethod(
         crown_id_file_description
       )
 
+      # For R CMD check which sees variables in data.table syntax as global
+      X <- Y <- Z <- NULL
+
       # Get the apex xy-coordinates and ID of each tree crown
       # Then select only those crowns whose apex lies in the core area
       core_apices <- segmented_las@data[
@@ -632,6 +638,9 @@ methods::setMethod(
       # that lidR sometimes produces duplicated trees on chunk borders and
       # that's what I am trying to prevent here by using the <= and <.
       # TODO Test whether this actually makes a difference.
+
+      # For R CMD check which sees variables in data.table syntax as global
+      buffer <- NULL
 
       # Get the trees and any points with ID == NA in the core area
       # I.e. in the end, trees at the chunk edge will extend into the buffer
@@ -662,6 +671,9 @@ methods::setMethod(
 
       x_scale <- las@header@PHB[["X scale factor"]]
       y_scale <- las@header@PHB[["Y scale factor"]]
+
+      # For R CMD check which sees variables in data.table syntax as global
+      . <- NULL
 
       # Connect the IDs of the core apices with the their respective bitshift
       # IDs

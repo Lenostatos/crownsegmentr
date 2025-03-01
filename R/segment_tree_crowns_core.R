@@ -248,6 +248,9 @@ segment_tree_crowns_core <- function(
       point_index = seq_len(nrow(coordinate_table))
     )
 
+    # For R CMD check which sees variables in data.table syntax as global
+    . <- x <- y <- z <- crown_id <- point_index <- NULL
+
     # Join the crown IDs to the centroid coordinates via the point index using
     # some data.table syntax.
     res[["centroid_coordinates"]] <- data.table::as.data.table(

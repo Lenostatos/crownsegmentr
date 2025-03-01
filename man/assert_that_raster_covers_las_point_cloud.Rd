@@ -2,7 +2,7 @@
 % Please edit documentation in R/validation_functions.R
 \name{assert_that_raster_covers_las_point_cloud}
 \alias{assert_that_raster_covers_las_point_cloud}
-\title{Assert that a raster covers a LAS point cloud}
+\title{Assert that the extent of a raster covers that of a LAS point cloud}
 \usage{
 assert_that_raster_covers_las_point_cloud(raster, las_point_cloud, message)
 }
@@ -15,5 +15,5 @@ assert_that_raster_covers_las_point_cloud(raster, las_point_cloud, message)
 failure.}
 }
 \description{
-Assert that a raster covers a LAS point cloud
+Assert that the extent of a raster covers that of a LAS point cloud
 }

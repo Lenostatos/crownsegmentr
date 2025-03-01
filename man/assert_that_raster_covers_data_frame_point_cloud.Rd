@@ -2,7 +2,7 @@
 % Please edit documentation in R/validation_functions.R
 \name{assert_that_raster_covers_data_frame_point_cloud}
 \alias{assert_that_raster_covers_data_frame_point_cloud}
-\title{Assert that a raster covers a data.frame point cloud}
+\title{Assert that the extent of a raster covers that of a data.frame point cloud}
 \usage{
 assert_that_raster_covers_data_frame_point_cloud(
   raster,
@@ -19,5 +19,5 @@ assert_that_raster_covers_data_frame_point_cloud(
 failure.}
 }
 \description{
-Assert that a raster covers a data.frame point cloud
+Assert that the extent of a raster covers that of a data.frame point cloud
 }

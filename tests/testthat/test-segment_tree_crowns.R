@@ -387,7 +387,9 @@ test_that("The terraneous and flexible C++ back-ends work", {
   )
 
   # The terraneous back-end
-  ground_height_grid <- lidR::rasterize_terrain(test_points, algorithm = lidR::tin())
+  ground_height_grid <- lidR::rasterize_terrain(
+    test_points, algorithm = lidR::tin()
+  )
 
   segmented_points <- crownsegmentr::segment_tree_crowns(
     point_cloud = test_points,
@@ -408,7 +410,7 @@ test_that("The terraneous and flexible C++ back-ends work", {
   # The flexible back-end
   crown_height_to_tree_height_grid <- terra::rast(
     matrix(c(0.5, 1), ncol = 2),
-    crs = lidR::st_crs(point_cloud)$wkt,
+    crs = lidR::st_crs(test_points)$wkt,
     extent = terra::ext(
       lidR::st_bbox(test_points)$xmin,
       lidR::st_bbox(test_points)$xmax,
@@ -431,7 +433,7 @@ test_that("The terraneous and flexible C++ back-ends work", {
 
   crown_diameter_to_tree_height_grid <- terra::rast(
     matrix(c(0.3, 0.8), ncol = 2),
-    crs = lidR::st_crs(point_cloud)$wkt,
+    crs = lidR::st_crs(test_points)$wkt,
     extent = terra::ext(
       lidR::st_bbox(test_points)$xmin,
       lidR::st_bbox(test_points)$xmax,
@@ -447,8 +449,8 @@ test_that("The terraneous and flexible C++ back-ends work", {
   )
 
 
-  # # Plot segmentation results (for manual testing only)
-  #
+  # Plot segmentation results (for manual testing only)
+
   # # Generate Crown Colors
   # crown_colors <- lidR::random.colors(
   #   n = data.table::uniqueN(segmented_points@data$crown_id) - 1
@@ -458,7 +460,7 @@ test_that("The terraneous and flexible C++ back-ends work", {
   # lidR::plot(
   #   lidR::filter_poi(segmented_points, !(Classification %in% c(2, 9))),
   #   color = "crown_id",
-  #   colorPalette = crown_colors,
+  #   pal = crown_colors,
   #   size = 5
   # )
 })

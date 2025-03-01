@@ -310,7 +310,7 @@ plot_segmented_point_cloud <- function(
   # Generate random crown colors
   if (is.null(crown_colors)) {
     crown_colors <- lidR::random.colors(
-      n = length(unique(point_cloud@data[["crown_id"]])) - 1
+      n = length(unique(point_cloud@data[["crown_id"]]))
     )
   }
 
@@ -318,7 +318,7 @@ plot_segmented_point_cloud <- function(
   lidR::plot(
     point_cloud,
     color = "crown_id",
-    colorPalette = crown_colors,
+    pal = crown_colors,
     size = size,
     axis = TRUE
   )
@@ -387,11 +387,13 @@ plot_segmented_point_cloud(segmented_point_cloud)
 # western half and 0.75 in the eastern half
 crown_diameter_to_tree_height_grid <- terra::rast(
   matrix(c(0.25, 0.75), ncol = 2),
-  xmin = lidR::extent(point_cloud)@xmin,
-  xmax = lidR::extent(point_cloud)@xmax,
-  ymin = lidR::extent(point_cloud)@ymin,
-  ymax = lidR::extent(point_cloud)@ymax,
-  crs = lidR::crs(point_cloud)
+  crs = lidR::st_crs(point_cloud)$wkt,
+  extent = terra::ext(
+    lidR::st_bbox(point_cloud)$xmin,
+    lidR::st_bbox(point_cloud)$xmax,
+    lidR::st_bbox(point_cloud)$ymin,
+    lidR::st_bbox(point_cloud)$ymax
+  )
 )
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
