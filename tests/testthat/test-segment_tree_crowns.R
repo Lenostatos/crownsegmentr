@@ -388,7 +388,8 @@ test_that("The terraneous and flexible C++ back-ends work", {
 
   # The terraneous back-end
   ground_height_grid <- lidR::rasterize_terrain(
-    test_points, algorithm = lidR::tin()
+    test_points,
+    algorithm = lidR::tin()
   )
 
   segmented_points <- crownsegmentr::segment_tree_crowns(

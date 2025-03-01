@@ -360,22 +360,21 @@ methods::setMethod(
 methods::setMethod(
   "segment_tree_crowns",
   signature(point_cloud = "LAS"),
-  function(
-      point_cloud,
-      crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
-      segment_crowns_only_above,
-      ground_height,
-      crown_id_column_name,
-      centroid_convergence_distance,
-      max_num_centroids_per_mode,
-      dbscan_neighborhood_radius,
-      min_num_modes_per_neighborhood,
-      verbose = TRUE,
-      also_return_modes = FALSE,
-      also_return_centroids = FALSE,
-      write_crown_id_also_to_file = FALSE,
-      crown_id_file_description = crown_id_column_name) {
+  function(point_cloud,
+           crown_diameter_to_tree_height,
+           crown_height_to_tree_height,
+           segment_crowns_only_above,
+           ground_height,
+           crown_id_column_name,
+           centroid_convergence_distance,
+           max_num_centroids_per_mode,
+           dbscan_neighborhood_radius,
+           min_num_modes_per_neighborhood,
+           verbose = TRUE,
+           also_return_modes = FALSE,
+           also_return_centroids = FALSE,
+           write_crown_id_also_to_file = FALSE,
+           crown_id_file_description = crown_id_column_name) {
     validate_crown_diameter_to_tree_height(
       crown_diameter_to_tree_height,
       point_cloud
@@ -548,19 +547,18 @@ methods::setMethod(
 methods::setMethod(
   "segment_tree_crowns",
   signature(point_cloud = "LAScatalog"),
-  function(
-      point_cloud,
-      crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
-      segment_crowns_only_above,
-      ground_height,
-      crown_id_column_name,
-      centroid_convergence_distance,
-      max_num_centroids_per_mode,
-      dbscan_neighborhood_radius,
-      min_num_modes_per_neighborhood,
-      write_crown_id_also_to_file = TRUE,
-      crown_id_file_description = crown_id_column_name) {
+  function(point_cloud,
+           crown_diameter_to_tree_height,
+           crown_height_to_tree_height,
+           segment_crowns_only_above,
+           ground_height,
+           crown_id_column_name,
+           centroid_convergence_distance,
+           max_num_centroids_per_mode,
+           dbscan_neighborhood_radius,
+           min_num_modes_per_neighborhood,
+           write_crown_id_also_to_file = TRUE,
+           crown_id_file_description = crown_id_column_name) {
     validate_scale_n_offset_are_consistent(point_cloud)
 
     validate_crown_diameter_to_tree_height(
