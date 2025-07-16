@@ -21,7 +21,7 @@
 #'     numeric value (named "value") or the data for a raster of values (see
 #'     section "Raster argument structure" below for how the raster data has to
 #'     be stored in the list). The values indicate the estimated ratio of crown
-#'     length to tree height for the whole plot or individual raster pixels
+#'     height to tree height for the whole plot or individual raster pixels
 #'     respectively.
 #'
 #' @section Raster argument structure:
@@ -54,7 +54,7 @@ calculate_modes_flexible <- function(coordinate_table, min_point_height_above_gr
 #' @param min_point_height_above_ground A single positive number. The minimum
 #'     point height above ground at which the function will calculate modes.
 #' @param crown_diameter_to_tree_height,crown_length_to_tree_height Single
-#'     numbers. Crown diameter and crown length to tree height ratios of the
+#'     numbers. Crown diameter and crown height to tree height ratios of the
 #'     trees expected to be found in the point cloud.
 #' @param centroid_convergence_distance Numeric Scalar. Distance at which it is
 #'     assumed that subsequently calculated centroids have converged to the

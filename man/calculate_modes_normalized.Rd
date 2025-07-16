@@ -11,7 +11,7 @@ calculate_modes_flexible(
   min_point_height_above_ground,
   ground_height_data,
   crown_diameter_to_tree_height_data,
-  crown_height_to_tree_height_data,
+  crown_length_to_tree_height_data,
   centroid_convergence_distance,
   max_num_centroids_per_mode,
   also_return_centroids,
@@ -22,7 +22,7 @@ calculate_modes_normalized(
   coordinate_table,
   min_point_height_above_ground,
   crown_diameter_to_tree_height,
-  crown_height_to_tree_height,
+  crown_length_to_tree_height,
   centroid_convergence_distance,
   max_num_centroids_per_mode,
   also_return_centroids,
@@ -34,7 +34,7 @@ calculate_modes_terraneous(
   min_point_height_above_ground,
   ground_height_grid_data,
   crown_diameter_to_tree_height,
-  crown_height_to_tree_height,
+  crown_length_to_tree_height,
   centroid_convergence_distance,
   max_num_centroids_per_mode,
   also_return_centroids,
@@ -62,7 +62,7 @@ be stored in the list). The values indicate the estimated ratio of crown
 diameter to tree height for the whole plot or individual raster pixels
 respectively.}
 
-\item{crown_height_to_tree_height_data}{A list containing either a single
+\item{crown_length_to_tree_height_data}{A list containing either a single
 numeric value (named "value") or the data for a raster of values (see
 section "Raster argument structure" below for how the raster data has to
 be stored in the list). The values indicate the estimated ratio of crown
@@ -82,7 +82,7 @@ returned as well?}
 \item{show_progress_bar}{Boolean Scalar. Should a progress bar be shown
 during the computation?}
 
-\item{crown_diameter_to_tree_height, crown_height_to_tree_height}{Single
+\item{crown_diameter_to_tree_height, crown_length_to_tree_height}{Single
 numbers. Crown diameter and crown height to tree height ratios of the
 trees expected to be found in the point cloud.}
 
@@ -120,7 +120,7 @@ crown point cloud, that is usually located shortly below the crown apex.
 \item \code{calculate_modes_flexible()}: Can take either a single value or
 raster data for both the ground height and the
 \code{crown_diameter_to_tree_height} and
-\code{crown_height_to_tree_height} parameters.
+\code{crown_length_to_tree_height} parameters.
 
 \item \code{calculate_modes_terraneous()}: Use a ground height raster to find
 modes in a non-normalized point cloud.

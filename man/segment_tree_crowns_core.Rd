@@ -9,7 +9,7 @@ segment_tree_crowns_core(
   segment_crowns_only_above,
   ground_height,
   crown_diameter_to_tree_height,
-  crown_height_to_tree_height,
+  crown_length_to_tree_height,
   verbose,
   centroid_convergence_distance,
   max_num_centroids_per_mode,
@@ -41,7 +41,7 @@ the area of the (not normalized) point cloud stored in
 \code{coordinate_table}.
 }}
 
-\item{crown_diameter_to_tree_height, crown_height_to_tree_height}{Single
+\item{crown_diameter_to_tree_height, crown_length_to_tree_height}{Single
 numbers or \link[terra:SpatRaster-class]{SpatRasters} covering the area of the
 \code{point_cloud}. The values should be approximate crown diameter and crown
 height to tree height ratios of the trees expected to be found in the point
@@ -132,7 +132,7 @@ whose diameter and height are similar to those of the surrounding tree
 crowns. The exact diameter and height are dependent on the cylinder's
 height above ground and are controlled with the two main parameters of the
 algorithm: \code{crown_diameter_to_tree_height} and
-\code{crown_height_to_tree_height}.
+\code{crown_length_to_tree_height}.
 
 The direction of the highest point density is found by calculating the
 average position of all points within the cylinder, the cylinder's so
