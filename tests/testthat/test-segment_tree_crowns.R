@@ -20,13 +20,14 @@
 
 
 # data.frame/data.table method --------------------------------
-test_that("the data.frame/data.table method works", {
 
+test_that("the data.frame/data.table method works", {
   # Pseudo point cloud with just one point
   pseudo_point_cloud <- data.table::data.table(X = 1, Y = 1, Z = 1)
   # Also load real point cloud data
   test_point_cloud_file_path <- system.file(
-    "extdata", "MixedConifer.laz", package = "lidR"
+    "extdata", "MixedConifer.laz",
+    package = "lidR"
   )
   test_point_cloud_header <- lidR::readLASheader(test_point_cloud_file_path)
   test_point_cloud <- lidR::clip_rectangle(
@@ -72,7 +73,7 @@ test_that("the data.frame/data.table method works", {
     ),
     regexp = paste0(
       "^The point cloud data already has a column/attribute with the name ",
-      "'treeID'\\. Please either choose a different argument for the ",
+      "\"treeID\"\\. Please either choose a different argument for the ",
       "crown_id_column_name parameter or modify the point cloud data\\.$"
     )
   )
@@ -134,15 +135,16 @@ test_that("the data.frame/data.table method works", {
   #   colorPalette = crown_colors,
   #   size = 1
   # )
-
 })
 
-# LAS method --------------------------------
-test_that("the LAS method works", {
 
+# LAS method --------------------------------
+
+test_that("the LAS method works", {
   # Load real point cloud data
   test_point_cloud_file_path <- system.file(
-    "extdata", "MixedConifer.laz", package = "lidR"
+    "extdata", "MixedConifer.laz",
+    package = "lidR"
   )
   test_point_cloud_header <- lidR::readLASheader(test_point_cloud_file_path)
   test_point_cloud <- lidR::clip_rectangle(lidR::readLAS(test_point_cloud_file_path),
@@ -201,7 +203,7 @@ test_that("the LAS method works", {
     ),
     regexp = paste0(
       "^The point cloud data already has a column/attribute with the name ",
-      "'treeID'\\. Please either choose a different argument for the ",
+      "\"treeID\"\\. Please either choose a different argument for the ",
       "crown_id_column_name parameter or modify the point cloud data\\.$"
     )
   )
@@ -276,11 +278,14 @@ test_that("the LAS method works", {
   # )
 })
 
-# LAScatalog method -------------------------------------------
-test_that("the LAScatalog method works", {
 
+# LAScatalog method -------------------------------------------
+
+test_that("the LAScatalog method works", {
   # TODO Check whether enabling parallelization like this is CRAN conform
-  future::plan(strategy = future::multisession)
+  # On some machines, using future::multisession without specifying number of
+  # workers produces errors
+  future::plan(strategy = future::multisession(workers = future::availableCores()))
 
   # Load real point cloud data
   test_catalog <- lidR::readLAScatalog(
@@ -323,8 +328,8 @@ test_that("the LAScatalog method works", {
 
 
 # Uniqueness of LAScatalog crown IDs ------------------------------
-test_that("the calculation of unique crown IDs works for LAScatalog", {
 
+test_that("the calculation of unique crown IDs works for LAScatalog", {
   # TODO Stuff seems to work but I haven't found a way to systematically test it
   # yet.
 
@@ -377,14 +382,17 @@ test_that("the calculation of unique crown IDs works for LAScatalog", {
 
 
 # Different C++ back-ends -------------------------------------------------
-test_that("The terraneous and flexible C++ back-ends work", {
 
+test_that("The terraneous and flexible C++ back-ends work", {
   test_points <- lidR::readLAS(
     system.file("extdata/Topography.laz", package = "lidR")
   )
 
   # The terraneous back-end
-  ground_height_grid <- lidR::grid_terrain(test_points, algorithm = lidR::tin())
+  ground_height_grid <- lidR::rasterize_terrain(
+    test_points,
+    algorithm = lidR::tin()
+  )
 
   segmented_points <- crownsegmentr::segment_tree_crowns(
     point_cloud = test_points,
@@ -403,13 +411,15 @@ test_that("The terraneous and flexible C++ back-ends work", {
   )
 
   # The flexible back-end
-  crown_height_to_tree_height_grid <- raster::raster(
+  crown_height_to_tree_height_grid <- terra::rast(
     matrix(c(0.5, 1), ncol = 2),
-    xmn = lidR::extent(test_points)@xmin,
-    xmx = lidR::extent(test_points)@xmax,
-    ymn = lidR::extent(test_points)@ymin,
-    ymx = lidR::extent(test_points)@ymax,
-    crs = lidR::crs(test_points)
+    crs = lidR::st_crs(test_points)$wkt,
+    extent = terra::ext(
+      lidR::st_bbox(test_points)$xmin,
+      lidR::st_bbox(test_points)$xmax,
+      lidR::st_bbox(test_points)$ymin,
+      lidR::st_bbox(test_points)$ymax
+    )
   )
 
   segmented_points <- crownsegmentr::segment_tree_crowns(
@@ -424,13 +434,15 @@ test_that("The terraneous and flexible C++ back-ends work", {
     system.file("extdata/MixedConifer.laz", package = "lidR")
   )
 
-  crown_diameter_to_tree_height_grid <- raster::raster(
+  crown_diameter_to_tree_height_grid <- terra::rast(
     matrix(c(0.3, 0.8), ncol = 2),
-    xmn = lidR::extent(test_points)@xmin,
-    xmx = lidR::extent(test_points)@xmax,
-    ymn = lidR::extent(test_points)@ymin,
-    ymx = lidR::extent(test_points)@ymax,
-    crs = lidR::crs(test_points)
+    crs = lidR::st_crs(test_points)$wkt,
+    extent = terra::ext(
+      lidR::st_bbox(test_points)$xmin,
+      lidR::st_bbox(test_points)$xmax,
+      lidR::st_bbox(test_points)$ymin,
+      lidR::st_bbox(test_points)$ymax
+    )
   )
 
   segmented_points <- crownsegmentr::segment_tree_crowns(
@@ -440,8 +452,8 @@ test_that("The terraneous and flexible C++ back-ends work", {
   )
 
 
-  # # Plot segmentation results (for manual testing only)
-  #
+  # Plot segmentation results (for manual testing only)
+
   # # Generate Crown Colors
   # crown_colors <- lidR::random.colors(
   #   n = data.table::uniqueN(segmented_points@data$crown_id) - 1
@@ -451,7 +463,7 @@ test_that("The terraneous and flexible C++ back-ends work", {
   # lidR::plot(
   #   lidR::filter_poi(segmented_points, !(Classification %in% c(2, 9))),
   #   color = "crown_id",
-  #   colorPalette = crown_colors,
+  #   pal = crown_colors,
   #   size = 5
   # )
 })

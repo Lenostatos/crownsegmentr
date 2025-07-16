@@ -92,12 +92,15 @@ The set has to consist of the named elements described in the section
 "Raster argument structure" below.}
 }
 \value{
-A list with either one or two elements. The first element (named
+A list with either one or two elements:
+\itemize{
+\item The first element (named
 "mode_coordinates") contains the modes for all points in the
 \code{coordinate_table}. The modes are stored in a \code{data.frame}
 with three columns that hold the x-, y-, and z-coordinates and they are
 stored in the same order as their respective points in the
-\code{coordinate_table}.\preformatted{The second element (named "centroid_coordinates") is only present if
+\code{coordinate_table}.
+\item The second element (named "centroid_coordinates") is only present if
 \code{also_return_centroids} was set to \code{TRUE} and contains the
 centroids calculated during the mode finding process. The centroids are
 stored in a \code{data.frame} with xyz-coordinate columns like the
@@ -114,15 +117,15 @@ crown point cloud, that is usually located shortly below the crown apex.
 }
 \section{Functions}{
 \itemize{
-\item \code{calculate_modes_flexible}: Can take either a single value or
+\item \code{calculate_modes_flexible()}: Can take either a single value or
 raster data for both the ground height and the
 \code{crown_diameter_to_tree_height} and
 \code{crown_height_to_tree_height} parameters.
 
-\item \code{calculate_modes_terraneous}: Use a ground height raster to find
+\item \code{calculate_modes_terraneous()}: Use a ground height raster to find
 modes in a non-normalized point cloud.
-}}
 
+}}
 \section{Raster argument structure}{
 
 Raster data has to be passed as a list comprising the following named

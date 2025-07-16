@@ -12,11 +12,11 @@ validate_write_crown_id_also_to_file_for_LAScatalogs(
 \arguments{
 \item{write_crown_id_also_to_file}{The to-be-validated parameter.}
 
-\item{LAScatalog}{The \code{\link[lidR]{LAScatalog-class}} object whose
+\item{LAScatalog}{The \link[lidR:LAScatalog-class]{LAScatalog} whose
 settings are compared to the value of \code{write_crown_id_also_to_file}.}
 }
 \value{
-A possibly corrected value for write_crown_id_also_to_file.
+A possibly corrected value for \code{write_crown_id_also_to_file}.
 }
 \description{
 Issues a warning if the user wanted to write the output to files but not

@@ -18,6 +18,7 @@
 // along with crownsegmentr in a file called "COPYING". If not,
 // see <http://www.gnu.org/licenses/>.
 
+
 #include "spatial_util.h"
 
 #include <iterator> // for std::back_inserter

@@ -18,202 +18,238 @@
 # along with crownsegmentr in a file called "COPYING". If not,
 # see <http://www.gnu.org/licenses/>.
 
+
+#' Assert that the extent of a raster covers that of a data.frame point cloud
+#'
+#' @param raster A [SpatRaster][terra::SpatRaster].
+#' @param data_frame_point_cloud Point cloud data in [data.frame()] format.
+#' @param message Length-one character vector. Message to be used on assertion
+#'  failure.
+assert_that_raster_covers_data_frame_point_cloud <- function(
+    raster,
+    data_frame_point_cloud,
+    message) {
+  point_cloud_coordinates <- extract_coordinate_values(data_frame_point_cloud)
+
+  point_cloud_xmin <- min(point_cloud_coordinates[[1]], na.rm = FALSE)
+  point_cloud_ymin <- min(point_cloud_coordinates[[2]], na.rm = FALSE)
+  point_cloud_xmax <- max(point_cloud_coordinates[[1]], na.rm = FALSE)
+  point_cloud_ymax <- max(point_cloud_coordinates[[2]], na.rm = FALSE)
+
+  assert_that(
+    terra::xmin(raster) <= point_cloud_xmin,
+    terra::ymin(raster) <= point_cloud_ymin,
+    terra::xmax(raster) >= point_cloud_xmax,
+    terra::ymax(raster) >= point_cloud_ymax,
+    msg = message
+  )
+}
+
+#' Assert that the extent of a raster covers that of a LAS point cloud
+#'
+#' @param raster A [SpatRaster][terra::SpatRaster].
+#' @param las_point_cloud Point cloud data in [lidR::LAS] format.
+#' @param message Length-one character vector. Message to be used on assertion
+#'  failure.
+assert_that_raster_covers_las_point_cloud <- function(
+    raster,
+    las_point_cloud,
+    message) {
+  pc_extent <- lidR::st_bbox(las_point_cloud)
+
+  assert_that(
+    terra::xmin(raster) <= pc_extent$xmin,
+    terra::ymin(raster) <= pc_extent$ymin,
+    terra::xmax(raster) >= pc_extent$xmax,
+    terra::ymax(raster) >= pc_extent$ymax,
+    msg = paste(
+      "The crown diameter to tree height raster does not cover the",
+      "extent of the point cloud."
+    )
+  )
+}
+
+assert_that_raster_crs_matches_las_crs <- function(raster, las, message) {
+  assert_that(terra::crs(raster) == lidR::st_crs(las)$wkt, msg = message)
+}
+
+assert_that_raster_fits_point_cloud <- function(raster, point_cloud, raster_name) {
+  if (inherits(point_cloud, "data.frame")) {
+    # if point_cloud is a data.frame(-like) object
+    assert_that_raster_covers_data_frame_point_cloud(
+      raster = raster,
+      data_frame_point_cloud = point_cloud,
+      message = paste(
+        "The", raster_name, "raster does not cover the extent of the point cloud."
+      )
+    )
+  } else if (methods::is(point_cloud, "LAS") ||
+    methods::is(point_cloud, "LAScatalog")) {
+    # if point_cloud is a LAS or LAScatalog object
+    assert_that_raster_crs_matches_las_crs(
+      raster = raster,
+      las = point_cloud,
+      message = paste(
+        "The CRS of the", raster_name, "raster does not match with the CRS of",
+        "the point cloud."
+      )
+    )
+
+    assert_that_raster_covers_las_point_cloud(
+      raster = raster,
+      las_point_cloud = point_cloud,
+      message = paste(
+        "The", raster_name, "raster does not cover the extent of the point cloud."
+      )
+    )
+  } else {
+    # if point_cloud is none of the above
+    stop(paste(
+      "This shouldn't happen. Your point cloud does neither inherit from",
+      "data.frame nor is it a LAS or LAScatalog object."
+    ))
+  }
+}
+
+assert_that_raster_has_numeric_values <- function(raster, raster_name) {
+  if (terra::inMemory(raster)) {
+    assert_that(
+      terra::hasValues(raster),
+      msg = paste(raster_name, "contains no values.")
+    )
+
+    raster_values <- terra::values(raster)
+    assert_that(
+      is.numeric(raster_values),
+      msg = paste(raster_name, "does not contain numeric values.")
+    )
+  } else {
+    assert_that(
+      terra::datatype(raster)[1] %in% c("FLT4S", "FLT8S"),
+      msg = paste(
+        raster_name, "does not contain numeric values."
+      )
+    )
+  }
+}
+
 # Note: The definition of a valid coordinate table used by this function is
 # relied on by the segment_tree_crowns_core function. Be aware of that when
 # changing this function.
 validate_coordinate_table <- function(coordinate_table) {
-
-  assert_that(is.data.frame(coordinate_table), msg = paste0(
-    "The coordinate data needs to be stored in a data.frame or another data ",
+  assert_that(is.data.frame(coordinate_table), msg = paste(
+    "The coordinate data needs to be stored in a data.frame or another data",
     "type which can be treated as one."
   ))
 
-  # Get the names of all numeric columns
-  numeric_col_names <- names(which(sapply(coordinate_table, is.numeric)))
+  # Get the number of numeric columns
+  num_numeric_cols <- length(which(sapply(coordinate_table, is.numeric)))
 
-  # Assert that the table consists of at least three numeric columns.
-  assert_that(length(numeric_col_names) >= 3, msg = paste0(
-    "The coordinate table needs to have at least three numeric columns for ",
-    "x-, y-, and z-coordinates but there are only ", length(numeric_col_names),
-    " numeric columns."
+  assert_that(num_numeric_cols >= 3, msg = paste(
+    "The coordinate table needs to have at least three numeric columns for",
+    "x-, y-, and z-coordinates but there are only", num_numeric_cols,
+    "numeric columns."
   ))
 }
 
-validate_crown_diameter_to_tree_height <-
-  function(crown_diameter_to_tree_height, point_cloud) {
-
+validate_crown_diameter_to_tree_height <- function(
+    crown_diameter_to_tree_height,
+    point_cloud) {
   # if crown_diameter_to_tree_height is a raster
-  if (methods::is(crown_diameter_to_tree_height, "RasterLayer")) {
-
-    assert_that(
-      raster::dataType(crown_diameter_to_tree_height) %in% c("FLT4S", "FLT8S"),
-      msg = "crown_diameter_to_tree_height does not contain numeric values."
-    )
-
-    # If necessary, calculate the min and max raster values
-    if (!crown_diameter_to_tree_height@data@haveminmax) {
-      crown_diameter_to_tree_height <- raster::setMinMax(
-        crown_diameter_to_tree_height
-      )
+  if (methods::is(crown_diameter_to_tree_height, "SpatRaster")) {
+    if (terra::nlyr(crown_diameter_to_tree_height) > 1) {
+      warning(paste(
+        "crown_diameter_to_tree_height has more than one raster layer. Only",
+        "the first layer is considered."
+      ))
     }
-    assert_that(
-      raster::minValue(crown_diameter_to_tree_height) > 0,
-      raster::maxValue(crown_diameter_to_tree_height) < 100
+
+    assert_that_raster_has_numeric_values(
+      raster = crown_diameter_to_tree_height,
+      raster_name = "crown_diameter_to_tree_height"
     )
 
-    if (raster::maxValue(crown_diameter_to_tree_height) > 2) {
+    cd2th_minmax <- terra::minmax(crown_diameter_to_tree_height, compute = TRUE)[, 1]
+
+    assert_that(
+      cd2th_minmax["min"] > 0,
+      msg = paste(
+        "Used a crown diameter to tree height ratio equal to or less than",
+        "zero which doesn't work."
+      )
+    )
+
+    if (cd2th_minmax["max"] > 2) {
       warning(paste0(
         "A crown diameter to tree height ratio greater than 2 is likely too ",
         "high (the largest of the ratios that you provide is ",
-        raster::maxValue(crown_diameter_to_tree_height), ")."
-      ), immediate. = TRUE)
+        cd2th_minmax["max"], ")."
+      ))
     }
 
-    if (inherits(point_cloud, "data.frame")) {
-      # if point_cloud is a data.frame(-like) object
-      assert_that(
-        raster::extent(crown_diameter_to_tree_height)@xmin <=
-          min(extract_coordinate_values(point_cloud)[[1]], na.rm = FALSE),
-        raster::extent(crown_diameter_to_tree_height)@ymin <=
-          min(extract_coordinate_values(point_cloud)[[2]], na.rm = FALSE),
-        max(extract_coordinate_values(point_cloud)[[1]], na.rm = FALSE) <=
-          raster::extent(crown_diameter_to_tree_height)@xmax,
-        max(extract_coordinate_values(point_cloud)[[2]], na.rm = FALSE) <=
-          raster::extent(crown_diameter_to_tree_height)@ymax,
-        msg = paste0("crown_diameter_to_tree_height is a raster but does not ",
-                     "cover the extent of the point cloud.")
-      )
-
-    } else if (methods::is(point_cloud, "LAS") ||
-               methods::is(point_cloud, "LAScatalog")) {
-      # if point_cloud is a LAS or LAScatalog object
-      assert_that(
-        sf::st_crs(crown_diameter_to_tree_height) == sf::st_crs(point_cloud),
-        msg = paste0("The CRS of the crown diameter to tree height raster does",
-                     " not match with the CRS of the point cloud.")
-      )
-      assert_that(
-        raster::extent(crown_diameter_to_tree_height)@xmin <=
-          lidR::extent(point_cloud)@xmin,
-        raster::extent(crown_diameter_to_tree_height)@ymin <=
-          lidR::extent(point_cloud)@ymin,
-        lidR::extent(point_cloud)@xmax <=
-          raster::extent(crown_diameter_to_tree_height)@xmax,
-        lidR::extent(point_cloud)@ymax <=
-          raster::extent(crown_diameter_to_tree_height)@ymax,
-        msg = paste0("crown_diameter_to_tree_height is a raster but does not ",
-                     "cover the extent of the point cloud.")
-      )
-
-    } else {
-      # if point_cloud is none of the above
-      simpleError(paste0(
-        "This shouldn't happen. Your point cloud does neither inherit from ",
-        "data.frame nor is it a LAS or LAScatalog object."))
-    }
-
-    # if crown_diameter_to_tree_height is a multi-layer raster object
-  } else if (methods::is(crown_diameter_to_tree_height, "RasterBrick") ||
-             methods::is(crown_diameter_to_tree_height, "RasterStack")) {
-    simpleError(paste0(
-      "crown_diameter_to_tree_height is a RasterBrick/RasterStack but should ",
-      "be a RasterLayer if you want to provide these values with a raster ",
-      "object."
-    ))
-
-  } else { # if crown_diameter_to_tree_height is not a raster object
+    assert_that_raster_fits_point_cloud(
+      raster = crown_diameter_to_tree_height,
+      point_cloud = point_cloud,
+      raster_name = "crown diameter to tree height"
+    )
+  } else {
+    # if crown_diameter_to_tree_height is not a raster object
     assert_that(
-      is.number(crown_diameter_to_tree_height),
-      noNA(crown_diameter_to_tree_height),
+      assertthat::is.number(crown_diameter_to_tree_height),
+      assertthat::noNA(crown_diameter_to_tree_height)
+    )
+
+    assert_that(
       crown_diameter_to_tree_height > 0,
-      crown_diameter_to_tree_height < 100
+      msg = paste(
+        "Used a crown diameter to tree height ratio equal to or less than",
+        "zero which doesn't work (your ratio: ", cd2th_minmax["max"], ")."
+      )
     )
 
     if (crown_diameter_to_tree_height > 2) {
-      warning(paste0("A crown diameter to tree height ratio greater than 2 is ",
-                     "likely too high (you provided a ratio of ",
-                     crown_diameter_to_tree_height, ")."
-      ), immediate. = TRUE)
+      warning(paste0(
+        "A crown diameter to tree height ratio greater than 2 is likely too ",
+        "high (your ratio: ", cd2th_minmax["max"], ")."
+      ))
     }
   }
 }
 
-validate_crown_height_to_tree_height <- function(crown_height_to_tree_height,
-                                                 point_cloud) {
+validate_crown_height_to_tree_height <- function(
+    crown_height_to_tree_height,
+    point_cloud) {
   # if crown_height_to_tree_height is a raster
-  if (methods::is(crown_height_to_tree_height, "RasterLayer")) {
-
-    assert_that(
-      raster::dataType(crown_height_to_tree_height) %in% c("FLT4S", "FLT8S"),
-      msg = "crown_diameter_to_tree_height does not contain numeric values."
-    )
-
-    # If necessary, calculate the min and max raster values
-    if (!crown_height_to_tree_height@data@haveminmax) {
-      crown_height_to_tree_height <- raster::setMinMax(
-        crown_height_to_tree_height
-      )
-    }
-    assert_that(
-      raster::minValue(crown_height_to_tree_height) > 0,
-      raster::maxValue(crown_height_to_tree_height) <= 1
-    )
-
-    if (inherits(point_cloud, "data.frame")) {
-      # if point_cloud is a data.frame(-like) object
-      assert_that(
-        raster::extent(crown_height_to_tree_height)@xmin <=
-          min(extract_coordinate_values(point_cloud)[[1]], na.rm = FALSE),
-        raster::extent(crown_height_to_tree_height)@ymin <=
-          min(extract_coordinate_values(point_cloud)[[2]], na.rm = FALSE),
-        max(extract_coordinate_values(point_cloud)[[1]], na.rm = FALSE) <=
-          raster::extent(crown_height_to_tree_height)@xmax,
-        max(extract_coordinate_values(point_cloud)[[2]], na.rm = FALSE) <=
-          raster::extent(crown_height_to_tree_height)@ymax,
-        msg = paste0("crown_height_to_tree_height is a raster but does not ",
-                     "cover the extent of the point cloud.")
-      )
-
-    } else if (methods::is(point_cloud, "LAS") ||
-               methods::is(point_cloud, "LAScatalog")) {
-      # if point_cloud is a LAS or LAScatalog object
-      assert_that(
-        sf::st_crs(crown_height_to_tree_height) == sf::st_crs(point_cloud),
-        msg = paste0("The CRS of the crown height to tree height raster does ",
-                     "not match with the CRS of the point cloud.")
-      )
-      assert_that(
-        raster::extent(crown_height_to_tree_height)@xmin <=
-          lidR::extent(point_cloud)@xmin,
-        raster::extent(crown_height_to_tree_height)@ymin <=
-          lidR::extent(point_cloud)@ymin,
-        lidR::extent(point_cloud)@xmax <=
-          raster::extent(crown_height_to_tree_height)@xmax,
-        lidR::extent(point_cloud)@ymax <=
-          raster::extent(crown_height_to_tree_height)@ymax,
-        msg = paste0("crown_height_to_tree_height is a raster but does not ",
-                     "cover the extent of the point cloud.")
-      )
-
-    } else {
-      # if point_cloud is none of the above
-      simpleError(paste0(
-        "This shouldn't happen. Your point cloud does neither inherit from ",
-        "data.frame nor is it a LAS or LAScatalog object."))
+  if (methods::is(crown_height_to_tree_height, "SpatRaster")) {
+    if (terra::nlyr(crown_height_to_tree_height) > 1) {
+      warning(paste(
+        "crown_height_to_tree_height has more than one raster layer. Only the",
+        "first layer is considered."
+      ))
     }
 
-  # if crown_height_to_tree_height is a multi-layer raster object
-  } else if (methods::is(crown_height_to_tree_height, "RasterBrick") ||
-             methods::is(crown_height_to_tree_height, "RasterStack")) {
-    simpleError(paste0(
-      "crown_height_to_tree_height is a RasterBrick/RasterStack but should be ",
-      "a RasterLayer if you want to provide these values with a raster object."
-    ))
+    assert_that_raster_has_numeric_values(
+      raster = crown_height_to_tree_height,
+      raster_name = "crown_height_to_tree_height"
+    )
 
-  } else { # if crown_height_to_tree_height is not a raster object
+    ch2th_minmax <- terra::minmax(crown_height_to_tree_height, compute = TRUE)[, 1]
+
     assert_that(
-      is.number(crown_height_to_tree_height),
-      noNA(crown_height_to_tree_height),
+      ch2th_minmax["min"] > 0,
+      ch2th_minmax["max"] <= 1
+    )
+
+    assert_that_raster_fits_point_cloud(
+      raster = crown_height_to_tree_height,
+      point_cloud = point_cloud,
+      raster_name = "crown height to tree height"
+    )
+  } else {
+    # if crown_height_to_tree_height is not a raster object
+    assert_that(
+      assertthat::is.number(crown_height_to_tree_height),
+      assertthat::noNA(crown_height_to_tree_height),
       crown_height_to_tree_height > 0,
       crown_height_to_tree_height <= 1
     )
@@ -222,81 +258,48 @@ validate_crown_height_to_tree_height <- function(crown_height_to_tree_height,
 
 validate_segment_crowns_only_above <- function(segment_crowns_only_above) {
   assert_that(
-    is.number(segment_crowns_only_above),
-    noNA(segment_crowns_only_above),
+    assertthat::is.number(segment_crowns_only_above),
+    assertthat::noNA(segment_crowns_only_above),
     segment_crowns_only_above >= 0
   )
 }
 
 validate_ground_height <- function(ground_height, point_cloud) {
-
-  if (is.null(ground_height)) { # if ground_height is NULL
-    # do nothing
-  } else if (methods::is(ground_height, "RasterLayer")) { # if ground_height is a raster
-
-    assert_that(
-      raster::dataType(ground_height) %in% c("FLT4S", "FLT8S"),
-      msg = "ground_height does not contain numeric values."
-    )
-
-    if (inherits(point_cloud, "data.frame")) {
-      # if point_cloud is a data.frame(-like) object
-      assert_that(
-        raster::extent(ground_height)@xmin <=
-          min(extract_coordinate_values(point_cloud)[[1]], na.rm = FALSE),
-        raster::extent(ground_height)@ymin <=
-          min(extract_coordinate_values(point_cloud)[[2]], na.rm = FALSE),
-        max(extract_coordinate_values(point_cloud)[[1]], na.rm = FALSE) <=
-          raster::extent(ground_height)@xmax,
-        max(extract_coordinate_values(point_cloud)[[2]], na.rm = FALSE) <=
-          raster::extent(ground_height)@ymax,
-        msg = paste0("ground_height is a raster but does not cover the extent ",
-                     "of the point cloud.")
+  if (is.null(ground_height)) {
+    # if ground_height is NULL do nothing
+  } else if (methods::is(ground_height, "SpatRaster")) {
+    # if ground_height is a raster
+    if (terra::nlyr(ground_height) > 1) {
+      warning(
+        "ground_height has more than one raster layer. Only the first layer is",
+        " considered."
       )
-
-    } else if (methods::is(point_cloud, "LAS") ||
-               methods::is(point_cloud, "LAScatalog")) {
-      # if point_cloud is a LAS or LAScatalog object
-      assert_that(
-        sf::st_crs(ground_height) == sf::st_crs(point_cloud),
-        msg = paste0("The CRS of the ground height raster does not match with ",
-                     "the CRS of the point cloud.")
-      )
-      assert_that(
-        raster::extent(ground_height)@xmin <= lidR::extent(point_cloud)@xmin,
-        raster::extent(ground_height)@ymin <= lidR::extent(point_cloud)@ymin,
-        lidR::extent(point_cloud)@xmax <= raster::extent(ground_height)@xmax,
-        lidR::extent(point_cloud)@ymax <= raster::extent(ground_height)@ymax,
-        msg = paste0("ground_height is a raster but does not cover the extent ",
-                     "of the point cloud.")
-      )
-
-    } else {
-      # if point_cloud is none of the above
-      simpleError(paste0(
-        "This shouldn't happen. Your point cloud does neither inherit from ",
-        "data.frame nor is it a LAS or LAScatalog object."))
     }
 
-  } else if (is.list(ground_height)) { # if ground_height is a list
-    assert_that(!inherits(point_cloud, "data.frame"), msg = paste0(
-      "Passing a list for parameter ground_height is not supported with ",
-      "data.frame(-like) point clouds.")
-    )
-    assert_that(not_empty(ground_height))
-    assert_that(!(ground_height %has_name% "las"), msg = paste0(
-      "Parameter ground_height must not contain an element called \"las\" when",
-      " it is a list (see documentation).")
+    assert_that_raster_has_numeric_values(
+      raster = ground_height,
+      raster_name = "ground_height"
     )
 
-  } else if (methods::is(ground_height, "RasterBrick") ||
-             methods::is(ground_height, "RasterStack")) {
-    simpleError(paste0(
-      "ground_height is a RasterBrick/RasterStack but should be a RasterLayer ",
-      "if you want to provide ground heights with a raster object."
+    assert_that_raster_fits_point_cloud(
+      raster = ground_height,
+      point_cloud = point_cloud,
+      raster_name = "ground height"
+    )
+  } else if (is.list(ground_height)) {
+    # if ground_height is a list
+    assert_that(!inherits(point_cloud, "data.frame"), msg = paste(
+      "Passing a list for parameter ground_height is not supported with",
+      "data.frame(-like) point clouds."
     ))
-  } else { # if ground_height is none of the above
-    simpleError(paste0(
+    assert_that(assertthat::not_empty(ground_height))
+    assert_that(!(assertthat::has_name(ground_height, "las")), msg = paste(
+      "Parameter ground_height must not contain an element called \"las\" when",
+      "it is a list (see documentation)."
+    ))
+  } else {
+    # if ground_height is none of the above
+    stop(paste0(
       "ground_height is neither NULL, nor a raster object, nor a list."
     ))
   }
@@ -304,11 +307,10 @@ validate_ground_height <- function(ground_height, point_cloud) {
 
 validate_crown_id_column_name <- function(crown_id_column_name,
                                           coordinate_table) {
-
   # Check the data type and validity of the crown ID column name
   assert_that(
-    is.string(crown_id_column_name),
-    noNA(crown_id_column_name),
+    assertthat::is.string(crown_id_column_name),
+    assertthat::noNA(crown_id_column_name),
     crown_id_column_name != ""
   )
 
@@ -317,8 +319,8 @@ validate_crown_id_column_name <- function(crown_id_column_name,
   assert_that(
     !(make.names(crown_id_column_name) %in% colnames(coordinate_table)),
     msg = paste0(
-      "The point cloud data already has a column/attribute with the name '",
-      crown_id_column_name, "'. Please either choose a different argument for",
+      "The point cloud data already has a column/attribute with the name \"",
+      crown_id_column_name, "\". Please either choose a different argument for",
       " the crown_id_column_name parameter or modify the point cloud data."
     )
   )
@@ -326,45 +328,45 @@ validate_crown_id_column_name <- function(crown_id_column_name,
 
 validate_verbose <- function(verbose) {
   assert_that(
-    is.flag(verbose),
-    noNA(verbose)
+    assertthat::is.flag(verbose),
+    assertthat::noNA(verbose)
   )
 }
 
 validate_also_return_modes <- function(also_return_modes) {
   assert_that(
-    is.flag(also_return_modes),
-    noNA(also_return_modes)
+    assertthat::is.flag(also_return_modes),
+    assertthat::noNA(also_return_modes)
   )
 }
 
 validate_also_return_centroids <- function(also_return_centroids) {
   assert_that(
-    is.flag(also_return_centroids),
-    noNA(also_return_centroids)
+    assertthat::is.flag(also_return_centroids),
+    assertthat::noNA(also_return_centroids)
   )
 }
 
 validate_centroid_convergence_distance <-
   function(centroid_convergence_distance) {
     assert_that(
-      is.number(centroid_convergence_distance),
-      noNA(centroid_convergence_distance),
+      assertthat::is.number(centroid_convergence_distance),
+      assertthat::noNA(centroid_convergence_distance),
       centroid_convergence_distance > 0
     )
   }
 
 validate_max_num_centroids_per_mode <- function(max_num_centroids_per_mode) {
   assert_that(
-    is.count(max_num_centroids_per_mode),
+    assertthat::is.count(max_num_centroids_per_mode),
     max_num_centroids_per_mode >= 1
   )
 }
 
 validate_dbscan_neighborhood_radius <- function(dbscan_neighborhood_radius) {
   assert_that(
-    is.number(dbscan_neighborhood_radius),
-    noNA(dbscan_neighborhood_radius),
+    assertthat::is.number(dbscan_neighborhood_radius),
+    assertthat::noNA(dbscan_neighborhood_radius),
     dbscan_neighborhood_radius > 0
   )
 }
@@ -372,15 +374,15 @@ validate_dbscan_neighborhood_radius <- function(dbscan_neighborhood_radius) {
 validate_min_num_modes_per_neighborhood <-
   function(min_num_modes_per_neighborhood) {
     assert_that(
-      is.count(min_num_modes_per_neighborhood),
+      assertthat::is.count(min_num_modes_per_neighborhood),
       min_num_modes_per_neighborhood >= 1
     )
   }
 
 validate_write_crown_id_also_to_file <- function(write_crown_id_also_to_file) {
   assert_that(
-    is.flag(write_crown_id_also_to_file),
-    noNA(write_crown_id_also_to_file)
+    assertthat::is.flag(write_crown_id_also_to_file),
+    assertthat::noNA(write_crown_id_also_to_file)
   )
 }
 
@@ -390,22 +392,23 @@ validate_write_crown_id_also_to_file <- function(write_crown_id_also_to_file) {
 #' store IDs of segmented bodies.
 #'
 #' @param write_crown_id_also_to_file The to-be-validated parameter.
-#' @param LAScatalog The \code{\link[lidR]{LAScatalog-class}} object whose
-#'   settings are compared to the value of \code{write_crown_id_also_to_file}.
+#' @param LAScatalog The [LAScatalog][lidR::LAScatalog-class] whose
+#'   settings are compared to the value of `write_crown_id_also_to_file`.
 #'
-#' @return A possibly corrected value for write_crown_id_also_to_file.
+#' @return A possibly corrected value for `write_crown_id_also_to_file`.
 validate_write_crown_id_also_to_file_for_LAScatalogs <-
   function(write_crown_id_also_to_file, LAScatalog) {
-
     validate_write_crown_id_also_to_file(write_crown_id_also_to_file)
 
     if (!write_crown_id_also_to_file &&
-        lidR::opt_output_files(LAScatalog) != "") {
-      warning("IDs of segmented bodies will be written to the output files. ",
-              "(This warning was generated because you set the ",
-              "write_crown_id_also_to_file parameter to FALSE but requested ",
-              "output files instead of an in-memory object via the LAScatalog ",
-              "options.)")
+      lidR::opt_output_files(LAScatalog) != "") {
+      warning(
+        "IDs of segmented bodies will be written to the output files. ",
+        "(This warning was generated because you set the ",
+        "write_crown_id_also_to_file parameter to FALSE but requested ",
+        "output files instead of an in-memory object via the LAScatalog ",
+        "options.)"
+      )
       return(TRUE)
     } else {
       return(write_crown_id_also_to_file)
@@ -414,8 +417,8 @@ validate_write_crown_id_also_to_file_for_LAScatalogs <-
 
 validate_crown_id_file_description <- function(crown_id_file_description) {
   assert_that(
-    is.string(crown_id_file_description),
-    noNA(crown_id_file_description),
+    assertthat::is.string(crown_id_file_description),
+    assertthat::noNA(crown_id_file_description),
     crown_id_file_description != ""
   )
 }
@@ -423,10 +426,8 @@ validate_crown_id_file_description <- function(crown_id_file_description) {
 #' Asserts that all files referenced by a LAScatalog have the same scale and
 #' offset values.
 #'
-#' @param LAScatalog The \code{\link[lidR]{LAScatalog-class}} object to be
-#'   tested.
+#' @param LAScatalog The [LAScatalog][lidR::LAScatalog-class] to be tested.
 validate_scale_n_offset_are_consistent <- function(LAScatalog) {
-
   scales_n_offsets <- collect_scale_n_offset_of_LAScatalog_files(
     LAScatalog
   )[, 1:6] # select only the values and not the last column with the file paths
@@ -434,7 +435,6 @@ validate_scale_n_offset_are_consistent <- function(LAScatalog) {
   # Iterate over the scale and offset values for the x, y, and z coordinates one
   # after the other.
   for (column_name in colnames(scales_n_offsets)) {
-
     # Get the column
     values <- scales_n_offsets[[column_name]]
 
@@ -446,12 +446,13 @@ validate_scale_n_offset_are_consistent <- function(LAScatalog) {
       msg = paste0(
         "This shouldn't happen? Your LAScatalog appears to be referencing at ",
         "least one LAS file with their ", column_name, " set to NA."
-    ))
+      )
+    )
 
     # Only do the following if there is more than one value
     if (length(values) > 1) {
       # Check that all the values are near-equal.
-      assert_that(abs(max(values) - min(values)) < .Machine$double.eps ^ 0.5,
+      assert_that(abs(max(values) - min(values)) < .Machine$double.eps^0.5,
         msg = paste0(
           "The scale and offset values of all used LAS files have to be equal.",
           " Your LAScatalog appears to be referencing LAS files with differing",
@@ -459,7 +460,8 @@ validate_scale_n_offset_are_consistent <- function(LAScatalog) {
           "crownsegmentr::collect_scale_n_offset_of_LAScatalog_files(<your LAScatalog object>)",
           " to get an overview of these values for all files referenced by ",
           "your LAScatalog."
-      ))
+        )
+      )
     }
   }
 }

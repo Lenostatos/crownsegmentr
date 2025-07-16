@@ -18,6 +18,7 @@
 // along with crownsegmentr in a file called "COPYING". If not,
 // see <http://www.gnu.org/licenses/>.
 
+
 #include "ams3d_R_interface.h"
 
 #include "spatial.h"
@@ -48,20 +49,22 @@
 //' @param show_progress_bar Boolean Scalar. Should a progress bar be shown
 //'     during the computation?
 //'
-//' @return A list with either one or two elements. The first element (named
-//'     "mode_coordinates") contains the modes for all points in the
-//'     \code{coordinate_table}. The modes are stored in a \code{data.frame}
-//'     with three columns that hold the x-, y-, and z-coordinates and they are
-//'     stored in the same order as their respective points in the
-//'     \code{coordinate_table}.
-//'
-//'     The second element (named "centroid_coordinates") is only present if
-//'     \code{also_return_centroids} was set to \code{TRUE} and contains the
-//'     centroids calculated during the mode finding process. The centroids are
-//'     stored in a \code{data.frame} with xyz-coordinate columns like the
-//'     modes. To enable grouping of these centroids by the point they belong
-//'     to, there is one additional column (named "point_index") which holds row
-//'     indices of the corresponding points in the \code{coordinate_table}.
+//' @returns A list with either one or two elements:
+//'     \itemize{
+//'         \item The first element (named
+//'             "mode_coordinates") contains the modes for all points in the
+//'             \code{coordinate_table}. The modes are stored in a \code{data.frame}
+//'             with three columns that hold the x-, y-, and z-coordinates and they are
+//'             stored in the same order as their respective points in the
+//'             \code{coordinate_table}.
+//'         \item The second element (named "centroid_coordinates") is only present if
+//'             \code{also_return_centroids} was set to \code{TRUE} and contains the
+//'             centroids calculated during the mode finding process. The centroids are
+//'             stored in a \code{data.frame} with xyz-coordinate columns like the
+//'             modes. To enable grouping of these centroids by the point they belong
+//'             to, there is one additional column (named "point_index") which holds row
+//'             indices of the corresponding points in the \code{coordinate_table}.
+//'     }
 //'
 //' @references Ferraz, A., S. Saatchi, C. Mallet, and V. Meyer (2016)
 //'     \emph{Lidar detection of individual tree size in tropical forests}.

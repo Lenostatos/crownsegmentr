@@ -18,6 +18,7 @@
 # along with crownsegmentr in a file called "COPYING". If not,
 # see <http://www.gnu.org/licenses/>.
 
+
 test_that(
   "validate_coordinate_table throws error for non-data.frame-like objects",
   {
@@ -51,25 +52,24 @@ test_that(
 
 test_that(paste0(
   "validate_coordinate_table throws error for data.frames with less than three",
-  " columns"),
-  {
-    numeric_vector <- c(.0, 1.0, 5, 10.0)
-    one_column_data_frame <- data.frame(a = numeric_vector)
-    two_column_data_frame <- data.frame(a = numeric_vector, b = numeric_vector)
+  " columns"
+), {
+  numeric_vector <- c(.0, 1.0, 5, 10.0)
+  one_column_data_frame <- data.frame(a = numeric_vector)
+  two_column_data_frame <- data.frame(a = numeric_vector, b = numeric_vector)
 
-    expect_error(
-      validate_coordinate_table(one_column_data_frame),
-      regexp = paste0(
-        "^The coordinate table needs to have at least three numeric columns ",
-        "for x-, y-, and z-coordinates but there are only 1 numeric columns\\.$"
-      )
+  expect_error(
+    validate_coordinate_table(one_column_data_frame),
+    regexp = paste0(
+      "^The coordinate table needs to have at least three numeric columns ",
+      "for x-, y-, and z-coordinates but there are only 1 numeric columns\\.$"
     )
-    expect_error(
-      validate_coordinate_table(two_column_data_frame),
-      regexp = paste0(
-        "^The coordinate table needs to have at least three numeric columns ",
-        "for x-, y-, and z-coordinates but there are only 2 numeric columns\\.$"
-      )
+  )
+  expect_error(
+    validate_coordinate_table(two_column_data_frame),
+    regexp = paste0(
+      "^The coordinate table needs to have at least three numeric columns ",
+      "for x-, y-, and z-coordinates but there are only 2 numeric columns\\.$"
     )
-  }
-)
+  )
+})

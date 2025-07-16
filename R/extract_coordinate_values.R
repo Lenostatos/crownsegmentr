@@ -18,55 +18,105 @@
 # along with crownsegmentr in a file called "COPYING". If not,
 # see <http://www.gnu.org/licenses/>.
 
-#' Extract coordinate data from an object
+
+#' Find all exact matches with at least one of the provided patterns
+#'
+#' @param patterns Objects which will be matched to `targets` via the `==`
+#'   operator.
+#' @param targets Objects which will be matched to each of the `patterns`.
+#'
+#' @returns A boolean vector of the same length as `targets`.
+match_any <- function(patterns, targets) {
+  assert_that(is.vector(patterns), is.vector(targets))
+
+  matches <- list()
+
+  # match each pattern
+  for (pattern in patterns) {
+    matches[[length(matches) + 1]] <- targets == pattern
+  }
+
+  res_matches <- matches[[1]]
+
+  # combine all matches
+  if (length(matches) > 1) {
+    for (match in matches[2:length(matches)]) {
+      res_matches <- res_matches | match
+    }
+  }
+
+  return(res_matches)
+}
+
+#' Extract coordinate data from a data.frame-like object
 #'
 #' This function extracts three numeric columns from the input table. If
 #' possible, columns which are named x/X, y/Y, or z/Z.
 #'
 #' @param coordinate_table An object which is valid according to
-#'   \code{validate_coordinate_table} (i.e. data.frame-like and contains at
-#'   least three numeric columns).
+#'   `validate_coordinate_table()` (i.e. data.frame-like and contains at least
+#'   three numeric columns).
 #'
-#' @return A \code{data.frame} with just three columns that are expected to hold
-#'   the x-, y-, and z-coordinates in that order.
-#'
-#' @import assertthat
+#' @returns A [base::data.frame()] with just three columns that are expected to
+#'   hold the x-, y-, and z-coordinates in that order.
 extract_coordinate_values <- function(coordinate_table) {
+  # Define coordinate column names to search for
+  xyz_chars <- list(x = c("x", "X"), y = c("y", "Y"), z = c("z", "Z"))
 
-  # Get the names of all numeric columns
-  numeric_col_names <- names(which(sapply(coordinate_table, is.numeric)))
+  # Find all numeric columns
+  is_numeric_col <- sapply(coordinate_table, is.numeric)
 
-  # Get the names of the first numeric columns whose names are a upper- or
-  # lower-case variant of either "x", "y", or "z".
-  xyz_chars <- c("x", "y", "z")
-  input_col_names <- colnames(coordinate_table)
+  # Get their names
+  numeric_col_names <- names(which(is_numeric_col))
 
-  xyz_col_names <- input_col_names[match(xyz_chars, tolower(input_col_names))]
-  names(xyz_col_names) <- xyz_chars
+  # Find numeric columns with names matching the search patterns
+  xyz_numeric_matches <- lapply(xyz_chars, match_any, targets = numeric_col_names)
 
-  numeric_non_xyz_col_names <- numeric_col_names[
-    !(tolower(numeric_col_names) %in% xyz_chars)]
+  # Get the inversely not-matching columns
+  non_xyz_numeric_cols <-
+    !xyz_numeric_matches[["x"]] &
+      !xyz_numeric_matches[["y"]] &
+      !xyz_numeric_matches[["z"]]
 
-  res_col_names <- vector("character")
+  # Variables for the following loop
+  num_used_non_xyz_cols <- 0
+  xyz_numeric_col_pos <- vector("integer")
 
-  for (xyz_col_name in xyz_col_names) {
-    if (!is.na(xyz_col_name) && xyz_col_name %in% numeric_col_names) {
-      # If there is a numeric column called either x, y, or z, take that
-      res_col_names <- append(res_col_names, xyz_col_name)
-    } else {
-      # Take the first numeric column that is neither called x, y, or z and is
-      # also not part of the already selected columns
-      next_meaningful_col_name <- numeric_non_xyz_col_names[
-        !(numeric_non_xyz_col_names %in% res_col_names)][1]
+  # Look for a matching column for each of the three dimensions and issue
+  # warnings when there are none or more than one for any.
+  for (coord_dim in c("x", "y", "z")) {
+    numeric_match_pos <- which(xyz_numeric_matches[[coord_dim]])
+
+    if (length(numeric_match_pos) == 1) {
+      xyz_numeric_col_pos <- append(xyz_numeric_col_pos, numeric_match_pos)
+    } else if (length(numeric_match_pos) > 1) {
+      xyz_numeric_col_pos <- append(xyz_numeric_col_pos, numeric_match_pos[1])
+
       warning(paste0(
-        "Couldn't find a numeric column with name ", names(xyz_col_name),
-        " or ", toupper(xyz_col_name), ". Using column ",
-        next_meaningful_col_name, " for ", names(xyz_col_name),
-        "-coordinates instead."
+        "Found more than one numeric column named like it could hold ",
+        coord_dim, " coordinates. Using column \"",
+        numeric_col_names[numeric_match_pos[1]], "\". Ignoring columns \"",
+        paste(
+          numeric_col_names[numeric_match_pos[2:length(numeric_match_pos)]],
+          sep = ", "
+        ),
+        "\"."
+      ))
+    } else {
+      num_used_non_xyz_cols <- num_used_non_xyz_cols + 1
+      xyz_numeric_col_pos <- append(
+        xyz_numeric_col_pos,
+        which(non_xyz_numeric_cols)[num_used_non_xyz_cols]
+      )
+
+      warning(paste0(
+        "Found no numeric column named like it could hold ", coord_dim,
+        " coordinates. Using next available numeric column \"",
+        numeric_col_names[xyz_numeric_col_pos[length(xyz_numeric_col_pos)]], "\"."
       ))
     }
   }
 
   # Return the columns which are assumed to hold the coordinate values
-  return(as.data.frame(coordinate_table)[res_col_names])
+  return(as.data.frame(coordinate_table)[is_numeric_col][xyz_numeric_col_pos])
 }

@@ -8,8 +8,7 @@ offset values.}
 validate_scale_n_offset_are_consistent(LAScatalog)
 }
 \arguments{
-\item{LAScatalog}{The \code{\link[lidR]{LAScatalog-class}} object to be
-tested.}
+\item{LAScatalog}{The \link[lidR:LAScatalog-class]{LAScatalog} to be tested.}
 }
 \description{
 Asserts that all files referenced by a LAScatalog have the same scale and

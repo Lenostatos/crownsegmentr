@@ -18,6 +18,44 @@
 # along with crownsegmentr in a file called "COPYING". If not,
 # see <http://www.gnu.org/licenses/>.
 
+
+test_that(
+  "the any pattern matching works correctly with one pattern",
+  {
+    expect_equal(match_any("a", targets = "a"), TRUE)
+    expect_equal(match_any("a", targets = "b"), FALSE)
+    expect_equal(match_any("a", targets = "ab"), FALSE)
+    expect_equal(match_any("a", targets = c("ab", "a")), c(F, T))
+    expect_equal(match_any("a", targets = c("a", "ab")), c(T, F))
+    expect_equal(match_any("a", targets = c("b", "c")), c(F, F))
+    expect_equal(match_any("a", targets = c("b", "c", "d")), c(F, F, F))
+    expect_equal(match_any("", targets = ""), TRUE)
+    expect_equal(match_any("", targets = c("a", "")), c(F, T))
+  }
+)
+
+test_that(
+  "the any pattern matching works correctly with multiple patterns",
+  {
+    expect_equal(match_any(c("p1", "p2"), targets = ""), FALSE)
+    expect_equal(match_any(c("p1", "p2"), targets = "a"), FALSE)
+    expect_equal(match_any(c("p1", "p2"), targets = "p1"), TRUE)
+    expect_equal(match_any(c("p1", "p2"), targets = "p2"), TRUE)
+    expect_equal(match_any(c("p1", "p2"), targets = c("", "p2")), c(F, T))
+    expect_equal(match_any(c("p1", "p2"), targets = c("p1", "", "p2")), c(T, F, T))
+    expect_equal(match_any(c("p1", "p2"), targets = c("p2", "p2")), c(T, T))
+    expect_equal(match_any(c("p1", "p2"), targets = c("a", "b", "")), c(F, F, F))
+    expect_equal(match_any(c("p1", "p2", "p3"), targets = c("a", "p3", "")), c(F, T, F))
+  }
+)
+
+test_that(
+  "the any pattern matching works correctly with multiple equal patterns",
+  {
+    expect_equal(match_any(c("p", "p"), targets = c("p", "")), c(T, F))
+  }
+)
+
 # TODO expand this test into multiple smaller ones.
 test_that(
   "function returns a data.frame with just the x-, y-, and z-coordinates",
@@ -43,10 +81,10 @@ test_that(
       expected = valid_data_frame_w_normal_colnames
     )
 
-    valid_data_table_w_normal_colnames <- as.data.table(
+    valid_data_table_w_normal_colnames <- data.table::as.data.table(
       valid_data_frame_w_normal_colnames
     )
-    valid_data_table_w_normal_colnames_unordered <- as.data.table(
+    valid_data_table_w_normal_colnames_unordered <- data.table::as.data.table(
       valid_data_frame_w_normal_colnames_unordered
     )
 

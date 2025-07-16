@@ -18,8 +18,11 @@
 # along with crownsegmentr in a file called "COPYING". If not,
 # see <http://www.gnu.org/licenses/>.
 
+
 ## usethis namespace: start
-#' @useDynLib crownsegmentr, .registration = TRUE
+#' @importFrom assertthat assert_that
+#' @importFrom data.table :=
 #' @importFrom Rcpp sourceCpp
+#' @useDynLib crownsegmentr, .registration = TRUE
 ## usethis namespace: end
 NULL

@@ -18,6 +18,7 @@
 // along with crownsegmentr in a file called "COPYING". If not,
 // see <http://www.gnu.org/licenses/>.
 
+
 #ifndef SPATIAL_TYPES_H
 #define SPATIAL_TYPES_H
 
@@ -36,7 +37,7 @@ namespace spatial
     /** Data type for 2D points. */
     using point_2d_t = _geom::model::d2::point_xy< coordinate_t >;
     /** Data type for 3D points. */
-    using point_3d_t = _geom::model::point< coordinate_t, 3, _geom::cs::cartesian >;
+    using point_3d_t = _geom::model::d3::point_xyz< coordinate_t >;
 
     namespace constants
     {

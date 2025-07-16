@@ -1,17 +1,18 @@
 # Load a point cloud of some trees included in the lidR package
 point_cloud <- lidR::readLAS(system.file(
-  "extdata/MixedConifer.laz", package = "lidR"
+  "extdata/MixedConifer.laz",
+  package = "lidR"
 ))
 
 # Set up a plotting function for segmented point clouds
-plot_segmented_point_cloud <- function(point_cloud,
-                                       crown_colors = NULL,
-                                       size = 3) {
-
+plot_segmented_point_cloud <- function(
+    point_cloud,
+    crown_colors = NULL,
+    size = 3) {
   # Generate random crown colors
   if (is.null(crown_colors)) {
-    crown_colors <- lidR::random.colors(
-      n = length(unique(point_cloud@data[["crown_id"]])) - 1
+    crown_colors <- lidR::pastel.colors(
+      n = length(unique(point_cloud@data[["crown_id"]]))
     )
   }
 
@@ -19,7 +20,8 @@ plot_segmented_point_cloud <- function(point_cloud,
   lidR::plot(
     point_cloud,
     color = "crown_id",
-    colorPalette = crown_colors,
+    pal = crown_colors,
+    nbreaks = length(crown_colors),
     size = size,
     axis = TRUE
   )
@@ -52,10 +54,11 @@ plot_segmented_point_cloud(segmented_point_cloud)
 # Segment Terraneous (i.e. Non-Normalized) Point Clouds -------------------
 
 terraneous_point_cloud <- lidR::readLAS(system.file(
-  "extdata/Topography.laz", package = "lidR"
+  "extdata/Topography.laz",
+  package = "lidR"
 ))
 
-# Either pass arguments for the lidR::grid_terrain() function
+# Either pass arguments for the lidR::rasterize_terrain() function
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   terraneous_point_cloud,
   crown_diameter_to_tree_height = 0.5,
@@ -65,7 +68,8 @@ segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
 )
 
 # Or pass a ground height raster
-ground_height_grid <- lidR::grid_terrain(terraneous_point_cloud,
+ground_height_grid <- lidR::rasterize_terrain(
+  terraneous_point_cloud,
   algorithm = lidR::tin()
 )
 
@@ -84,13 +88,15 @@ plot_segmented_point_cloud(segmented_point_cloud)
 
 # Create a raster of crown_diameter_to_tree_height ratios with 0.25 in the
 # western half and 0.75 in the eastern half
-crown_diameter_to_tree_height_grid <- raster::raster(
+crown_diameter_to_tree_height_grid <- terra::rast(
   matrix(c(0.25, 0.75), ncol = 2),
-  xmn = lidR::extent(point_cloud)@xmin,
-  xmx = lidR::extent(point_cloud)@xmax,
-  ymn = lidR::extent(point_cloud)@ymin,
-  ymx = lidR::extent(point_cloud)@ymax,
-  crs = lidR::crs(point_cloud)
+  crs = lidR::st_crs(point_cloud)$wkt,
+  extent = terra::ext(
+    lidR::st_bbox(point_cloud)$xmin,
+    lidR::st_bbox(point_cloud)$xmax,
+    lidR::st_bbox(point_cloud)$ymin,
+    lidR::st_bbox(point_cloud)$ymax
+  )
 )
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
@@ -126,15 +132,16 @@ crown_colors <- lidR::random.colors(
 )
 
 # Plot the segemented point cloud
-plot_segmented_point_cloud(segmentation_results$segmented_point_cloud,
-  crown_colors
+plot_segmented_point_cloud(
+  segmentation_results$segmented_point_cloud, crown_colors
 )
 # Plot the modes
-plot_segmented_point_cloud(segmentation_results$modes,
-  crown_colors
+plot_segmented_point_cloud(
+  segmentation_results$modes, crown_colors
 )
 # Plot the centroids
-plot_segmented_point_cloud(segmentation_results$centroids,
+plot_segmented_point_cloud(
+  segmentation_results$centroids,
   crown_colors,
   size = 1
 )
@@ -154,15 +161,8 @@ system.time(
     dbscan_neighborhood_radius = 0.5
   )
 )
-lidR::plot(
-  segmented_point_cloud,
-  color = "crown_id",
-  colorPalette = lidR::random.colors(
-    n = length(unique(segmented_point_cloud@data$crown_id)) - 1
-  ),
-  size = 3,
-  axis = TRUE
-)
+
+plot_segmented_point_cloud(segmented_point_cloud)
 
 system.time(
   segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
@@ -173,12 +173,5 @@ system.time(
     dbscan_neighborhood_radius = 0.3 # default value
   )
 )
-lidR::plot(
-  segmented_point_cloud,
-  color = "crown_id",
-  colorPalette = lidR::random.colors(
-    n = length(unique(segmented_point_cloud@data$crown_id)) - 1
-  ),
-  size = 3,
-  axis = TRUE
-)
+
+plot_segmented_point_cloud(segmented_point_cloud)

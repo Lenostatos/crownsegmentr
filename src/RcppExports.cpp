@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // calculate_modes_flexible
 Rcpp::List calculate_modes_flexible(const Rcpp::DataFrame& coordinate_table, const spatial::coordinate_t& min_point_height_above_ground, const Rcpp::List& ground_height_data, const Rcpp::List& crown_diameter_to_tree_height_data, const Rcpp::List& crown_height_to_tree_height_data, const spatial::distance_t& centroid_convergence_distance, const int max_num_centroids_per_mode, const bool also_return_centroids, const bool show_progress_bar);
 RcppExport SEXP _crownsegmentr_calculate_modes_flexible(SEXP coordinate_tableSEXP, SEXP min_point_height_above_groundSEXP, SEXP ground_height_dataSEXP, SEXP crown_diameter_to_tree_height_dataSEXP, SEXP crown_height_to_tree_height_dataSEXP, SEXP centroid_convergence_distanceSEXP, SEXP max_num_centroids_per_modeSEXP, SEXP also_return_centroidsSEXP, SEXP show_progress_barSEXP) {

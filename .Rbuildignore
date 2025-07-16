@@ -2,5 +2,7 @@
 ^renv\.lock$
 ^crownsegmentr\.Rproj$
 ^\.Rproj\.user$
-^package_development_code\.R$
 ^LICENSE\.md$
+^README\.Rmd$
+^cran-comments\.md$
+^package_development_code\.R$

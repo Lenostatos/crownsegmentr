@@ -2,18 +2,18 @@
 % Please edit documentation in R/extract_coordinate_values.R
 \name{extract_coordinate_values}
 \alias{extract_coordinate_values}
-\title{Extract coordinate data from an object}
+\title{Extract coordinate data from a data.frame-like object}
 \usage{
 extract_coordinate_values(coordinate_table)
 }
 \arguments{
 \item{coordinate_table}{An object which is valid according to
-\code{validate_coordinate_table} (i.e. data.frame-like and contains at
-least three numeric columns).}
+\code{validate_coordinate_table()} (i.e. data.frame-like and contains at least
+three numeric columns).}
 }
 \value{
-A \code{data.frame} with just three columns that are expected to hold
-the x-, y-, and z-coordinates in that order.
+A \code{\link[base:data.frame]{base::data.frame()}} with just three columns that are expected to
+hold the x-, y-, and z-coordinates in that order.
 }
 \description{
 This function extracts three numeric columns from the input table. If

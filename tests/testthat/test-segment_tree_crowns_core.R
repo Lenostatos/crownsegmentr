@@ -19,12 +19,13 @@
 # see <http://www.gnu.org/licenses/>.
 
 
-# core function -----------------------------------------------
-test_that("the core function works with 'normal' arguments", {
+# Core function -----------------------------------------------
 
+test_that("the core function works with 'normal' arguments", {
   # Load point cloud data
   test_point_cloud_file_path <- system.file(
-    "extdata", "MixedConifer.laz", package = "lidR"
+    "extdata", "MixedConifer.laz",
+    package = "lidR"
   )
   test_point_cloud_header <- lidR::readLASheader(test_point_cloud_file_path)
   test_point_cloud <- lidR::clip_rectangle(

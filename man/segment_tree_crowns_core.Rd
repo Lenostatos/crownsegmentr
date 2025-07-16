@@ -20,8 +20,9 @@ segment_tree_crowns_core(
 )
 }
 \arguments{
-\item{coordinate_table}{A \code{data.frame} or \code{data.table} which is a
-valid coordinate table according to \code{validate_coordinate_table}.}
+\item{coordinate_table}{A \link[base:data.frame]{data.frame} or
+\link[data.table:data.table]{data.table}
+which is a valid coordinate table according to \code{validate_coordinate_table}.}
 
 \item{segment_crowns_only_above}{A single positive number denoting the
 minimum height above ground at which crown IDs will be calculated.
@@ -35,27 +36,19 @@ algorithm works" to learn about the search cylinders.}
 \itemize{
 \item \code{NULL}, indicating that the point cloud stored in
 \code{coordinate_table} is normalized with ground height at zero.
-\item A \code{\link[raster]{raster}} object providing ground heights for
+\item A \link[terra:SpatRaster-class]{SpatRaster} providing ground heights for
 the area of the (not normalized) point cloud stored in
 \code{coordinate_table}.
 }}
 
-\item{crown_diameter_to_tree_height}{Single
-numbers or \code{\link[raster]{raster}} objects covering the area of the
-\code{point_cloud}. The values should be approximate crown diameter and
-crown height to tree height ratios of the trees expected to be found in the
-point cloud. Points will not be segmented wherever a raster contains
-\code{NA} values.}
+\item{crown_diameter_to_tree_height, crown_height_to_tree_height}{Single
+numbers or \link[terra:SpatRaster-class]{SpatRasters} covering the area of the
+\code{point_cloud}. The values should be approximate crown diameter and crown
+height to tree height ratios of the trees expected to be found in the point
+cloud. Points will not be segmented wherever a raster contains \code{NA} values.}
 
-\item{crown_height_to_tree_height}{Single
-numbers or \code{\link[raster]{raster}} objects covering the area of the
-\code{point_cloud}. The values should be approximate crown diameter and
-crown height to tree height ratios of the trees expected to be found in the
-point cloud. Points will not be segmented wherever a raster contains
-\code{NA} values.}
-
-\item{verbose}{\code{TRUE} or \code{FALSE}. Should the function show a
-progress bar and other runtime information in the console?}
+\item{verbose}{\code{TRUE} or \code{FALSE}. Should the function show a progress bar and
+other runtime information in the console?}
 
 \item{centroid_convergence_distance}{A single number. Distance at which it is
 assumed that subsequently calculated centroids have converged to the
@@ -77,22 +70,23 @@ center will be treated as a core point. See "How the algorithm works" to
 learn about neighborhoods and core points in the context of the DBSCAN
 algorithm.}
 
-\item{also_return_modes}{\code{TRUE} or \code{FALSE}. Should mode coordinates
-be returned as well?}
+\item{also_return_modes}{\code{TRUE} or \code{FALSE}. Should mode coordinates be
+returned as well?}
 
-\item{also_return_centroids}{\code{TRUE} or \code{FALSE}. Should centroid
-coordinates be returned as well? This slows down processing by a little bit
-and will return a data set which requires at least ~10 times more memory
-than the input point cloud.}
+\item{also_return_centroids}{\code{TRUE} or \code{FALSE}. Should centroid coordinates
+be returned as well? This slows down processing by a little bit and will
+return a data set which requires at least ~10 times more memory than the
+input point cloud.}
 }
 \value{
 A list with at most three elements:
 \describe{
 \item{crown_ids}{A vector of IDs of segmented bodies.}
 \item{mode_coordinates}{
-If \code{also_return_modes} was set to \code{TRUE}, a \code{data.table}
-with mode coordinates as the second list element. The table has two
-additional columns: \describe{
+If \code{also_return_modes} was set to \code{TRUE}, a
+\link[data.table:data.table]{data.table} with mode coordinates as the
+second list element.
+The table has two additional columns: \describe{
 \item{crown_id}{
 Holds the IDs also returned with the first list element.
 }
@@ -104,7 +98,8 @@ Holds row indices of the original points in the input
 }
 \item{centroid_coordinates}{
 If \code{also_return_centroids} was set to \code{TRUE}, a
-\code{data.table} with centroid coordinates as the last list element.
+\link[data.table:data.table]{data.table} with centroid coordinates as the
+last list element.
 The table has two additional columns:
 \describe{
 \item{crown_id}{

@@ -72,22 +72,21 @@ segment_tree_crowns(
 }
 \arguments{
 \item{point_cloud}{A data set containing xyz-coordinates. Can be passed as
-either a \code{\link[base]{data.frame}}, a
-\code{\link[data.table]{data.table}}, or a lidR- \code{\link[lidR]{LAS}} or
-\code{\link[lidR]{LAScatalog-class}} object.
+either a \link[=data.frame]{data.frame}, a
+\link[data.table:data.table]{data.table}, a \link[lidR:LAS-class]{LAS object} or
+a \link[lidR:LAScatalog-class]{LAScatalog}.
 
-If it's a \code{\link[base]{data.frame}} or a
-\code{\link[data.table]{data.table}} the function searches for coordinate
+If it's a \link[=data.frame]{data.frame} or a
+\link[data.table:data.table]{data.table} the function searches for coordinate
 columns by looking for the first numeric columns named "x"/"X", "y"/"Y", or
 "z"/"Z". For each instance where it can't find one of those it selects the
 next available numeric column in the table and issues a warning.}
 
 \item{crown_diameter_to_tree_height, crown_height_to_tree_height}{Single
-numbers or \code{\link[raster]{raster}} objects covering the area of the
-\code{point_cloud}. The values should be approximate crown diameter and
-crown height to tree height ratios of the trees expected to be found in the
-point cloud. Points will not be segmented wherever a raster contains
-\code{NA} values.}
+numbers or \link[terra:SpatRaster-class]{SpatRasters} covering the area of the
+\code{point_cloud}. The values should be approximate crown diameter and crown
+height to tree height ratios of the trees expected to be found in the point
+cloud. Points will not be segmented wherever a raster contains \code{NA} values.}
 
 \item{segment_crowns_only_above}{A single positive number denoting the
 minimum height above ground at which crown IDs will be calculated.
@@ -99,16 +98,18 @@ algorithm works" to learn about the search cylinders.}
 
 \item{ground_height}{One of
 \itemize{
-\item \code{NULL}, indicating that \code{point_cloud} is normalized with
-ground height at zero.
-\item A \code{\link[raster]{raster}} object providing ground heights for
-the area of the (not normalized) \code{point_cloud}.
+\item \code{NULL}, indicating that \code{point_cloud} is normalized with ground height at
+zero.
+\item A \link[terra:SpatRaster-class]{SpatRaster} providing ground heights for the area
+of the (not normalized) \code{point_cloud}.
 \item A list of (ideally named) arguments to the
-\code{\link[lidR]{grid_terrain}} function, which will be used to generate
-a ground height grid from \code{point_cloud}. Currently not supported
-with point clouds stored in \code{data.frame}s. The list should not
-contain an argument to the "las" parameter of grid_terrain.
+\link[lidR:rasterize]{lidR rasterize_terrain()} function, which
+will be used to generate a ground height grid from \code{point_cloud}.
+Currently not supported with point clouds stored in
+\link[=data.frame]{data.frames}. The list should not contain an argument to
+the "las" parameter of \link[lidR:rasterize]{rasterize_terrain()}.
 }
+
 Points will not be segmented wherever ground heights are NA.}
 
 \item{crown_id_column_name}{A character string. The column or attribute name
@@ -136,34 +137,36 @@ algorithm.}
 
 \item{...}{Unused.}
 
-\item{verbose}{\code{TRUE} or \code{FALSE}. Should the function show a
-progress bar and other runtime information in the console?}
+\item{verbose}{\code{TRUE} or \code{FALSE}. Should the function show a progress bar and
+other runtime information in the console?}
 
-\item{also_return_modes}{\code{TRUE} or \code{FALSE}. Should mode coordinates
-be returned as well?}
+\item{also_return_modes}{\code{TRUE} or \code{FALSE}. Should mode coordinates be
+returned as well?}
 
-\item{also_return_centroids}{\code{TRUE} or \code{FALSE}. Should centroid
-coordinates be returned as well? This slows down processing by a little bit
-and will return a data set which requires at least ~10 times more memory
-than the input point cloud.}
+\item{also_return_centroids}{\code{TRUE} or \code{FALSE}. Should centroid coordinates
+be returned as well? This slows down processing by a little bit and will
+return a data set which requires at least ~10 times more memory than the
+input point cloud.}
 
 \item{write_crown_id_also_to_file}{\code{TRUE} or \code{FALSE}. When writing
 the returned LAS object to disk, should the IDs of segmented bodies be
-written into that file as well? See \code{\link[lidR]{add_lasattribute}}
-for additional details. Will also be used for all attributes of the LAS
-object(s) which are returned if \code{also_return_modes} and/or
-\code{also_return_centroids} were set to \code{TRUE}.
+written into that file as well? See the
+\link[lidR:add_attribute]{lidR function add_lasattribute()} for additional
+details. Will also be used for all attributes of the
+\link[lidR:LAS-class]{LAS object(s)} which are returned if \code{also_return_modes}
+and/or \code{also_return_centroids} were set to \code{TRUE}.
 
-For \code{\link[lidR]{LAScatalog-class}} objects, this is only used if the
-result is returned as a \code{\link[lidR]{LAS}} object in memory. If the
+For \link[lidR:LAScatalog-class]{LAScatalogs}, this is only used if the
+result is returned as a \link[lidR:LAS-class]{LAS object} in memory. If the
 LAScatalog is set up to write the segmented point clouds into files, the
 IDs of segmented bodies will always be written to these files as well.}
 
 \item{crown_id_file_description}{A character string. If
 \code{write_crown_id_also_to_file} is set to \code{TRUE} this will be used
 as an additional description of the IDs of segmented bodies when the LAS
-object is written to disk. See the "desc" parameter of
-\code{\link[lidR]{add_lasattribute}} for additional details.}
+object is written to disk. See the "desc" parameter of the
+\link[lidR:add_attribute]{lidR function add_lasattribute()} for additional
+details.}
 }
 \value{
 The point cloud which was passed to the function but extended with a
@@ -171,9 +174,8 @@ column/attribute holding for each point the ID of a segmented body. IDs
 with the value \code{NA} indicate that a point was not assigned to any
 body.
 
-If \code{also_return_modes} and/or \code{also_return_centroids} were set to
-\code{TRUE}, a list with at most three named elements in the following
-order:
+If \code{also_return_modes} and/or \code{also_return_centroids} were set to \code{TRUE}, a
+list with at most three named elements in the following order:
 \describe{
 \item{segmented_point_cloud}{
 The segmented point cloud which would have been returned directly if
@@ -198,33 +200,33 @@ segmented bodies that the centroids belong to and the other (named
 }
 }
 
-The method for \code{\link[lidR]{LAScatalog-class}} objects works just like
-any other lidR function that accepts LAScatalogs, i.e. it returns either an
-in-memory \code{\link[lidR]{LAS}} object or writes the processed chunks to
+The method for \link[lidR:LAScatalog-class]{LASCatalogs} works just like
+any other lidR function that accepts them, i.e. it returns either an
+in-memory \link[lidR:LAS-class]{LAS object} or writes the processed chunks to
 individual files and returns those file's names. Please refer to the
-documentation of the \code{\link[lidR]{LAScatalog-class}} for more details.
+\link[lidR:LAScatalog-class]{LASCatalog} documentation for more details.
 }
 \description{
 Employs a variant of the mean shift algorithm (Ferraz et. al, 2016) and after
 that the DBSCAN algorithm in order to identify tree crowns in airborne lidar
 data.
 }
-\section{Methods (by class)}{
+\section{Functions}{
 \itemize{
-\item \code{data.frame}: Segments coordinates stored as three columns
-in a \code{\link[base]{data.frame}} or
-\code{\link[data.table]{data.table}}.
+\item \code{segment_tree_crowns(data.frame)}: Segments coordinates stored as three columns
+in a \link[=data.frame]{data.frame} or \link[data.table:data.table]{data.table}.
 
-\item \code{LAS}: Segments the point cloud data of a
-\code{\link[lidR]{LAS}} object.
+\item \code{segment_tree_crowns(LAS)}: Segments the point cloud data of a
+\link[lidR:LAS-class]{LAS object}.
 
-\item \code{LAScatalog}: Segments the point cloud data of a
-\code{\link[lidR]{LAScatalog-class}} object. This method does not support
+\item \code{segment_tree_crowns(LAScatalog)}: Segments the point cloud data of a
+\link[lidR:LAScatalog-class]{LAScatalog}. This method does not support
 additionally returning modes and/or centroids. Instead of the verbose
-parameter use the LAScatalog's progress option (see the LAScatalog
-documentation -> "Processing options" -> "progress").
-}}
+parameter use the LAScatalog's progress option (see the
+\link[lidR:LAScatalog-class]{LAScatalog documentation} -> "Processing options"
+-> "progress").
 
+}}
 \section{How the algorithm works}{
 
 
@@ -296,18 +298,19 @@ ID is assigned to each encountered point.
 \examples{
 # Load a point cloud of some trees included in the lidR package
 point_cloud <- lidR::readLAS(system.file(
-  "extdata/MixedConifer.laz", package = "lidR"
+  "extdata/MixedConifer.laz",
+  package = "lidR"
 ))
 
 # Set up a plotting function for segmented point clouds
-plot_segmented_point_cloud <- function(point_cloud,
-                                       crown_colors = NULL,
-                                       size = 3) {
-
+plot_segmented_point_cloud <- function(
+    point_cloud,
+    crown_colors = NULL,
+    size = 3) {
   # Generate random crown colors
   if (is.null(crown_colors)) {
-    crown_colors <- lidR::random.colors(
-      n = length(unique(point_cloud@data[["crown_id"]])) - 1
+    crown_colors <- lidR::pastel.colors(
+      n = length(unique(point_cloud@data[["crown_id"]]))
     )
   }
 
@@ -315,7 +318,8 @@ plot_segmented_point_cloud <- function(point_cloud,
   lidR::plot(
     point_cloud,
     color = "crown_id",
-    colorPalette = crown_colors,
+    pal = crown_colors,
+    nbreaks = length(crown_colors),
     size = size,
     axis = TRUE
   )
@@ -348,10 +352,11 @@ plot_segmented_point_cloud(segmented_point_cloud)
 # Segment Terraneous (i.e. Non-Normalized) Point Clouds -------------------
 
 terraneous_point_cloud <- lidR::readLAS(system.file(
-  "extdata/Topography.laz", package = "lidR"
+  "extdata/Topography.laz",
+  package = "lidR"
 ))
 
-# Either pass arguments for the lidR::grid_terrain() function
+# Either pass arguments for the lidR::rasterize_terrain() function
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   terraneous_point_cloud,
   crown_diameter_to_tree_height = 0.5,
@@ -361,7 +366,8 @@ segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
 )
 
 # Or pass a ground height raster
-ground_height_grid <- lidR::grid_terrain(terraneous_point_cloud,
+ground_height_grid <- lidR::rasterize_terrain(
+  terraneous_point_cloud,
   algorithm = lidR::tin()
 )
 
@@ -380,13 +386,15 @@ plot_segmented_point_cloud(segmented_point_cloud)
 
 # Create a raster of crown_diameter_to_tree_height ratios with 0.25 in the
 # western half and 0.75 in the eastern half
-crown_diameter_to_tree_height_grid <- raster::raster(
+crown_diameter_to_tree_height_grid <- terra::rast(
   matrix(c(0.25, 0.75), ncol = 2),
-  xmn = lidR::extent(point_cloud)@xmin,
-  xmx = lidR::extent(point_cloud)@xmax,
-  ymn = lidR::extent(point_cloud)@ymin,
-  ymx = lidR::extent(point_cloud)@ymax,
-  crs = lidR::crs(point_cloud)
+  crs = lidR::st_crs(point_cloud)$wkt,
+  extent = terra::ext(
+    lidR::st_bbox(point_cloud)$xmin,
+    lidR::st_bbox(point_cloud)$xmax,
+    lidR::st_bbox(point_cloud)$ymin,
+    lidR::st_bbox(point_cloud)$ymax
+  )
 )
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
@@ -422,15 +430,16 @@ crown_colors <- lidR::random.colors(
 )
 
 # Plot the segemented point cloud
-plot_segmented_point_cloud(segmentation_results$segmented_point_cloud,
-  crown_colors
+plot_segmented_point_cloud(
+  segmentation_results$segmented_point_cloud, crown_colors
 )
 # Plot the modes
-plot_segmented_point_cloud(segmentation_results$modes,
-  crown_colors
+plot_segmented_point_cloud(
+  segmentation_results$modes, crown_colors
 )
 # Plot the centroids
-plot_segmented_point_cloud(segmentation_results$centroids,
+plot_segmented_point_cloud(
+  segmentation_results$centroids,
   crown_colors,
   size = 1
 )
@@ -450,15 +459,8 @@ system.time(
     dbscan_neighborhood_radius = 0.5
   )
 )
-lidR::plot(
-  segmented_point_cloud,
-  color = "crown_id",
-  colorPalette = lidR::random.colors(
-    n = length(unique(segmented_point_cloud@data$crown_id)) - 1
-  ),
-  size = 3,
-  axis = TRUE
-)
+
+plot_segmented_point_cloud(segmented_point_cloud)
 
 system.time(
   segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
@@ -469,15 +471,8 @@ system.time(
     dbscan_neighborhood_radius = 0.3 # default value
   )
 )
-lidR::plot(
-  segmented_point_cloud,
-  color = "crown_id",
-  colorPalette = lidR::random.colors(
-    n = length(unique(segmented_point_cloud@data$crown_id)) - 1
-  ),
-  size = 3,
-  axis = TRUE
-)
+
+plot_segmented_point_cloud(segmented_point_cloud)
 }
 \references{
 Ferraz, A., S. Saatchi, C. Mallet, and V. Meyer (2016)

@@ -22,41 +22,44 @@
 #' Calls the C++ back-end and the DBSCAN algorithm to perform the segmentation
 #'
 #' This functions is meant to be used internally by methods of the
-#' \code{segment_tree_crowns} generic.
+#' `segment_tree_crowns` generic.
 #'
-#' @param coordinate_table A \code{data.frame} or \code{data.table} which is a
-#'   valid coordinate table according to \code{validate_coordinate_table}.
+#' @param coordinate_table A [data.frame][base::data.frame()] or
+#'   [data.table][data.table::data.table()]
+#'   which is a valid coordinate table according to `validate_coordinate_table`.
 #' @param ground_height One of
 #'   \itemize{
-#'     \item \code{NULL}, indicating that the point cloud stored in
-#'     \code{coordinate_table} is normalized with ground height at zero.
-#'     \item A \code{\link[raster]{raster}} object providing ground heights for
+#'     \item `NULL`, indicating that the point cloud stored in
+#'     `coordinate_table` is normalized with ground height at zero.
+#'     \item A [SpatRaster][terra::SpatRaster] providing ground heights for
 #'     the area of the (not normalized) point cloud stored in
-#'     \code{coordinate_table}.
+#'     `coordinate_table`.
 #'   }
 #' @inheritParams segment_tree_crowns
 #'
 #' @inheritSection segment_tree_crowns How the algorithm works
 #'
-#' @return A list with at most three elements:
+#' @returns A list with at most three elements:
 #'   \describe{
 #'     \item{crown_ids}{A vector of IDs of segmented bodies.}
 #'     \item{mode_coordinates}{
-#'       If \code{also_return_modes} was set to \code{TRUE}, a \code{data.table}
-#'       with mode coordinates as the second list element. The table has two
-#'       additional columns: \describe{
+#'       If `also_return_modes` was set to `TRUE`, a
+#'       [data.table][data.table::data.table()] with mode coordinates as the
+#'       second list element.
+#'       The table has two additional columns: \describe{
 #'         \item{crown_id}{
 #'           Holds the IDs also returned with the first list element.
 #'         }
 #'         \item{point_index}{
 #'           Holds row indices of the original points in the input
-#'           \code{coordinate_table}.
+#'           `coordinate_table`.
 #'         }
 #'       }
 #'     }
 #'     \item{centroid_coordinates}{
-#'       If \code{also_return_centroids} was set to \code{TRUE}, a
-#'       \code{data.table} with centroid coordinates as the last list element.
+#'       If `also_return_centroids` was set to `TRUE`, a
+#'       [data.table][data.table::data.table()] with centroid coordinates as the
+#'       last list element.
 #'       The table has two additional columns:
 #'       \describe{
 #'         \item{crown_id}{
@@ -64,26 +67,24 @@
 #'         }
 #'         \item{point_index}{
 #'           Holds row indices of the original points in the input
-#'           \code{coordinate_table}.
+#'           `coordinate_table`.
 #'         }
 #'       }
 #'     }
 #'   }
-#'
-#' @import assertthat
-segment_tree_crowns_core <- function(coordinate_table,
-                                     segment_crowns_only_above,
-                                     ground_height,
-                                     crown_diameter_to_tree_height,
-                                     crown_height_to_tree_height,
-                                     verbose,
-                                     centroid_convergence_distance,
-                                     max_num_centroids_per_mode,
-                                     dbscan_neighborhood_radius,
-                                     min_num_modes_per_neighborhood,
-                                     also_return_modes,
-                                     also_return_centroids) {
-
+segment_tree_crowns_core <- function(
+    coordinate_table,
+    segment_crowns_only_above,
+    ground_height,
+    crown_diameter_to_tree_height,
+    crown_height_to_tree_height,
+    verbose,
+    centroid_convergence_distance,
+    max_num_centroids_per_mode,
+    dbscan_neighborhood_radius,
+    min_num_modes_per_neighborhood,
+    also_return_modes,
+    also_return_centroids) {
   coordinate_values <- extract_coordinate_values(coordinate_table)
 
   # Warn about likely not normalized point clouds
@@ -91,46 +92,26 @@ segment_tree_crowns_core <- function(coordinate_table,
     warn_about_normalization(coordinate_table[[3]])
   } else {
     # Get the raster values only in the bounding box of the point cloud
-    ground_height <- raster::crop(ground_height, raster::extent(
-      min(coordinate_values[[1]], na.rm = TRUE),
-      max(coordinate_values[[1]], na.rm = TRUE),
-      min(coordinate_values[[2]], na.rm = TRUE),
-      max(coordinate_values[[2]], na.rm = TRUE)
-    ))
-    # Create a list with raster data that can be used by the C++ back-end
-    ground_height <- list(
-      values = raster::values(ground_height),
-      num_rows = raster::nrow(ground_height),
-      num_cols = raster::ncol(ground_height),
-      x_min = raster::xmin(ground_height),
-      x_max = raster::xmax(ground_height),
-      y_min = raster::ymin(ground_height),
-      y_max = raster::ymax(ground_height)
+    ground_height <- crop_raster_with_coordinates_extent(
+      ground_height, coordinate_values
     )
+
+    # Create a list with raster data that can be used by the C++ back-end
+    ground_height <- create_cpp_list_from_raster(ground_height)
   }
 
   # If either of the crown diameter or crown height to tree height ratios is a
   # raster, convert both of them and the ground height to lists for the C++
   # back-end.
-  if (methods::is(crown_diameter_to_tree_height, "RasterLayer") ||
-      methods::is(crown_height_to_tree_height, "RasterLayer")) {
+  if (methods::is(crown_diameter_to_tree_height, "SpatRaster") ||
+    methods::is(crown_height_to_tree_height, "SpatRaster")) {
+    if (methods::is(crown_diameter_to_tree_height, "SpatRaster")) {
+      crown_diameter_to_tree_height <- crop_raster_with_coordinates_extent(
+        crown_diameter_to_tree_height, coordinate_values
+      )
 
-    if (methods::is(crown_diameter_to_tree_height, "RasterLayer")) {
-      crown_diameter_to_tree_height <-
-        raster::crop(crown_diameter_to_tree_height, raster::extent(
-          min(coordinate_values[[1]], na.rm = TRUE),
-          max(coordinate_values[[1]], na.rm = TRUE),
-          min(coordinate_values[[2]], na.rm = TRUE),
-          max(coordinate_values[[2]], na.rm = TRUE)
-        ))
-      crown_diameter_to_tree_height <- list(
-        values = raster::values(crown_diameter_to_tree_height),
-        num_rows = raster::nrow(crown_diameter_to_tree_height),
-        num_cols = raster::ncol(crown_diameter_to_tree_height),
-        x_min = raster::xmin(crown_diameter_to_tree_height),
-        x_max = raster::xmax(crown_diameter_to_tree_height),
-        y_min = raster::ymin(crown_diameter_to_tree_height),
-        y_max = raster::ymax(crown_diameter_to_tree_height)
+      crown_diameter_to_tree_height <- create_cpp_list_from_raster(
+        crown_diameter_to_tree_height
       )
     } else {
       crown_diameter_to_tree_height <- list(
@@ -138,22 +119,13 @@ segment_tree_crowns_core <- function(coordinate_table,
       )
     }
 
-    if (methods::is(crown_height_to_tree_height, "RasterLayer")) {
-      crown_height_to_tree_height <-
-        raster::crop(crown_height_to_tree_height, raster::extent(
-          min(coordinate_values[[1]], na.rm = TRUE),
-          max(coordinate_values[[1]], na.rm = TRUE),
-          min(coordinate_values[[2]], na.rm = TRUE),
-          max(coordinate_values[[2]], na.rm = TRUE)
-        ))
-      crown_height_to_tree_height <- list(
-        values = raster::values(crown_height_to_tree_height),
-        num_rows = raster::nrow(crown_height_to_tree_height),
-        num_cols = raster::ncol(crown_height_to_tree_height),
-        x_min = raster::xmin(crown_height_to_tree_height),
-        x_max = raster::xmax(crown_height_to_tree_height),
-        y_min = raster::ymin(crown_height_to_tree_height),
-        y_max = raster::ymax(crown_height_to_tree_height)
+    if (methods::is(crown_height_to_tree_height, "SpatRaster")) {
+      crown_height_to_tree_height <- crop_raster_with_coordinates_extent(
+        crown_height_to_tree_height, coordinate_values
+      )
+
+      crown_height_to_tree_height <- create_cpp_list_from_raster(
+        crown_height_to_tree_height
       )
     } else {
       crown_height_to_tree_height <- list(
@@ -171,44 +143,44 @@ segment_tree_crowns_core <- function(coordinate_table,
 
   # If crown_diameter_to_tree_height is a list, call the "flexible" C++ back-end
   if (is.list(crown_diameter_to_tree_height)) {
-      modes_and_centroids <- calculate_modes_flexible(
-        coordinate_values,
-        min_point_height_above_ground = segment_crowns_only_above,
-        ground_height,
-        crown_diameter_to_tree_height,
-        crown_height_to_tree_height,
-        centroid_convergence_distance,
-        max_num_centroids_per_mode,
-        also_return_centroids,
-        show_progress_bar = verbose
-      )
+    modes_and_centroids <- calculate_modes_flexible(
+      coordinate_values,
+      min_point_height_above_ground = segment_crowns_only_above,
+      ground_height,
+      crown_diameter_to_tree_height,
+      crown_height_to_tree_height,
+      centroid_convergence_distance,
+      max_num_centroids_per_mode,
+      also_return_centroids,
+      show_progress_bar = verbose
+    )
 
-  # Call the C++ back-end for normalized point clouds
+    # Call the C++ back-end for normalized point clouds
   } else if (is.null(ground_height)) {
-      modes_and_centroids <- calculate_modes_normalized(
-        coordinate_values,
-        min_point_height_above_ground = segment_crowns_only_above,
-        crown_diameter_to_tree_height,
-        crown_height_to_tree_height,
-        centroid_convergence_distance,
-        max_num_centroids_per_mode,
-        also_return_centroids,
-        show_progress_bar = verbose
-      )
+    modes_and_centroids <- calculate_modes_normalized(
+      coordinate_values,
+      min_point_height_above_ground = segment_crowns_only_above,
+      crown_diameter_to_tree_height,
+      crown_height_to_tree_height,
+      centroid_convergence_distance,
+      max_num_centroids_per_mode,
+      also_return_centroids,
+      show_progress_bar = verbose
+    )
 
-  # Call the C++ back-end for not normalized point clouds
+    # Call the C++ back-end for not normalized point clouds
   } else {
-      modes_and_centroids <- calculate_modes_terraneous(
-        coordinate_values,
-        min_point_height_above_ground = segment_crowns_only_above,
-        ground_height,
-        crown_diameter_to_tree_height,
-        crown_height_to_tree_height,
-        centroid_convergence_distance,
-        max_num_centroids_per_mode,
-        also_return_centroids,
-        show_progress_bar = verbose
-      )
+    modes_and_centroids <- calculate_modes_terraneous(
+      coordinate_values,
+      min_point_height_above_ground = segment_crowns_only_above,
+      ground_height,
+      crown_diameter_to_tree_height,
+      crown_height_to_tree_height,
+      centroid_convergence_distance,
+      max_num_centroids_per_mode,
+      also_return_centroids,
+      show_progress_bar = verbose
+    )
   }
 
   modes <- modes_and_centroids$mode_coordinates
@@ -271,30 +243,36 @@ segment_tree_crowns_core <- function(coordinate_table,
   }
 
   if (also_return_centroids) {
-
     crown_ids_w_point_indices <- data.table::data.table(
       crown_id = crown_ids,
       point_index = seq_len(nrow(coordinate_table))
     )
+
+    # For R CMD check which sees variables in data.table syntax as global
+    . <- x <- y <- z <- crown_id <- point_index <- NULL
 
     # Join the crown IDs to the centroid coordinates via the point index using
     # some data.table syntax.
     res[["centroid_coordinates"]] <- data.table::as.data.table(
       modes_and_centroids$centroid_coordinates
     )[
-      crown_ids_w_point_indices, on = "point_index"][ # join syntax
-        # make point_index the last column for consistency with the modes data
-        , .(x, y, z, crown_id, point_index)]
+      crown_ids_w_point_indices,
+      on = "point_index"
+    ][ # join syntax
+      # make point_index the last column for consistency with the modes data
+      , .(x, y, z, crown_id, point_index)
+    ]
 
     # Find centroids with NA coordinates
     na_centroid_coordinates <-
       is.na(res$centroid_coordinates$x) |
-      is.na(res$centroid_coordinates$y) |
-      is.na(res$centroid_coordinates$z)
+        is.na(res$centroid_coordinates$y) |
+        is.na(res$centroid_coordinates$z)
 
     # Exclude centroids with NA coordinates
     res$centroid_coordinates <- res$centroid_coordinates[
-      !na_centroid_coordinates, ]
+      !na_centroid_coordinates,
+    ]
   }
 
   return(res)
@@ -302,34 +280,32 @@ segment_tree_crowns_core <- function(coordinate_table,
 
 
 warn_about_normalization <- function(Z_coordinate_values) {
-
   # Get min, max, and 1% Z values
   z_percentiles <- stats::quantile(Z_coordinate_values, probs = c(0, 0.01, 1))
 
-  lowest_point_too_high <- z_percentiles[[1]] > 100
+  lowest_point_too_high <- z_percentiles[[1]] > 1
   highest_point_too_high <- z_percentiles[[3]] > 100
-  lowest_points_too_far_apart <- z_percentiles[[2]] - z_percentiles[[1]] > 5
+  lowest_points_too_far_apart <- z_percentiles[[2]] - z_percentiles[[1]] > 3
 
   if (any(
     lowest_point_too_high,
     highest_point_too_high,
     lowest_points_too_far_apart
   )) {
-
     warning_start <- paste0(
       "Your point cloud might not be normalized! If you want to segment trees ",
       "in not normalized point clouds, you have to provide ground heights via ",
-      "the ground_height parameter.\n",
+      "the `ground_height` parameter.\n",
       "(Your point cloud looks like it's not normalized because "
     )
 
     if (lowest_point_too_high) {
-      reason <- "the lowest point lies above 100 m"
+      reason <- "the lowest point lies above 1 m"
     } else if (highest_point_too_high) {
       reason <- "the highest point lies above 100 m"
     } else if (lowest_points_too_far_apart) {
       reason <-
-        "the lowest 1% of points covers a vertical distance of more than 5 m"
+        "the lowest 1% of points covers a vertical distance of more than 3 m"
     }
 
     warning(warning_start, reason, " (units are assumed).)",
@@ -337,4 +313,25 @@ warn_about_normalization <- function(Z_coordinate_values) {
       immediate. = TRUE
     )
   }
+}
+
+crop_raster_with_coordinates_extent <- function(raster, coordinates) {
+  return(terra::crop(raster, terra::ext(
+    min(coordinates[[1]], na.rm = TRUE),
+    max(coordinates[[1]], na.rm = TRUE),
+    min(coordinates[[2]], na.rm = TRUE),
+    max(coordinates[[2]], na.rm = TRUE)
+  )))
+}
+
+create_cpp_list_from_raster <- function(raster) {
+  return(list(
+    values = terra::values(raster[[1]])[, 1],
+    num_rows = as.integer(terra::nrow(raster)),
+    num_cols = as.integer(terra::ncol(raster)),
+    x_min = terra::xmin(raster),
+    x_max = terra::xmax(raster),
+    y_min = terra::ymin(raster),
+    y_max = terra::ymax(raster)
+  ))
 }
