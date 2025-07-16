@@ -35,8 +35,35 @@ pak::pak("Lenostatos/crownsegmentr")
 This is a basic example which shows you how to segment a normalized
 point cloud and visualize the result:
 
-    #>   Calculating modes [-----------------------------]   0%%  eta:?s  elapsed: 0s  Calculating modes [===---------------------] 10.6222%%  eta: 2s  elapsed: 0s  Calculating modes [====--------------------] 15.9333%%  eta: 2s  elapsed: 0s  Calculating modes [=====-------------------] 21.2444%%  eta: 2s  elapsed: 1s  Calculating modes [======------------------] 26.5555%%  eta: 2s  elapsed: 1s  Calculating modes [========----------------] 31.8666%%  eta: 2s  elapsed: 1s  Calculating modes [=========---------------] 37.1777%%  eta: 2s  elapsed: 1s  Calculating modes [==========--------------] 42.4888%%  eta: 1s  elapsed: 1s  Calculating modes [===========-------------] 47.7999%%  eta: 1s  elapsed: 1s  Calculating modes [=============------------] 53.111%%  eta: 1s  elapsed: 1s  Calculating modes [==============----------] 58.4221%%  eta: 1s  elapsed: 2s  Calculating modes [===============---------] 63.7332%%  eta: 1s  elapsed: 2s  Calculating modes [=================-------] 69.0443%%  eta: 1s  elapsed: 2s  Calculating modes [==================------] 74.3554%%  eta: 1s  elapsed: 2s  Calculating modes [===================-----] 79.6665%%  eta: 1s  elapsed: 2s  Calculating modes [====================----] 84.9776%%  eta: 0s  elapsed: 2s  Calculating modes [======================--] 90.2887%%  eta: 0s  elapsed: 2s  Calculating modes [=======================-] 95.5998%%  eta: 0s  elapsed: 2s  Calculating modes [============================] 100%%  eta: 0s  elapsed: 3s
-    #>   Finding mode clusters...done.
+``` r
+# Load a point cloud of some trees included in the lidR package
+point_cloud <- lidR::readLAS(system.file(
+  "extdata/MixedConifer.laz",
+  package = "lidR"
+))
+
+# Segment a normalized point cloud
+segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
+  point_cloud,
+  crown_diameter_to_tree_height = 0.25,
+  crown_height_to_tree_height = 0.5
+)
+
+# Generate random crown colors
+crown_colors <- lidR::pastel.colors(
+  n = length(unique(segmented_point_cloud@data[["crown_id"]]))
+)
+
+# Plot the segmented crown bodies
+lidR::plot(
+  segmented_point_cloud,
+  color = "crown_id",
+  pal = crown_colors,
+  nbreaks = length(crown_colors),
+  size = 3,
+  axis = TRUE
+)
+```
 
 ## Code Structure
 

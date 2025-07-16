@@ -36,7 +36,7 @@ pak::pak("Lenostatos/crownsegmentr")
 
 This is a basic example which shows you how to segment a normalized point cloud and visualize the result:
 
-```{r example, echo = FALSE}
+```{r example, eval=FALSE}
 # Load a point cloud of some trees included in the lidR package
 point_cloud <- lidR::readLAS(system.file(
   "extdata/MixedConifer.laz",
