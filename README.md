@@ -46,7 +46,7 @@ point_cloud <- lidR::readLAS(system.file(
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
   crown_diameter_to_tree_height = 0.25,
-  crown_height_to_tree_height = 0.5
+  crown_length_to_tree_height = 0.5
 )
 
 # Generate random crown colors
@@ -195,7 +195,7 @@ actual exposition to R. The functions are
 - `calculate_modes_flexible`
   ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_flexible.cpp))
   for processing both normalized and non-normalized while possibly also
-  using rasters for the crown diameter and crown height to tree height
+  using rasters for the crown diameter and crown length to tree height
   parameters.
 
 They are all doing basically the same thing, which is looping over
@@ -228,7 +228,7 @@ three times:
 
 1.  The most simple overload assumes a normalized point cloud with
     ground height at zero and takes single numbers for the
-    `crown_diameter_to_tree_height` and `crown_height_to_tree_height`
+    `crown_diameter_to_tree_height` and `crown_length_to_tree_height`
     arguments
     ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_normalized.cpp)).
 2.  The second overload can deal with not normalized point clouds by
@@ -320,7 +320,7 @@ The raster classes were set up like this to make it possible to pass
 either a single value or an actual raster to the same function argument.
 Without this it would be necessary to code every combination of function
 parameters where the ground height and the
-`crown_diameter_to_tree_height` and `crown_height_to_tree_height`
+`crown_diameter_to_tree_height` and `crown_length_to_tree_height`
 parameters can be either a single value or a raster of values. With the
 `I_Raster` class it is possible to pass either
 `Single_value_pseudo_raster` or `Raster` objects to the same function
@@ -428,14 +428,14 @@ lists. The syntax of these initializer lists looks like this:
     # two main parameters to the algorithm
     vertical_cylinder_at( point ):
         cylinder = new cylinder (
-            height   = above_ground_height_of( point ) * ch_2_th
+            height   = above_ground_height_of( point ) * cl_2_th
             diameter = above_ground_height_of( point ) * cd_2_th
         )
         
         return( upper_three_quarters_of( cylinder ) )
 
-        # ch_2_th and cd_2_th are available as parameters to the
-        # algorithm and stand for "crown height to tree height" and
+        # cl_2_th and cd_2_th are available as parameters to the
+        # algorithm and stand for "crown length to tree height" and
         # "crown diameter to tree height"
         
         

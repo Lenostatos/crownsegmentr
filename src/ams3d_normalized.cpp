@@ -30,7 +30,7 @@ namespace ams3d
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
         const double crown_diameter_to_tree_height,
-        const double crown_height_to_tree_height,
+        const double crown_length_to_tree_height,
         const spatial::distance_t &centroid_convergence_distance,
         const int max_num_centroids_per_mode
     ) {
@@ -54,7 +54,7 @@ namespace ams3d
             _Kernel kernel {
                 current_centroid,
                 crown_diameter_to_tree_height,
-                crown_height_to_tree_height
+                crown_length_to_tree_height
             };
 
             // Store the current centroid and calculate a new centroid with the
@@ -82,7 +82,7 @@ namespace ams3d
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
         const double crown_diameter_to_tree_height,
-        const double crown_height_to_tree_height,
+        const double crown_length_to_tree_height,
         const spatial::distance_t &centroid_convergence_distance,
         const int max_num_centroids_per_mode
     ) {
@@ -113,7 +113,7 @@ namespace ams3d
             _Kernel kernel {
                 current_centroid,
                 crown_diameter_to_tree_height,
-                crown_height_to_tree_height
+                crown_length_to_tree_height
             };
 
             // Store the current centroid and calculate a new centroid with the
