@@ -18,12 +18,12 @@ segmentation in airborne lidar data. For a general description of how
 the tree segmentation works, see the documentation of the
 [`segment_tree_crowns`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R)
 generic. Pseudo code of the AMS3D algorithm is listed
-[below](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/README.md#pseudo-code-of-the-ams3d-algorithm).
+[below](#pseudo-code-of-the-ams3d-algorithm).
 
 ## Installation
 
 You can install the development version of crownsegmentr from
-[GitHub](https://github.com/) with:
+[GitHub](https://github.com/Lenostatos/crownsegmentr) with:
 
 ``` r
 # install.packages("pak")
