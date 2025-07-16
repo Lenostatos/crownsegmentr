@@ -21,10 +21,39 @@
 
 # Maintenance -------------------------------------------------------------
 
-# For conveniently updating version numbers:
-usethis::use_version()
+# Make usethis functions available on the command line without package prefix.
+# usethis::use_usethis()
 
-# Use X to do Y:
+# Package development workflow summary:
+# + devtools::document()
+# + devtools::load_all()
+# + Run some examples interactively.
+# + devtools::test()
+# + devtools::check()
+# Source: https://r-pkgs.org/code.html#constant-health-checks
+
+# Use X after doing Y:
+# + Use devtools::load_all() or Ctrl+Shift+L after changing R code to reinstall
+#   package.
+# + Use "Install and restart" in the Build tab or Ctrl+Shift+B after changing
+#   C/C++ code in order to do perform an installation with source compilation.
+# + Use devtools::check() to regularly perform R CMD check
+# + Use devtools::document() or Ctrl+Shift+D after changing documentation.
+# + Use devtools::document() after adding functions in order to add those
+#   functions to the NAMESAPCE file.
+# + Use devtools::build_readme() after updating README.Rmd.
+# + Use usethis::use_test() when editing an R source file in order to create a
+#   test file (or switch to it if it already exists).
+# + Use usethis::use_r() when editing a test file in order to switch back to the
+#   respective R source file.
+# + Use devtools::build(binary = TRUE) after updating the package in order to
+#   create a compiled bundle of the package that can be installed without
+#   devtools and RTools, but only on the OS that it was compiled on.
+# + Use devtools::build() after updating the package in order to create a bundle
+#   of the package that can be installed on any OS as long as the required
+#   compiler toolchain is installed (RTools on Windows and Mac OS and something
+#   equivalent on Linux).
+# + Use usethis::use_version() for conveniently updating version numbers.
 # + Use usethis::use_tidy_style() to style all code according to the tidyverse
 #   style guide.
 # + Use devtools::dev_sitrep() from time to time to check for dependency
@@ -119,35 +148,3 @@ usethis::use_tidy_description()
 usethis::use_r(name = "try_to_extract_coordinate_data.R")
 
 usethis::use_r(name = "segment_tree_crowns.R")
-
-# Make usethis functions available on the command line without package prefix.
-# usethis::use_usethis()
-
-# Package development workflow summary:
-# + devtools::document()
-# + devtools::load_all()
-# + Run some examples interactively.
-# + devtools::test()
-# + devtools::check()
-# Source: https://r-pkgs.org/code.html#constant-health-checks
-
-# Use X after doing Y:
-# + Use devtools::document() after adding functions in order to add those
-#   functions to the NAMESAPCE file.
-# + Use devtools::load_all() or Ctrl+Shift+L after changing R code to reinstall
-#   package.
-# + Use "Install and restart" in the Build tab or Ctrl+Shift+B after changing
-#   C/C++ code in order to do perform an installation with source compilation.
-# + Use devtools::check() to regularly perform R CMD check
-# + Use devtools::document() or Ctrl+Shift+D after changing documentation.
-# + Use usethis::use_test() when editing an R source file in order to create a
-#   test file (or switch to it if it already exists).
-# + Use usethis::use_r() when editing a test file in order to switch back to the
-#   respective R source file.
-# + Use devtools::build(binary = TRUE) after updating the package in order to
-#   create a compiled bundle of the package that can be installed without
-#   devtools and RTools, but only on the OS that it was compiled on.
-# + Use devtools::build() after updating the package in order to create a bundle
-#   of the package that can be installed on any OS as long as the required
-#   compiler toolchain is installed (RTools on Windows and Mac OS and something
-#   equivalent on Linux).
