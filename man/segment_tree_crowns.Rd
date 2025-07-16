@@ -309,7 +309,7 @@ plot_segmented_point_cloud <- function(
     size = 3) {
   # Generate random crown colors
   if (is.null(crown_colors)) {
-    crown_colors <- lidR::random.colors(
+    crown_colors <- lidR::pastel.colors(
       n = length(unique(point_cloud@data[["crown_id"]]))
     )
   }
@@ -319,6 +319,7 @@ plot_segmented_point_cloud <- function(
     point_cloud,
     color = "crown_id",
     pal = crown_colors,
+    nbreaks = length(crown_colors),
     size = size,
     axis = TRUE
   )
@@ -459,15 +460,7 @@ system.time(
   )
 )
 
-lidR::plot(
-  segmented_point_cloud,
-  color = "crown_id",
-  colorPalette = lidR::random.colors(
-    n = length(unique(segmented_point_cloud@data$crown_id)) - 1
-  ),
-  size = 3,
-  axis = TRUE
-)
+plot_segmented_point_cloud(segmented_point_cloud)
 
 system.time(
   segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
@@ -479,15 +472,7 @@ system.time(
   )
 )
 
-lidR::plot(
-  segmented_point_cloud,
-  color = "crown_id",
-  colorPalette = lidR::random.colors(
-    n = length(unique(segmented_point_cloud@data$crown_id)) - 1
-  ),
-  size = 3,
-  axis = TRUE
-)
+plot_segmented_point_cloud(segmented_point_cloud)
 }
 \references{
 Ferraz, A., S. Saatchi, C. Mallet, and V. Meyer (2016)
