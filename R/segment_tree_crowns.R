@@ -194,18 +194,17 @@
 #'
 #' @export
 methods::setGeneric("segment_tree_crowns",
-  function(
-      point_cloud,
-      crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
-      segment_crowns_only_above = 0,
-      ground_height = NULL,
-      crown_id_column_name = "crown_id",
-      centroid_convergence_distance = 0.01,
-      max_num_centroids_per_mode = 500,
-      dbscan_neighborhood_radius = 0.3,
-      min_num_modes_per_neighborhood = 5,
-      ...) {
+  function(point_cloud,
+           crown_diameter_to_tree_height,
+           crown_height_to_tree_height,
+           segment_crowns_only_above = 0,
+           ground_height = NULL,
+           crown_id_column_name = "crown_id",
+           centroid_convergence_distance = 0.01,
+           max_num_centroids_per_mode = 500,
+           dbscan_neighborhood_radius = 0.3,
+           min_num_modes_per_neighborhood = 5,
+           ...) {
     standardGeneric("segment_tree_crowns")
   },
   signature = "point_cloud"
@@ -228,20 +227,19 @@ methods::setGeneric("segment_tree_crowns",
 methods::setMethod(
   "segment_tree_crowns",
   signature(point_cloud = c("data.frame")),
-  function(
-      point_cloud,
-      crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
-      segment_crowns_only_above,
-      ground_height,
-      crown_id_column_name,
-      centroid_convergence_distance,
-      max_num_centroids_per_mode,
-      dbscan_neighborhood_radius,
-      min_num_modes_per_neighborhood,
-      verbose = TRUE,
-      also_return_modes = FALSE,
-      also_return_centroids = FALSE) {
+  function(point_cloud,
+           crown_diameter_to_tree_height,
+           crown_height_to_tree_height,
+           segment_crowns_only_above,
+           ground_height,
+           crown_id_column_name,
+           centroid_convergence_distance,
+           max_num_centroids_per_mode,
+           dbscan_neighborhood_radius,
+           min_num_modes_per_neighborhood,
+           verbose = TRUE,
+           also_return_modes = FALSE,
+           also_return_centroids = FALSE) {
     validate_coordinate_table(point_cloud)
     validate_crown_diameter_to_tree_height(
       crown_diameter_to_tree_height,
