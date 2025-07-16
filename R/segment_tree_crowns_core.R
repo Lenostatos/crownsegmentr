@@ -77,7 +77,7 @@ segment_tree_crowns_core <- function(
     segment_crowns_only_above,
     ground_height,
     crown_diameter_to_tree_height,
-    crown_height_to_tree_height,
+    crown_length_to_tree_height,
     verbose,
     centroid_convergence_distance,
     max_num_centroids_per_mode,
@@ -100,11 +100,11 @@ segment_tree_crowns_core <- function(
     ground_height <- create_cpp_list_from_raster(ground_height)
   }
 
-  # If either of the crown diameter or crown height to tree height ratios is a
+  # If either of the crown diameter or crown length to tree height ratios is a
   # raster, convert both of them and the ground height to lists for the C++
   # back-end.
   if (methods::is(crown_diameter_to_tree_height, "SpatRaster") ||
-    methods::is(crown_height_to_tree_height, "SpatRaster")) {
+    methods::is(crown_length_to_tree_height, "SpatRaster")) {
     if (methods::is(crown_diameter_to_tree_height, "SpatRaster")) {
       crown_diameter_to_tree_height <- crop_raster_with_coordinates_extent(
         crown_diameter_to_tree_height, coordinate_values
@@ -119,17 +119,17 @@ segment_tree_crowns_core <- function(
       )
     }
 
-    if (methods::is(crown_height_to_tree_height, "SpatRaster")) {
-      crown_height_to_tree_height <- crop_raster_with_coordinates_extent(
-        crown_height_to_tree_height, coordinate_values
+    if (methods::is(crown_length_to_tree_height, "SpatRaster")) {
+      crown_length_to_tree_height <- crop_raster_with_coordinates_extent(
+        crown_length_to_tree_height, coordinate_values
       )
 
-      crown_height_to_tree_height <- create_cpp_list_from_raster(
-        crown_height_to_tree_height
+      crown_length_to_tree_height <- create_cpp_list_from_raster(
+        crown_length_to_tree_height
       )
     } else {
-      crown_height_to_tree_height <- list(
-        value = crown_height_to_tree_height
+      crown_length_to_tree_height <- list(
+        value = crown_length_to_tree_height
       )
     }
 
@@ -148,7 +148,7 @@ segment_tree_crowns_core <- function(
       min_point_height_above_ground = segment_crowns_only_above,
       ground_height,
       crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
+      crown_length_to_tree_height,
       centroid_convergence_distance,
       max_num_centroids_per_mode,
       also_return_centroids,
@@ -161,7 +161,7 @@ segment_tree_crowns_core <- function(
       coordinate_values,
       min_point_height_above_ground = segment_crowns_only_above,
       crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
+      crown_length_to_tree_height,
       centroid_convergence_distance,
       max_num_centroids_per_mode,
       also_return_centroids,
@@ -175,7 +175,7 @@ segment_tree_crowns_core <- function(
       min_point_height_above_ground = segment_crowns_only_above,
       ground_height,
       crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
+      crown_length_to_tree_height,
       centroid_convergence_distance,
       max_num_centroids_per_mode,
       also_return_centroids,

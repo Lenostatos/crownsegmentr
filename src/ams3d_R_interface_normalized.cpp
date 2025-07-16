@@ -36,7 +36,7 @@
 //'     cloud.
 //' @param min_point_height_above_ground A single positive number. The minimum
 //'     point height above ground at which the function will calculate modes.
-//' @param crown_diameter_to_tree_height,crown_height_to_tree_height Single
+//' @param crown_diameter_to_tree_height,crown_length_to_tree_height Single
 //'     numbers. Crown diameter and crown height to tree height ratios of the
 //'     trees expected to be found in the point cloud.
 //' @param centroid_convergence_distance Numeric Scalar. Distance at which it is
@@ -76,7 +76,7 @@ Rcpp::List calculate_modes_normalized (
     const Rcpp::DataFrame &coordinate_table,
     const spatial::coordinate_t &min_point_height_above_ground,
     const double crown_diameter_to_tree_height,
-    const double crown_height_to_tree_height,
+    const double crown_length_to_tree_height,
     const spatial::distance_t &centroid_convergence_distance,
     const int max_num_centroids_per_mode,
     const bool also_return_centroids,
@@ -93,7 +93,7 @@ Rcpp::List calculate_modes_normalized (
             points,
             ams3d::_Kernel::bottom_height_above_ground_with (
                 min_point_height_above_ground,
-                crown_height_to_tree_height
+                crown_length_to_tree_height
             )
         )
     };
@@ -130,7 +130,7 @@ Rcpp::List calculate_modes_normalized (
                     point_cloud_index,
                     min_point_height_above_ground,
                     crown_diameter_to_tree_height,
-                    crown_height_to_tree_height,
+                    crown_length_to_tree_height,
                     centroid_convergence_distance,
                     max_num_centroids_per_mode
                 )
@@ -182,7 +182,7 @@ Rcpp::List calculate_modes_normalized (
                     point_cloud_index,
                     min_point_height_above_ground,
                     crown_diameter_to_tree_height,
-                    crown_height_to_tree_height,
+                    crown_length_to_tree_height,
                     centroid_convergence_distance,
                     max_num_centroids_per_mode
                 )

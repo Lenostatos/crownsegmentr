@@ -216,24 +216,24 @@ validate_crown_diameter_to_tree_height <- function(
   }
 }
 
-validate_crown_height_to_tree_height <- function(
-    crown_height_to_tree_height,
+validate_crown_length_to_tree_height <- function(
+    crown_length_to_tree_height,
     point_cloud) {
-  # if crown_height_to_tree_height is a raster
-  if (methods::is(crown_height_to_tree_height, "SpatRaster")) {
-    if (terra::nlyr(crown_height_to_tree_height) > 1) {
+  # if crown_length_to_tree_height is a raster
+  if (methods::is(crown_length_to_tree_height, "SpatRaster")) {
+    if (terra::nlyr(crown_length_to_tree_height) > 1) {
       warning(paste(
-        "crown_height_to_tree_height has more than one raster layer. Only the",
+        "crown_length_to_tree_height has more than one raster layer. Only the",
         "first layer is considered."
       ))
     }
 
     assert_that_raster_has_numeric_values(
-      raster = crown_height_to_tree_height,
-      raster_name = "crown_height_to_tree_height"
+      raster = crown_length_to_tree_height,
+      raster_name = "crown_length_to_tree_height"
     )
 
-    ch2th_minmax <- terra::minmax(crown_height_to_tree_height, compute = TRUE)[, 1]
+    ch2th_minmax <- terra::minmax(crown_length_to_tree_height, compute = TRUE)[, 1]
 
     assert_that(
       ch2th_minmax["min"] > 0,
@@ -241,17 +241,17 @@ validate_crown_height_to_tree_height <- function(
     )
 
     assert_that_raster_fits_point_cloud(
-      raster = crown_height_to_tree_height,
+      raster = crown_length_to_tree_height,
       point_cloud = point_cloud,
-      raster_name = "crown height to tree height"
+      raster_name = "crown length to tree height"
     )
   } else {
-    # if crown_height_to_tree_height is not a raster object
+    # if crown_length_to_tree_height is not a raster object
     assert_that(
-      assertthat::is.number(crown_height_to_tree_height),
-      assertthat::noNA(crown_height_to_tree_height),
-      crown_height_to_tree_height > 0,
-      crown_height_to_tree_height <= 1
+      assertthat::is.number(crown_length_to_tree_height),
+      assertthat::noNA(crown_length_to_tree_height),
+      crown_length_to_tree_height > 0,
+      crown_length_to_tree_height <= 1
     )
   }
 }

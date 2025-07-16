@@ -27,7 +27,7 @@
 //' @describeIn calculate_modes_normalized Can take either a single value or
 //'     raster data for both the ground height and the
 //'     \code{crown_diameter_to_tree_height} and
-//'     \code{crown_height_to_tree_height} parameters.
+//'     \code{crown_length_to_tree_height} parameters.
 //'
 //' @param ground_height_data A list containing either a single ground height
 //'     value (named "value") or a set of elements that make up a ground height
@@ -40,7 +40,7 @@
 //'     be stored in the list). The values indicate the estimated ratio of crown
 //'     diameter to tree height for the whole plot or individual raster pixels
 //'     respectively.
-//' @param crown_height_to_tree_height_data A list containing either a single
+//' @param crown_length_to_tree_height_data A list containing either a single
 //'     numeric value (named "value") or the data for a raster of values (see
 //'     section "Raster argument structure" below for how the raster data has to
 //'     be stored in the list). The values indicate the estimated ratio of crown
@@ -66,7 +66,7 @@ Rcpp::List calculate_modes_flexible (
     const spatial::coordinate_t &min_point_height_above_ground,
     const Rcpp::List &ground_height_data,
     const Rcpp::List &crown_diameter_to_tree_height_data,
-    const Rcpp::List &crown_height_to_tree_height_data,
+    const Rcpp::List &crown_length_to_tree_height_data,
     const spatial::distance_t &centroid_convergence_distance,
     const int max_num_centroids_per_mode,
     const bool also_return_centroids,
@@ -97,9 +97,9 @@ Rcpp::List calculate_modes_flexible (
     // Convert the crown height to tree height data into a unique pointer to a
     // raster object.
     std::unique_ptr< spatial::I_Raster< double > >
-    crown_height_to_tree_height_grid_ptr {
+    crown_length_to_tree_height_grid_ptr {
         ams3d_R_interface_util::convert_list_argument_to_double_raster_ptr (
-            crown_height_to_tree_height_data
+            crown_length_to_tree_height_data
         )
     };
 
@@ -108,7 +108,7 @@ Rcpp::List calculate_modes_flexible (
     kernel_bottom_height_above_ground_grid_ptr {
         ams3d::_Kernel::bottom_height_above_ground_grid_with (
             min_point_height_above_ground,
-            *crown_height_to_tree_height_grid_ptr
+            *crown_length_to_tree_height_grid_ptr
         )
     };
 
@@ -154,7 +154,7 @@ Rcpp::List calculate_modes_flexible (
                     min_point_height_above_ground,
                     *ground_height_grid_ptr,
                     *crown_diameter_to_tree_height_grid_ptr,
-                    *crown_height_to_tree_height_grid_ptr,
+                    *crown_length_to_tree_height_grid_ptr,
                     centroid_convergence_distance,
                     max_num_centroids_per_mode
                 )
@@ -207,7 +207,7 @@ Rcpp::List calculate_modes_flexible (
                     min_point_height_above_ground,
                     *ground_height_grid_ptr,
                     *crown_diameter_to_tree_height_grid_ptr,
-                    *crown_height_to_tree_height_grid_ptr,
+                    *crown_length_to_tree_height_grid_ptr,
                     centroid_convergence_distance,
                     max_num_centroids_per_mode
                 )

@@ -38,7 +38,7 @@ Rcpp::List calculate_modes_terraneous (
     const spatial::coordinate_t &min_point_height_above_ground,
     const Rcpp::List &ground_height_grid_data,
     const double crown_diameter_to_tree_height,
-    const double crown_height_to_tree_height,
+    const double crown_length_to_tree_height,
     const spatial::distance_t &centroid_convergence_distance,
     const int max_num_centroids_per_mode,
     const bool also_return_centroids,
@@ -64,7 +64,7 @@ Rcpp::List calculate_modes_terraneous (
             points,
             ams3d::_Kernel::bottom_height_above_ground_with (
                 min_point_height_above_ground,
-                crown_height_to_tree_height
+                crown_length_to_tree_height
             ),
             ground_height_grid_ptr
         )
@@ -103,7 +103,7 @@ Rcpp::List calculate_modes_terraneous (
                     min_point_height_above_ground,
                     *ground_height_grid_ptr,
                     crown_diameter_to_tree_height,
-                    crown_height_to_tree_height,
+                    crown_length_to_tree_height,
                     centroid_convergence_distance,
                     max_num_centroids_per_mode
                 )
@@ -156,7 +156,7 @@ Rcpp::List calculate_modes_terraneous (
                     min_point_height_above_ground,
                     *ground_height_grid_ptr,
                     crown_diameter_to_tree_height,
-                    crown_height_to_tree_height,
+                    crown_length_to_tree_height,
                     centroid_convergence_distance,
                     max_num_centroids_per_mode
                 )

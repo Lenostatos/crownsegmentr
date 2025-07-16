@@ -31,7 +31,7 @@ namespace ams3d
         const spatial::coordinate_t &min_point_height_above_ground,
         const spatial::I_Raster< spatial::coordinate_t > &ground_height_grid,
         const spatial::I_Raster< double > &crown_diameter_to_tree_height_grid,
-        const spatial::I_Raster< double > &crown_height_to_tree_height_grid,
+        const spatial::I_Raster< double > &crown_length_to_tree_height_grid,
         const spatial::distance_t &centroid_convergence_distance,
         const int max_num_centroids_per_mode
     ) {
@@ -71,8 +71,8 @@ namespace ams3d
                     current_centroid
                 )
             };
-            double crown_height_to_tree_height {
-                crown_height_to_tree_height_grid.no_throw_value_at_xy_of (
+            double crown_length_to_tree_height {
+                crown_length_to_tree_height_grid.no_throw_value_at_xy_of (
                     current_centroid
                 )
             };
@@ -81,7 +81,7 @@ namespace ams3d
             // non-finite, return an NaN mode.
             if (!std::isfinite( ground_height ) ||
                 !std::isfinite( crown_diameter_to_tree_height ) ||
-                !std::isfinite( crown_height_to_tree_height ))
+                !std::isfinite( crown_length_to_tree_height ))
             {
                 return spatial::nan_point();
             }
@@ -92,7 +92,7 @@ namespace ams3d
                 current_centroid,
                 ground_height,
                 crown_diameter_to_tree_height,
-                crown_height_to_tree_height
+                crown_length_to_tree_height
             };
 
             // Store the current centroid and calculate a new centroid with the
@@ -121,7 +121,7 @@ namespace ams3d
         const spatial::coordinate_t &min_point_height_above_ground,
         const spatial::I_Raster< spatial::coordinate_t > &ground_height_grid,
         const spatial::I_Raster< double > &crown_diameter_to_tree_height_grid,
-        const spatial::I_Raster< double > &crown_height_to_tree_height_grid,
+        const spatial::I_Raster< double > &crown_length_to_tree_height_grid,
         const spatial::distance_t &centroid_convergence_distance,
         const int max_num_centroids_per_mode
     ) {
@@ -172,8 +172,8 @@ namespace ams3d
                     current_centroid
                 )
             };
-            double crown_height_to_tree_height {
-                crown_height_to_tree_height_grid.no_throw_value_at_xy_of (
+            double crown_length_to_tree_height {
+                crown_length_to_tree_height_grid.no_throw_value_at_xy_of (
                     current_centroid
                 )
             };
@@ -182,7 +182,7 @@ namespace ams3d
             // non-finite, return an NaN mode without any centroids.
             if (!std::isfinite( ground_height ) ||
                 !std::isfinite( crown_diameter_to_tree_height ) ||
-                !std::isfinite( crown_height_to_tree_height ))
+                !std::isfinite( crown_length_to_tree_height ))
             {
                 return std::pair {
                     spatial::nan_point(), std::vector< spatial::point_3d_t >{}
@@ -195,7 +195,7 @@ namespace ams3d
                 current_centroid,
                 ground_height,
                 crown_diameter_to_tree_height,
-                crown_height_to_tree_height
+                crown_length_to_tree_height
             };
 
             // Store the current centroid and calculate a new centroid with the

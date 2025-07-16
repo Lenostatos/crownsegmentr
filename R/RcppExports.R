@@ -4,7 +4,7 @@
 #' @describeIn calculate_modes_normalized Can take either a single value or
 #'     raster data for both the ground height and the
 #'     \code{crown_diameter_to_tree_height} and
-#'     \code{crown_height_to_tree_height} parameters.
+#'     \code{crown_length_to_tree_height} parameters.
 #'
 #' @param ground_height_data A list containing either a single ground height
 #'     value (named "value") or a set of elements that make up a ground height
@@ -17,11 +17,11 @@
 #'     be stored in the list). The values indicate the estimated ratio of crown
 #'     diameter to tree height for the whole plot or individual raster pixels
 #'     respectively.
-#' @param crown_height_to_tree_height_data A list containing either a single
+#' @param crown_length_to_tree_height_data A list containing either a single
 #'     numeric value (named "value") or the data for a raster of values (see
 #'     section "Raster argument structure" below for how the raster data has to
 #'     be stored in the list). The values indicate the estimated ratio of crown
-#'     height to tree height for the whole plot or individual raster pixels
+#'     length to tree height for the whole plot or individual raster pixels
 #'     respectively.
 #'
 #' @section Raster argument structure:
@@ -37,8 +37,8 @@
 #'         \item y_max: Number indicating the largest y coordinate covered.
 #'     }
 #'
-calculate_modes_flexible <- function(coordinate_table, min_point_height_above_ground, ground_height_data, crown_diameter_to_tree_height_data, crown_height_to_tree_height_data, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar) {
-    .Call(`_crownsegmentr_calculate_modes_flexible`, coordinate_table, min_point_height_above_ground, ground_height_data, crown_diameter_to_tree_height_data, crown_height_to_tree_height_data, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar)
+calculate_modes_flexible <- function(coordinate_table, min_point_height_above_ground, ground_height_data, crown_diameter_to_tree_height_data, crown_length_to_tree_height_data, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar) {
+    .Call(`_crownsegmentr_calculate_modes_flexible`, coordinate_table, min_point_height_above_ground, ground_height_data, crown_diameter_to_tree_height_data, crown_length_to_tree_height_data, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar)
 }
 
 #' Calculate modes with the AMS3D algorithm for a lidar point cloud of a forest
@@ -53,8 +53,8 @@ calculate_modes_flexible <- function(coordinate_table, min_point_height_above_gr
 #'     cloud.
 #' @param min_point_height_above_ground A single positive number. The minimum
 #'     point height above ground at which the function will calculate modes.
-#' @param crown_diameter_to_tree_height,crown_height_to_tree_height Single
-#'     numbers. Crown diameter and crown height to tree height ratios of the
+#' @param crown_diameter_to_tree_height,crown_length_to_tree_height Single
+#'     numbers. Crown diameter and crown length to tree height ratios of the
 #'     trees expected to be found in the point cloud.
 #' @param centroid_convergence_distance Numeric Scalar. Distance at which it is
 #'     assumed that subsequently calculated centroids have converged to the
@@ -88,8 +88,8 @@ calculate_modes_flexible <- function(coordinate_table, min_point_height_above_gr
 #'     Remote Sensing of Environment 183:318–333.
 #'     \url{https://doi.org/10.1016/j.rse.2016.05.028}.
 #'
-calculate_modes_normalized <- function(coordinate_table, min_point_height_above_ground, crown_diameter_to_tree_height, crown_height_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar) {
-    .Call(`_crownsegmentr_calculate_modes_normalized`, coordinate_table, min_point_height_above_ground, crown_diameter_to_tree_height, crown_height_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar)
+calculate_modes_normalized <- function(coordinate_table, min_point_height_above_ground, crown_diameter_to_tree_height, crown_length_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar) {
+    .Call(`_crownsegmentr_calculate_modes_normalized`, coordinate_table, min_point_height_above_ground, crown_diameter_to_tree_height, crown_length_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar)
 }
 
 #' @describeIn calculate_modes_normalized Use a ground height raster to find
@@ -100,7 +100,7 @@ calculate_modes_normalized <- function(coordinate_table, min_point_height_above_
 #'     The set has to consist of the named elements described in the section
 #'     "Raster argument structure" below.
 #'
-calculate_modes_terraneous <- function(coordinate_table, min_point_height_above_ground, ground_height_grid_data, crown_diameter_to_tree_height, crown_height_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar) {
-    .Call(`_crownsegmentr_calculate_modes_terraneous`, coordinate_table, min_point_height_above_ground, ground_height_grid_data, crown_diameter_to_tree_height, crown_height_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar)
+calculate_modes_terraneous <- function(coordinate_table, min_point_height_above_ground, ground_height_grid_data, crown_diameter_to_tree_height, crown_length_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar) {
+    .Call(`_crownsegmentr_calculate_modes_terraneous`, coordinate_table, min_point_height_above_ground, ground_height_grid_data, crown_diameter_to_tree_height, crown_length_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar)
 }
 
