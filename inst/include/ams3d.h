@@ -346,10 +346,10 @@ namespace ams3d
         ) {
             spatial::coordinate_t bottom_height_above_ground {
                 point_height_above_ground -
-                point_height_above_ground * crown_length_to_tree_height * 0.25
+                point_height_above_ground * crown_length_to_tree_height * 0.25 - 0.25
             };
 
-            return (bottom_height_above_ground < 0)
+            return (bottom_height_above_ground < -0.25)
                         ? spatial::coordinate_t{ 0 }
                         : bottom_height_above_ground;
         }
@@ -372,10 +372,10 @@ namespace ams3d
                 {
                     spatial::coordinate_t bottom_height_above_ground {
                         point_height_above_ground -
-                        point_height_above_ground * crown_length_to_tree_height * 0.25
+                        point_height_above_ground * crown_length_to_tree_height * 0.25 - 0.25
                     };
 
-                    return (bottom_height_above_ground < 0)
+                    return (bottom_height_above_ground < -0.25)
                                 ? spatial::coordinate_t{ 0 }
                                 : bottom_height_above_ground;
                 }
