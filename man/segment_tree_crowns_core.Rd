@@ -45,11 +45,16 @@ the area of the (not normalized) point cloud stored in
 
 \item{kernel_diameter_slope, kernel_height_slope}{Single
 numbers or \link[terra:SpatRaster-class]{SpatRasters} covering the area of the
-\code{point_cloud}. The values should be approximate crown diameter and crown
-height to tree height ratios of the trees expected to be found in the point
-cloud. Points will not be segmented wherever a raster contains \code{NA} values.}
+\code{point_cloud}. Slope for the linear function determining the kernel
+diameter (bandwidth) and kernel height, respectively, in relationship to
+the height above ground. Roughly equivalent to the ratio of crown diameter
+to tree height, or crown length to tree height, respectively. Points will
+not be segmented wherever a raster contains \code{NA} values.}
 
-\item{kernel_diameter_intercept, kernel_height_intercept}{TODO: add something}
+\item{kernel_diameter_intercept, kernel_height_intercept}{Single number >=0.
+Intercept for the linear function determining the kernel diameter
+(bandwidth), or kernel height, respectively, in relationship to the
+height above ground.}
 
 \item{verbose}{\code{TRUE} or \code{FALSE}. Should the function show a progress bar and
 other runtime information in the console?}

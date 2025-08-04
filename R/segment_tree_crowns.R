@@ -39,10 +39,15 @@
 #'   next available numeric column in the table and issues a warning.
 #' @param kernel_diameter_slope,kernel_height_slope Single
 #'   numbers or [SpatRasters][terra::SpatRaster] covering the area of the
-#'   `point_cloud`. The values should be approximate crown diameter and crown
-#'   height to tree height ratios of the trees expected to be found in the point
-#'   cloud. Points will not be segmented wherever a raster contains `NA` values.
-#' @param kernel_diameter_intercept,kernel_height_intercept TODO: add something
+#'   `point_cloud`. Slope for the linear function determining the kernel
+#'   diameter (bandwidth) and kernel height, respectively, in relationship to
+#'   the height above ground. Roughly equivalent to the ratio of crown diameter
+#'   to tree height, or crown length to tree height, respectively. Points will
+#'   not be segmented wherever a raster contains `NA` values.
+#' @param kernel_diameter_intercept,kernel_height_intercept Single number >=0.
+#'     Intercept for the linear function determining the kernel diameter
+#'     (bandwidth), or kernel height, respectively, in relationship to the
+#'     height above ground.
 #' @param segment_crowns_only_above A single positive number denoting the
 #'   minimum height above ground at which crown IDs will be calculated.
 #'
@@ -246,13 +251,17 @@ methods::setMethod(
            also_return_modes = FALSE,
            also_return_centroids = FALSE) {
     validate_coordinate_table(point_cloud)
-    validate_kernel_diameter_slope(
+    validate_kernel_params(
       kernel_diameter_slope,
-      point_cloud
+      kernel_diameter_intercept,
+      point_cloud,
+      which = "diameter"
     )
-    validate_kernel_height_slope(
+    validate_kernel_params(
       kernel_height_slope,
-      point_cloud
+      kernel_height_intercept,
+      point_cloud,
+      which = "height"
     )
     # TODO: validate kernel_..._intercept
     validate_segment_crowns_only_above(segment_crowns_only_above)

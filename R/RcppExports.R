@@ -14,15 +14,15 @@
 #' @param kernel_diameter_slope_data A list containing either a single
 #'     numeric value (named "value") or the data for a raster of values (see
 #'     section "Raster argument structure" below for how the raster data has to
-#'     be stored in the list). Slope for the linear function determining the
-#'     kernel diameter (bandwidth) in relationship to the height above ground.
-#'     Roughly equivalent to the ratio of crown diameter to tree height.
+#'     be stored in the list). The values indicate the estimated ratio of crown
+#'     diameter to tree height for the whole plot or individual raster pixels
+#'     respectively.
 #' @param kernel_height_slope_data A list containing either a single
 #'     numeric value (named "value") or the data for a raster of values (see
 #'     section "Raster argument structure" below for how the raster data has to
-#'     be stored in the list).  Slope for the linear function determining the
-#'     kernel height (bandwidth) in relationship to the height above ground.
-#'     Roughly equivalent to the ratio of crown length to tree height.#' 
+#'     be stored in the list). The values indicate the estimated ratio of crown
+#'     height to tree height for the whole plot or individual raster pixels
+#'     respectively.
 #' @param kernel_diameter_intercept Single number >=0. Intercept for the linear
 #'     function determining the kernel diameter (bandwidth) in relationship to
 #'     the height above ground.

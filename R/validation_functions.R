@@ -152,109 +152,89 @@ validate_coordinate_table <- function(coordinate_table) {
   ))
 }
 
-validate_kernel_diameter_slope <- function(
-    kernel_diameter_slope,
-    point_cloud) {
-  # if kernel_diameter_slope is a raster
-  if (methods::is(kernel_diameter_slope, "SpatRaster")) {
-    if (terra::nlyr(kernel_diameter_slope) > 1) {
-      warning(paste(
-        "kernel_diameter_slope has more than one raster layer. Only",
-        "the first layer is considered."
+validate_kernel_params <- function(
+    kernel_slope,
+    kernel_intercept,
+    point_cloud,
+    which = "diameter") {
+
+  # intercept is numeric and not NA
+  assert_that(
+    assertthat::is.number(kernel_intercept),
+    assertthat::noNA(kernel_intercept)
+  )
+
+  # if intercept >= 0
+  assert_that(
+    kernel_intercept >= 0,
+    msg = paste( "Used a kernel",
+                 which,
+                 "intercept below 0 which doesn't work.")
+  )
+
+
+  # if kernel_slope is a raster
+  if (methods::is(kernel_slope, "SpatRaster")) {
+    if (terra::nlyr(kernel_slope) > 1) {
+      warning(
+        paste0(
+          "kernel_",
+          which,
+          "_slope has more than one raster layer. Only the first layer is",
+          "considered."
       ))
     }
 
     assert_that_raster_has_numeric_values(
-      raster = kernel_diameter_slope,
-      raster_name = "kernel_diameter_slope"
+      raster = kernel_slope,
+      raster_name = paste0("kernel_", which, "_slope")
     )
 
-    cd2th_minmax <- terra::minmax(kernel_diameter_slope, compute = TRUE)[, 1]
+    raster_minmax <- terra::minmax(kernel_slope, compute = TRUE)[, 1]
 
-    assert_that(
-      cd2th_minmax["min"] > 0,
-      msg = paste(
-        "Used a crown diameter to tree height ratio equal to or less than",
-        "zero which doesn't work."
+    if(kernel_intercept == 0){
+      assert_that(
+        raster_minmax["min"] > 0,
+        msg = paste(
+          "Used a kernel", which, "slope equal to or less than zero. This does",
+          "not work when intercept is zero."
+        )
       )
-    )
+    }
 
-    if (cd2th_minmax["max"] > 2) {
+
+    # warning for high diameter
+    if (raster_minmax["max"] > 2) {
       warning(paste0(
         "A crown diameter to tree height ratio greater than 2 is likely too ",
         "high (the largest of the ratios that you provide is ",
-        cd2th_minmax["max"], ")."
+        raster_minmax["max"], ")."
       ))
     }
 
     assert_that_raster_fits_point_cloud(
-      raster = kernel_diameter_slope,
+      raster = kernel_slope,
       point_cloud = point_cloud,
       raster_name = "crown diameter to tree height"
     )
   } else {
     # if kernel_diameter_slope is not a raster object
     assert_that(
-      assertthat::is.number(kernel_diameter_slope),
-      assertthat::noNA(kernel_diameter_slope)
+      assertthat::is.number(kernel_slope),
+      assertthat::noNA(kernel_slope)
     )
 
     assert_that(
-      kernel_diameter_slope > 0,
-      msg = paste(
-        "Used a crown diameter to tree height ratio equal to or less than",
-        "zero which doesn't work (your ratio: ", cd2th_minmax["max"], ")."
-      )
+      kernel_slope > 0,
+      msg = "Used a kernel diameter slope below zero which doesn't work."
     )
 
-    if (kernel_diameter_slope > 2) {
-      warning(paste0(
-        "A crown diameter to tree height ratio greater than 2 is likely too ",
-        "high (your ratio: ", cd2th_minmax["max"], ")."
-      ))
+    if (kernel_slope > 2) {
+      warning( "A kernel height slope greater than 2 is likely too high.")
     }
   }
 }
 
-validate_kernel_height_slope <- function(
-    kernel_height_slope,
-    point_cloud) {
-  # if kernel_height_slope is a raster
-  if (methods::is(kernel_height_slope, "SpatRaster")) {
-    if (terra::nlyr(kernel_height_slope) > 1) {
-      warning(paste(
-        "kernel_height_slope has more than one raster layer. Only the",
-        "first layer is considered."
-      ))
-    }
-
-    assert_that_raster_has_numeric_values(
-      raster = kernel_height_slope,
-      raster_name = "kernel_height_slope"
-    )
-
-    ch2th_minmax <- terra::minmax(kernel_height_slope, compute = TRUE)[, 1]
-
-    assert_that(
-      ch2th_minmax["min"] > 0,
-      ch2th_minmax["max"] <= 1
-    )
-
-    assert_that_raster_fits_point_cloud(
-      raster = kernel_height_slope,
-      point_cloud = point_cloud,
-      raster_name = "crown length to tree height"
-    )
-  } else {
-    # if kernel_height_slope is not a raster object
-    assert_that(
-      assertthat::is.number(kernel_height_slope),
-      assertthat::noNA(kernel_height_slope),
-      kernel_height_slope > 0,
-      kernel_height_slope <= 1
-    )
-  }
-}
 
 validate_segment_crowns_only_above <- function(segment_crowns_only_above) {
   assert_that(
