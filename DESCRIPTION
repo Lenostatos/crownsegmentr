@@ -1,6 +1,6 @@
 Package: crownsegmentr
 Title: Tree Crown Segmentation in Airborne LiDAR Data
-Version: 0.5.2
+Version: 0.5.3
 Authors@R: c(
     person("Leon", "Steinmeier", , "Leon.Steinmeier@posteo.net", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-9040-636X", "Created the package as part of his master thesis.")),
