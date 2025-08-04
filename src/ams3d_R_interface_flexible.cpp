@@ -26,26 +26,32 @@
 
 //' @describeIn calculate_modes_normalized Can take either a single value or
 //'     raster data for both the ground height and the
-//'     \code{crown_diameter_to_tree_height} and
-//'     \code{crown_length_to_tree_height} parameters.
+//'     \code{kernel_diameter_slope} and
+//'     \code{kernel_height_slope} parameters.
 //'
 //' @param ground_height_data A list containing either a single ground height
 //'     value (named "value") or a set of elements that make up a ground height
 //'     raster covering the whole area of the point cloud. Such a set has to
 //'     consist of the named elements described in the section "Raster argument
 //'     structure" below.
-//' @param crown_diameter_to_tree_height_data A list containing either a single
+//' @param kernel_diameter_slope_data A list containing either a single
 //'     numeric value (named "value") or the data for a raster of values (see
 //'     section "Raster argument structure" below for how the raster data has to
 //'     be stored in the list). The values indicate the estimated ratio of crown
 //'     diameter to tree height for the whole plot or individual raster pixels
 //'     respectively.
-//' @param crown_length_to_tree_height_data A list containing either a single
+//' @param kernel_height_slope_data A list containing either a single
 //'     numeric value (named "value") or the data for a raster of values (see
 //'     section "Raster argument structure" below for how the raster data has to
 //'     be stored in the list). The values indicate the estimated ratio of crown
 //'     height to tree height for the whole plot or individual raster pixels
 //'     respectively.
+//' @param kernel_diameter_intercept Single number >=0. Intercept for the linear
+//'     function determining the kernel diameter (bandwidth) in relationship to
+//'     the height above ground.
+//' @param kernel_height_intercept Single number >=0.  Intercept for the linear
+//'     function determining the kernel height (bandwidth) in relationship to
+//'     the height above ground.
 //'
 //' @section Raster argument structure:
 //'     Raster data has to be passed as a list comprising the following named
@@ -65,8 +71,10 @@ Rcpp::List calculate_modes_flexible (
     const Rcpp::DataFrame &coordinate_table,
     const spatial::coordinate_t &min_point_height_above_ground,
     const Rcpp::List &ground_height_data,
-    const Rcpp::List &crown_diameter_to_tree_height_data,
-    const Rcpp::List &crown_length_to_tree_height_data,
+    const Rcpp::List &kernel_diameter_slope_data,
+    const Rcpp::List &kernel_height_slope_data,
+    const double kernel_diameter_intercept,
+    const double kernel_height_intercept,
     const spatial::distance_t &centroid_convergence_distance,
     const int max_num_centroids_per_mode,
     const bool also_return_centroids,
@@ -88,18 +96,18 @@ Rcpp::List calculate_modes_flexible (
     // Convert the crown diameter to tree height data into a unique pointer to a
     // raster object.
     std::unique_ptr< spatial::I_Raster< double > >
-    crown_diameter_to_tree_height_grid_ptr {
+    kernel_diameter_slope_grid_ptr {
         ams3d_R_interface_util::convert_list_argument_to_double_raster_ptr (
-            crown_diameter_to_tree_height_data
+            kernel_diameter_slope_data
         )
     };
 
     // Convert the crown height to tree height data into a unique pointer to a
     // raster object.
     std::unique_ptr< spatial::I_Raster< double > >
-    crown_length_to_tree_height_grid_ptr {
+    kernel_height_slope_grid_ptr {
         ams3d_R_interface_util::convert_list_argument_to_double_raster_ptr (
-            crown_length_to_tree_height_data
+            kernel_height_slope_data
         )
     };
 
@@ -108,7 +116,8 @@ Rcpp::List calculate_modes_flexible (
     kernel_bottom_height_above_ground_grid_ptr {
         ams3d::_Kernel::bottom_height_above_ground_grid_with (
             min_point_height_above_ground,
-            *crown_length_to_tree_height_grid_ptr
+            *kernel_height_slope_grid_ptr,
+            kernel_height_intercept
         )
     };
 
@@ -153,8 +162,10 @@ Rcpp::List calculate_modes_flexible (
                     point_cloud_index,
                     min_point_height_above_ground,
                     *ground_height_grid_ptr,
-                    *crown_diameter_to_tree_height_grid_ptr,
-                    *crown_length_to_tree_height_grid_ptr,
+                    *kernel_diameter_slope_grid_ptr,
+                    *kernel_height_slope_grid_ptr,
+                    kernel_diameter_intercept,
+                    kernel_height_intercept,
                     centroid_convergence_distance,
                     max_num_centroids_per_mode
                 )
@@ -206,8 +217,10 @@ Rcpp::List calculate_modes_flexible (
                     point_cloud_index,
                     min_point_height_above_ground,
                     *ground_height_grid_ptr,
-                    *crown_diameter_to_tree_height_grid_ptr,
-                    *crown_length_to_tree_height_grid_ptr,
+                    *kernel_diameter_slope_grid_ptr,
+                    *kernel_height_slope_grid_ptr,
+                    kernel_diameter_intercept,
+                    kernel_height_intercept,
                     centroid_convergence_distance,
                     max_num_centroids_per_mode
                 )

@@ -54,7 +54,7 @@
 #   compiler toolchain is installed (RTools on Windows and Mac OS and something
 #   equivalent on Linux).
 # + Use usethis::use_version() for conveniently updating version numbers.
-# + Use usethis::use_tidy_style() to style all code according to the tidyverse
+# + Use to style all code according to the tidyverse
 #   style guide.
 # + Use devtools::dev_sitrep() from time to time to check for dependency
 #   updates.

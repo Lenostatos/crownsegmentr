@@ -8,8 +8,10 @@ segment_tree_crowns_core(
   coordinate_table,
   segment_crowns_only_above,
   ground_height,
-  crown_diameter_to_tree_height,
-  crown_length_to_tree_height,
+  kernel_diameter_slope,
+  kernel_height_slope,
+  kernel_diameter_intercept,
+  kernel_height_intercept,
   verbose,
   centroid_convergence_distance,
   max_num_centroids_per_mode,
@@ -41,11 +43,13 @@ the area of the (not normalized) point cloud stored in
 \code{coordinate_table}.
 }}
 
-\item{crown_diameter_to_tree_height, crown_length_to_tree_height}{Single
+\item{kernel_diameter_slope, kernel_height_slope}{Single
 numbers or \link[terra:SpatRaster-class]{SpatRasters} covering the area of the
 \code{point_cloud}. The values should be approximate crown diameter and crown
 height to tree height ratios of the trees expected to be found in the point
 cloud. Points will not be segmented wherever a raster contains \code{NA} values.}
+
+\item{kernel_diameter_intercept, kernel_height_intercept}{TODO: add something}
 
 \item{verbose}{\code{TRUE} or \code{FALSE}. Should the function show a progress bar and
 other runtime information in the console?}
@@ -131,8 +135,8 @@ which is roughly shaped like a crown itself, i.e. it is a vertical cylinder
 whose diameter and height are similar to those of the surrounding tree
 crowns. The exact diameter and height are dependent on the cylinder's
 height above ground and are controlled with the two main parameters of the
-algorithm: \code{crown_diameter_to_tree_height} and
-\code{crown_length_to_tree_height}.
+algorithm: \code{kernel_diameter_slope} and
+\code{kernel_height_slope}.
 
 The direction of the highest point density is found by calculating the
 average position of all points within the cylinder, the cylinder's so

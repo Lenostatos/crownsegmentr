@@ -76,8 +76,10 @@ segment_tree_crowns_core <- function(
     coordinate_table,
     segment_crowns_only_above,
     ground_height,
-    crown_diameter_to_tree_height,
-    crown_length_to_tree_height,
+    kernel_diameter_slope,
+    kernel_height_slope,
+    kernel_diameter_intercept,
+    kernel_height_intercept,
     verbose,
     centroid_convergence_distance,
     max_num_centroids_per_mode,
@@ -103,33 +105,33 @@ segment_tree_crowns_core <- function(
   # If either of the crown diameter or crown length to tree height ratios is a
   # raster, convert both of them and the ground height to lists for the C++
   # back-end.
-  if (methods::is(crown_diameter_to_tree_height, "SpatRaster") ||
-    methods::is(crown_length_to_tree_height, "SpatRaster")) {
-    if (methods::is(crown_diameter_to_tree_height, "SpatRaster")) {
-      crown_diameter_to_tree_height <- crop_raster_with_coordinates_extent(
-        crown_diameter_to_tree_height, coordinate_values
+  if (methods::is(kernel_diameter_slope, "SpatRaster") ||
+    methods::is(kernel_height_slope, "SpatRaster")) {
+    if (methods::is(kernel_diameter_slope, "SpatRaster")) {
+      kernel_diameter_slope <- crop_raster_with_coordinates_extent(
+        kernel_diameter_slope, coordinate_values
       )
 
-      crown_diameter_to_tree_height <- create_cpp_list_from_raster(
-        crown_diameter_to_tree_height
+      kernel_diameter_slope <- create_cpp_list_from_raster(
+        kernel_diameter_slope
       )
     } else {
-      crown_diameter_to_tree_height <- list(
-        value = crown_diameter_to_tree_height
+      kernel_diameter_slope <- list(
+        value = kernel_diameter_slope
       )
     }
 
-    if (methods::is(crown_length_to_tree_height, "SpatRaster")) {
-      crown_length_to_tree_height <- crop_raster_with_coordinates_extent(
-        crown_length_to_tree_height, coordinate_values
+    if (methods::is(kernel_height_slope, "SpatRaster")) {
+      kernel_height_slope <- crop_raster_with_coordinates_extent(
+        kernel_height_slope, coordinate_values
       )
 
-      crown_length_to_tree_height <- create_cpp_list_from_raster(
-        crown_length_to_tree_height
+      kernel_height_slope <- create_cpp_list_from_raster(
+        kernel_height_slope
       )
     } else {
-      crown_length_to_tree_height <- list(
-        value = crown_length_to_tree_height
+      kernel_height_slope <- list(
+        value = kernel_height_slope
       )
     }
 
@@ -141,14 +143,16 @@ segment_tree_crowns_core <- function(
 
   # Call the C++ back-end
 
-  # If crown_diameter_to_tree_height is a list, call the "flexible" C++ back-end
-  if (is.list(crown_diameter_to_tree_height)) {
+  # If kernel_diameter_slope is a list, call the "flexible" C++ back-end
+  if (is.list(kernel_diameter_slope)) {
     modes_and_centroids <- calculate_modes_flexible(
       coordinate_values,
       min_point_height_above_ground = segment_crowns_only_above,
       ground_height,
-      crown_diameter_to_tree_height,
-      crown_length_to_tree_height,
+      kernel_diameter_slope,
+      kernel_height_slope,
+      kernel_diameter_intercept,
+      kernel_height_intercept,      
       centroid_convergence_distance,
       max_num_centroids_per_mode,
       also_return_centroids,
@@ -160,8 +164,10 @@ segment_tree_crowns_core <- function(
     modes_and_centroids <- calculate_modes_normalized(
       coordinate_values,
       min_point_height_above_ground = segment_crowns_only_above,
-      crown_diameter_to_tree_height,
-      crown_length_to_tree_height,
+      kernel_diameter_slope,
+      kernel_height_slope,
+      kernel_diameter_intercept,
+      kernel_height_intercept,
       centroid_convergence_distance,
       max_num_centroids_per_mode,
       also_return_centroids,
@@ -174,8 +180,10 @@ segment_tree_crowns_core <- function(
       coordinate_values,
       min_point_height_above_ground = segment_crowns_only_above,
       ground_height,
-      crown_diameter_to_tree_height,
-      crown_length_to_tree_height,
+      kernel_diameter_slope,
+      kernel_height_slope,
+      kernel_diameter_intercept,
+      kernel_height_intercept,
       centroid_convergence_distance,
       max_num_centroids_per_mode,
       also_return_centroids,

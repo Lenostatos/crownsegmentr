@@ -27,13 +27,21 @@ namespace ams3d
 {
     _Kernel::_Kernel (
         const spatial::point_3d_t &center,
-        const double crown_diameter_to_tree_height,
-        const double crown_length_to_tree_height
+        const double kernel_diameter_slope,
+        const double kernel_height_slope,
+        const double kernel_diameter_intercept,
+        const double kernel_height_intercept
     ):
         _xy_center{ spatial::get_x( center ), spatial::get_y( center ) },
         _center_height_initial{ spatial::get_z( center ) },
-        _radius{ crown_diameter_to_tree_height * _center_height_initial * 0.5 + 0.5 },
-        _height{ crown_length_to_tree_height * _center_height_initial * 0.75 + 0.75 },
+        _radius{ (kernel_diameter_slope * _center_height_initial
+            + kernel_diameter_intercept
+            )* 0.5
+          },
+        _height{ (kernel_height_slope * _center_height_initial
+            + kernel_height_intercept
+            )* 0.75
+          },
 
         _half_height        { _height * 0.5 },
         _half_height_squared{ std::pow( _half_height, 2 ) },
@@ -49,24 +57,27 @@ namespace ams3d
     _Kernel::_Kernel (
         const spatial::point_3d_t &center,
         const spatial::coordinate_t &ground_height_at_center,
-        const double crown_diameter_to_tree_height,
-        const double crown_length_to_tree_height
+        const double kernel_diameter_slope,
+        const double kernel_height_slope,
+        const double kernel_diameter_intercept,
+        const double kernel_height_intercept
     ):
         _xy_center{ spatial::get_x( center ), spatial::get_y( center ) },
         _center_height_initial{ spatial::get_z( center ) },
         _radius
         {
-            crown_diameter_to_tree_height
+            (kernel_diameter_slope
             * (_center_height_initial - ground_height_at_center)
-            * 0.5
-            + 0.5
+            + kernel_diameter_intercept
+            )* 0.5
         },
         _height
         {
-            crown_length_to_tree_height
+            (kernel_height_slope
             * (_center_height_initial - ground_height_at_center)
-            * 0.75
-            + 0.75
+            + kernel_height_intercept
+            )* 0.75
+
         },
 
         _half_height        { _height * 0.5 },

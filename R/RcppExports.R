@@ -3,26 +3,32 @@
 
 #' @describeIn calculate_modes_normalized Can take either a single value or
 #'     raster data for both the ground height and the
-#'     \code{crown_diameter_to_tree_height} and
-#'     \code{crown_length_to_tree_height} parameters.
+#'     \code{kernel_diameter_slope} and
+#'     \code{kernel_height_slope} parameters.
 #'
 #' @param ground_height_data A list containing either a single ground height
 #'     value (named "value") or a set of elements that make up a ground height
 #'     raster covering the whole area of the point cloud. Such a set has to
 #'     consist of the named elements described in the section "Raster argument
 #'     structure" below.
-#' @param crown_diameter_to_tree_height_data A list containing either a single
+#' @param kernel_diameter_slope_data A list containing either a single
 #'     numeric value (named "value") or the data for a raster of values (see
 #'     section "Raster argument structure" below for how the raster data has to
-#'     be stored in the list). The values indicate the estimated ratio of crown
-#'     diameter to tree height for the whole plot or individual raster pixels
-#'     respectively.
-#' @param crown_length_to_tree_height_data A list containing either a single
+#'     be stored in the list). Slope for the linear function determining the
+#'     kernel diameter (bandwidth) in relationship to the height above ground.
+#'     Roughly equivalent to the ratio of crown diameter to tree height.
+#' @param kernel_height_slope_data A list containing either a single
 #'     numeric value (named "value") or the data for a raster of values (see
 #'     section "Raster argument structure" below for how the raster data has to
-#'     be stored in the list). The values indicate the estimated ratio of crown
-#'     height to tree height for the whole plot or individual raster pixels
-#'     respectively.
+#'     be stored in the list).  Slope for the linear function determining the
+#'     kernel height (bandwidth) in relationship to the height above ground.
+#'     Roughly equivalent to the ratio of crown length to tree height.#' 
+#' @param kernel_diameter_intercept Single number >=0. Intercept for the linear
+#'     function determining the kernel diameter (bandwidth) in relationship to
+#'     the height above ground.
+#' @param kernel_height_intercept Single number >=0.  Intercept for the linear
+#'     function determining the kernel height (bandwidth) in relationship to
+#'     the height above ground.
 #'
 #' @section Raster argument structure:
 #'     Raster data has to be passed as a list comprising the following named
@@ -37,8 +43,8 @@
 #'         \item y_max: Number indicating the largest y coordinate covered.
 #'     }
 #'
-calculate_modes_flexible <- function(coordinate_table, min_point_height_above_ground, ground_height_data, crown_diameter_to_tree_height_data, crown_length_to_tree_height_data, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar) {
-    .Call(`_crownsegmentr_calculate_modes_flexible`, coordinate_table, min_point_height_above_ground, ground_height_data, crown_diameter_to_tree_height_data, crown_length_to_tree_height_data, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar)
+calculate_modes_flexible <- function(coordinate_table, min_point_height_above_ground, ground_height_data, kernel_diameter_slope_data, kernel_height_slope_data, kernel_diameter_intercept, kernel_height_intercept, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar) {
+    .Call(`_crownsegmentr_calculate_modes_flexible`, coordinate_table, min_point_height_above_ground, ground_height_data, kernel_diameter_slope_data, kernel_height_slope_data, kernel_diameter_intercept, kernel_height_intercept, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar)
 }
 
 #' Calculate modes with the AMS3D algorithm for a lidar point cloud of a forest
@@ -53,9 +59,18 @@ calculate_modes_flexible <- function(coordinate_table, min_point_height_above_gr
 #'     cloud.
 #' @param min_point_height_above_ground A single positive number. The minimum
 #'     point height above ground at which the function will calculate modes.
-#' @param crown_diameter_to_tree_height,crown_length_to_tree_height Single
-#'     numbers. Crown diameter and crown height to tree height ratios of the
-#'     trees expected to be found in the point cloud.
+#' @param kernel_diameter_slope,kernel_height_slope Single
+#'     numbers. Determine the size of the search kernel (bandwidth) of the
+#'     algorithm, as a function of height above ground. The kernel should have 
+#'     roughly the size of the expected tree crowns. If the intercepts are 
+#'     zero, the slopes translate to ratios of crown diameter to tree height
+#'     or crown length to tree height, respectively.
+#' @param kernel_diameter_intercept Single number >=0. Intercept for the linear
+#'     function determining the kernel diameter (bandwidth) in relationship to
+#'     the height above ground.
+#' @param kernel_height_intercept Single number >=0.  Intercept for the linear
+#'     function determining the kernel height (bandwidth) in relationship to
+#'     the height above ground.
 #' @param centroid_convergence_distance Numeric Scalar. Distance at which it is
 #'     assumed that subsequently calculated centroids have converged to the
 #'     nearest mode.
@@ -88,8 +103,8 @@ calculate_modes_flexible <- function(coordinate_table, min_point_height_above_gr
 #'     Remote Sensing of Environment 183:318–333.
 #'     \url{https://doi.org/10.1016/j.rse.2016.05.028}.
 #'
-calculate_modes_normalized <- function(coordinate_table, min_point_height_above_ground, crown_diameter_to_tree_height, crown_length_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar) {
-    .Call(`_crownsegmentr_calculate_modes_normalized`, coordinate_table, min_point_height_above_ground, crown_diameter_to_tree_height, crown_length_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar)
+calculate_modes_normalized <- function(coordinate_table, min_point_height_above_ground, kernel_diameter_slope, kernel_height_slope, kernel_diameter_intercept, kernel_height_intercept, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar) {
+    .Call(`_crownsegmentr_calculate_modes_normalized`, coordinate_table, min_point_height_above_ground, kernel_diameter_slope, kernel_height_slope, kernel_diameter_intercept, kernel_height_intercept, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar)
 }
 
 #' @describeIn calculate_modes_normalized Use a ground height raster to find
@@ -100,7 +115,7 @@ calculate_modes_normalized <- function(coordinate_table, min_point_height_above_
 #'     The set has to consist of the named elements described in the section
 #'     "Raster argument structure" below.
 #'
-calculate_modes_terraneous <- function(coordinate_table, min_point_height_above_ground, ground_height_grid_data, crown_diameter_to_tree_height, crown_length_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar) {
-    .Call(`_crownsegmentr_calculate_modes_terraneous`, coordinate_table, min_point_height_above_ground, ground_height_grid_data, crown_diameter_to_tree_height, crown_length_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar)
+calculate_modes_terraneous <- function(coordinate_table, min_point_height_above_ground, ground_height_grid_data, kernel_diameter_slope, kernel_height_slope, kernel_diameter_intercept, kernel_height_intercept, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar) {
+    .Call(`_crownsegmentr_calculate_modes_terraneous`, coordinate_table, min_point_height_above_ground, ground_height_grid_data, kernel_diameter_slope, kernel_height_slope, kernel_diameter_intercept, kernel_height_intercept, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar)
 }
 

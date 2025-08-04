@@ -37,8 +37,10 @@ Rcpp::List calculate_modes_terraneous (
     const Rcpp::DataFrame &coordinate_table,
     const spatial::coordinate_t &min_point_height_above_ground,
     const Rcpp::List &ground_height_grid_data,
-    const double crown_diameter_to_tree_height,
-    const double crown_length_to_tree_height,
+    const double kernel_diameter_slope,
+    const double kernel_height_slope,
+    const double kernel_diameter_intercept,
+    const double kernel_height_intercept,
     const spatial::distance_t &centroid_convergence_distance,
     const int max_num_centroids_per_mode,
     const bool also_return_centroids,
@@ -64,7 +66,8 @@ Rcpp::List calculate_modes_terraneous (
             points,
             ams3d::_Kernel::bottom_height_above_ground_with (
                 min_point_height_above_ground,
-                crown_length_to_tree_height
+                kernel_height_slope,
+                kernel_height_intercept
             ),
             ground_height_grid_ptr
         )
@@ -102,8 +105,10 @@ Rcpp::List calculate_modes_terraneous (
                     point_cloud_index,
                     min_point_height_above_ground,
                     *ground_height_grid_ptr,
-                    crown_diameter_to_tree_height,
-                    crown_length_to_tree_height,
+                    kernel_diameter_slope,
+                    kernel_height_slope,
+                    kernel_diameter_intercept,
+                    kernel_height_intercept,
                     centroid_convergence_distance,
                     max_num_centroids_per_mode
                 )
@@ -155,8 +160,10 @@ Rcpp::List calculate_modes_terraneous (
                     point_cloud_index,
                     min_point_height_above_ground,
                     *ground_height_grid_ptr,
-                    crown_diameter_to_tree_height,
-                    crown_length_to_tree_height,
+                    kernel_diameter_slope,
+                    kernel_height_slope,
+                    kernel_diameter_intercept,
+                    kernel_height_intercept,
                     centroid_convergence_distance,
                     max_num_centroids_per_mode
                 )

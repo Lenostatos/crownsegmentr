@@ -29,8 +29,10 @@ namespace ams3d
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
-        const double crown_diameter_to_tree_height,
-        const double crown_length_to_tree_height,
+        const double kernel_diameter_slope,
+        const double kernel_height_slope,
+        const double kernel_diameter_intercept,
+        const double kernel_height_intercept,
         const spatial::distance_t &centroid_convergence_distance,
         const int max_num_centroids_per_mode
     ) {
@@ -53,8 +55,10 @@ namespace ams3d
             // Create a kernel at the current centroid.
             _Kernel kernel {
                 current_centroid,
-                crown_diameter_to_tree_height,
-                crown_length_to_tree_height
+                kernel_diameter_slope,
+                kernel_height_slope,
+                kernel_diameter_intercept,
+                kernel_height_intercept
             };
 
             // Store the current centroid and calculate a new centroid with the
@@ -81,8 +85,10 @@ namespace ams3d
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
-        const double crown_diameter_to_tree_height,
-        const double crown_length_to_tree_height,
+        const double kernel_diameter_slope,
+        const double kernel_height_slope,
+        const double kernel_diameter_intercept,
+        const double kernel_height_intercept,
         const spatial::distance_t &centroid_convergence_distance,
         const int max_num_centroids_per_mode
     ) {
@@ -112,8 +118,10 @@ namespace ams3d
             // the starting point during the first iteration).
             _Kernel kernel {
                 current_centroid,
-                crown_diameter_to_tree_height,
-                crown_length_to_tree_height
+                kernel_diameter_slope,
+                kernel_height_slope,
+                kernel_diameter_intercept,
+                kernel_height_intercept
             };
 
             // Store the current centroid and calculate a new centroid with the

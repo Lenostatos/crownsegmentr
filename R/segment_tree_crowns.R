@@ -37,11 +37,12 @@
 #'   columns by looking for the first numeric columns named "x"/"X", "y"/"Y", or
 #'   "z"/"Z". For each instance where it can't find one of those it selects the
 #'   next available numeric column in the table and issues a warning.
-#' @param crown_diameter_to_tree_height,crown_length_to_tree_height Single
+#' @param kernel_diameter_slope,kernel_height_slope Single
 #'   numbers or [SpatRasters][terra::SpatRaster] covering the area of the
 #'   `point_cloud`. The values should be approximate crown diameter and crown
 #'   height to tree height ratios of the trees expected to be found in the point
 #'   cloud. Points will not be segmented wherever a raster contains `NA` values.
+#' @param kernel_diameter_intercept,kernel_height_intercept TODO: add something
 #' @param segment_crowns_only_above A single positive number denoting the
 #'   minimum height above ground at which crown IDs will be calculated.
 #'
@@ -132,8 +133,8 @@
 #'   whose diameter and height are similar to those of the surrounding tree
 #'   crowns. The exact diameter and height are dependent on the cylinder's
 #'   height above ground and are controlled with the two main parameters of the
-#'   algorithm: `crown_diameter_to_tree_height` and
-#'   `crown_length_to_tree_height`.
+#'   algorithm: `kernel_diameter_slope` and
+#'   `kernel_height_slope`.
 #'
 #'   The direction of the highest point density is found by calculating the
 #'   average position of all points within the cylinder, the cylinder's so
@@ -195,8 +196,10 @@
 #' @export
 methods::setGeneric("segment_tree_crowns",
   function(point_cloud,
-           crown_diameter_to_tree_height,
-           crown_length_to_tree_height,
+           kernel_diameter_slope,
+           kernel_height_slope,
+           kernel_diameter_intercept = 0,
+           kernel_height_intercept = 0,
            segment_crowns_only_above = 0,
            ground_height = NULL,
            crown_id_column_name = "crown_id",
@@ -228,8 +231,10 @@ methods::setMethod(
   "segment_tree_crowns",
   signature(point_cloud = c("data.frame")),
   function(point_cloud,
-           crown_diameter_to_tree_height,
-           crown_length_to_tree_height,
+           kernel_diameter_slope,
+           kernel_height_slope,
+           kernel_diameter_intercept,
+           kernel_height_intercept,
            segment_crowns_only_above,
            ground_height,
            crown_id_column_name,
@@ -241,14 +246,15 @@ methods::setMethod(
            also_return_modes = FALSE,
            also_return_centroids = FALSE) {
     validate_coordinate_table(point_cloud)
-    validate_crown_diameter_to_tree_height(
-      crown_diameter_to_tree_height,
+    validate_kernel_diameter_slope(
+      kernel_diameter_slope,
       point_cloud
     )
-    validate_crown_length_to_tree_height(
-      crown_length_to_tree_height,
+    validate_kernel_height_slope(
+      kernel_height_slope,
       point_cloud
     )
+    # TODO: validate kernel_..._intercept
     validate_segment_crowns_only_above(segment_crowns_only_above)
     validate_ground_height(ground_height, point_cloud)
     validate_crown_id_column_name(crown_id_column_name, point_cloud)
@@ -265,8 +271,10 @@ methods::setMethod(
       point_cloud,
       segment_crowns_only_above,
       ground_height,
-      crown_diameter_to_tree_height,
-      crown_length_to_tree_height,
+      kernel_diameter_slope,
+      kernel_height_slope,
+      kernel_diameter_intercept,
+      kernel_height_intercept,
       verbose,
       centroid_convergence_distance,
       max_num_centroids_per_mode,
@@ -359,8 +367,10 @@ methods::setMethod(
   "segment_tree_crowns",
   signature(point_cloud = "LAS"),
   function(point_cloud,
-           crown_diameter_to_tree_height,
-           crown_length_to_tree_height,
+           kernel_diameter_slope,
+           kernel_height_slope,
+           kernel_diameter_intercept,
+           kernel_height_intercept,
            segment_crowns_only_above,
            ground_height,
            crown_id_column_name,
@@ -373,14 +383,15 @@ methods::setMethod(
            also_return_centroids = FALSE,
            write_crown_id_also_to_file = FALSE,
            crown_id_file_description = crown_id_column_name) {
-    validate_crown_diameter_to_tree_height(
-      crown_diameter_to_tree_height,
+    validate_kernel_diameter_slope(
+      kernel_diameter_slope,
       point_cloud
     )
-    validate_crown_length_to_tree_height(
-      crown_length_to_tree_height,
+    validate_kernel_height_slope(
+      kernel_height_slope,
       point_cloud
     )
+    # TODO: validate kernel_..._intercept
     validate_segment_crowns_only_above(segment_crowns_only_above)
     validate_ground_height(ground_height, point_cloud)
     validate_crown_id_column_name(crown_id_column_name, point_cloud@data)
@@ -407,8 +418,10 @@ methods::setMethod(
       point_cloud@data,
       segment_crowns_only_above,
       ground_height,
-      crown_diameter_to_tree_height,
-      crown_length_to_tree_height,
+      kernel_diameter_slope,
+      kernel_height_slope,
+      kernel_diameter_intercept,
+      kernel_height_intercept,
       verbose,
       centroid_convergence_distance,
       max_num_centroids_per_mode,
@@ -546,8 +559,10 @@ methods::setMethod(
   "segment_tree_crowns",
   signature(point_cloud = "LAScatalog"),
   function(point_cloud,
-           crown_diameter_to_tree_height,
-           crown_length_to_tree_height,
+           kernel_diameter_slope,
+           kernel_height_slope,
+           kernel_diameter_intercept,
+           kernel_height_intercept,
            segment_crowns_only_above,
            ground_height,
            crown_id_column_name,
@@ -559,12 +574,12 @@ methods::setMethod(
            crown_id_file_description = crown_id_column_name) {
     validate_scale_n_offset_are_consistent(point_cloud)
 
-    validate_crown_diameter_to_tree_height(
-      crown_diameter_to_tree_height,
+    validate_kernel_diameter_slope(
+      kernel_diameter_slope,
       point_cloud
     )
-    validate_crown_length_to_tree_height(
-      crown_length_to_tree_height,
+    validate_kernel_height_slope(
+      kernel_height_slope,
       point_cloud
     )
     # validate_crown_id_column_name(crown_id_column_name, point_cloud@data)
@@ -600,8 +615,10 @@ methods::setMethod(
       # segment the chunk with the LAS method
       segmented_las <- segment_tree_crowns(
         point_cloud = las,
-        crown_diameter_to_tree_height,
-        crown_length_to_tree_height,
+        kernel_diameter_slope,
+        kernel_height_slope,
+        kernel_diameter_intercept,
+        kernel_height_intercept,
         segment_crowns_only_above,
         ground_height,
         crown_id_column_name,

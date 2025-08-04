@@ -41,8 +41,8 @@ test_that("the data.frame/data.table method works", {
   # test the most simple form
   segmented_points <- segment_tree_crowns(
     point_cloud = as.data.frame(pseudo_point_cloud),
-    crown_diameter_to_tree_height = 0.25,
-    crown_length_to_tree_height = 0.5
+    kernel_diameter_slope = 0.25,
+    kernel_height_slope = 0.5
   )
   expect_s3_class(segmented_points, class = "data.frame", exact = TRUE)
   expect_named(segmented_points,
@@ -51,8 +51,8 @@ test_that("the data.frame/data.table method works", {
   # test with data.table and custom column name
   segmented_points <- segment_tree_crowns(
     point_cloud = test_point_cloud@data,
-    crown_diameter_to_tree_height = 0.25,
-    crown_length_to_tree_height = 0.5,
+    kernel_diameter_slope = 0.25,
+    kernel_height_slope = 0.5,
     crown_id_column_name = "test id col name"
   )
   expect_s3_class(segmented_points,
@@ -67,8 +67,8 @@ test_that("the data.frame/data.table method works", {
   expect_error(
     segment_tree_crowns(
       point_cloud = test_point_cloud@data[1],
-      crown_diameter_to_tree_height = 0.25,
-      crown_length_to_tree_height = 0.5,
+      kernel_diameter_slope = 0.25,
+      kernel_height_slope = 0.5,
       crown_id_column_name = "treeID"
     ),
     regexp = paste0(
@@ -81,8 +81,8 @@ test_that("the data.frame/data.table method works", {
   # Test varying different arguments
   segment_tree_crowns(
     point_cloud = test_point_cloud@data,
-    crown_diameter_to_tree_height = 0.25,
-    crown_length_to_tree_height = 0.5,
+    kernel_diameter_slope = 0.25,
+    kernel_height_slope = 0.5,
     verbose = FALSE,
     centroid_convergence_distance = 0.1,
     max_num_centroids_per_mode = 50,
@@ -93,8 +93,8 @@ test_that("the data.frame/data.table method works", {
   # Also return modes and centroids and vary some arguments
   segmentation_res <- segment_tree_crowns(
     point_cloud = test_point_cloud@data,
-    crown_diameter_to_tree_height = 0.25,
-    crown_length_to_tree_height = 0.5,
+    kernel_diameter_slope = 0.25,
+    kernel_height_slope = 0.5,
     max_num_centroids_per_mode = 1000,
     min_num_modes_per_neighborhood = 10,
     also_return_modes = TRUE,
@@ -159,8 +159,8 @@ test_that("the LAS method works", {
   # test the most simple form
   segmented_points <- segment_tree_crowns(
     point_cloud = test_points,
-    crown_diameter_to_tree_height = 0.25,
-    crown_length_to_tree_height = 0.5
+    kernel_diameter_slope = 0.25,
+    kernel_height_slope = 0.5
   )
   expect_s4_class(segmented_points, class = "LAS")
   expect_named(segmented_points@data,
@@ -177,8 +177,8 @@ test_that("the LAS method works", {
   # "file-writable"
   segmented_points <- segment_tree_crowns(
     point_cloud = test_points,
-    crown_diameter_to_tree_height = 0.25,
-    crown_length_to_tree_height = 0.5,
+    kernel_diameter_slope = 0.25,
+    kernel_height_slope = 0.5,
     verbose = FALSE,
     crown_id_column_name = "test id col name",
     write_crown_id_also_to_file = TRUE
@@ -197,8 +197,8 @@ test_that("the LAS method works", {
   expect_error(
     segment_tree_crowns(
       point_cloud = test_points,
-      crown_diameter_to_tree_height = 0.25,
-      crown_length_to_tree_height = 0.5,
+      kernel_diameter_slope = 0.25,
+      kernel_height_slope = 0.5,
       crown_id_column_name = "treeID"
     ),
     regexp = paste0(
@@ -211,8 +211,8 @@ test_that("the LAS method works", {
   # Test varying different arguments
   segmented_points <- segment_tree_crowns(
     point_cloud = test_point_cloud,
-    crown_diameter_to_tree_height = 0.25,
-    crown_length_to_tree_height = 0.5,
+    kernel_diameter_slope = 0.25,
+    kernel_height_slope = 0.5,
     verbose = FALSE,
     centroid_convergence_distance = 0.1,
     max_num_centroids_per_mode = 50,
@@ -224,8 +224,8 @@ test_that("the LAS method works", {
   # Also return modes and centroids and vary some arguments
   segmentation_res <- segment_tree_crowns(
     point_cloud = test_point_cloud,
-    crown_diameter_to_tree_height = 0.25,
-    crown_length_to_tree_height = 0.5,
+    kernel_diameter_slope = 0.25,
+    kernel_height_slope = 0.5,
     max_num_centroids_per_mode = 1000,
     min_num_modes_per_neighborhood = 10,
     also_return_modes = TRUE,
@@ -296,8 +296,8 @@ test_that("the LAScatalog method works", {
 
   segmented_points <- segment_tree_crowns(
     test_catalog,
-    crown_diameter_to_tree_height = 0.25,
-    crown_length_to_tree_height = 0.5,
+    kernel_diameter_slope = 0.25,
+    kernel_height_slope = 0.5,
     crown_id_column_name = "tree_id"
   )
   expect_s4_class(segmented_points, class = "LAS")
@@ -338,8 +338,8 @@ test_that("the calculation of unique crown IDs works for LAScatalog", {
     filter = "-drop_z_below 1"
   )
   segmented_las <- segment_tree_crowns(las_object,
-    crown_diameter_to_tree_height = 0.25,
-    crown_length_to_tree_height = 0.5
+    kernel_diameter_slope = 0.25,
+    kernel_height_slope = 0.5
   )
 
   las_catalog <- lidR::readLAScatalog(
@@ -349,8 +349,8 @@ test_that("the calculation of unique crown IDs works for LAScatalog", {
   )
 
   segmented_las_catalog <- segment_tree_crowns(las_catalog,
-    crown_diameter_to_tree_height = 0.25,
-    crown_length_to_tree_height = 0.5
+    kernel_diameter_slope = 0.25,
+    kernel_height_slope = 0.5
   )
 
   expect_equal(
@@ -396,22 +396,22 @@ test_that("The terraneous and flexible C++ back-ends work", {
 
   segmented_points <- crownsegmentr::segment_tree_crowns(
     point_cloud = test_points,
-    crown_diameter_to_tree_height = 0.5,
-    crown_length_to_tree_height = 1,
+    kernel_diameter_slope = 0.5,
+    kernel_height_slope = 1,
     segment_crowns_only_above = 2,
     ground_height = ground_height_grid
   )
 
   segmented_points <- crownsegmentr::segment_tree_crowns(
     point_cloud = test_points,
-    crown_diameter_to_tree_height = 0.5,
-    crown_length_to_tree_height = 1,
+    kernel_diameter_slope = 0.5,
+    kernel_height_slope = 1,
     segment_crowns_only_above = 2,
     ground_height = list(algorithm = lidR::tin())
   )
 
   # The flexible back-end
-  crown_length_to_tree_height_grid <- terra::rast(
+  kernel_height_slope_grid <- terra::rast(
     matrix(c(0.5, 1), ncol = 2),
     crs = lidR::st_crs(test_points)$wkt,
     extent = terra::ext(
@@ -424,8 +424,8 @@ test_that("The terraneous and flexible C++ back-ends work", {
 
   segmented_points <- crownsegmentr::segment_tree_crowns(
     point_cloud = test_points,
-    crown_diameter_to_tree_height = 0.5,
-    crown_length_to_tree_height = crown_length_to_tree_height_grid,
+    kernel_diameter_slope = 0.5,
+    kernel_height_slope = kernel_height_slope_grid,
     ground_height = list(algorithm = lidR::tin())
   )
 
@@ -434,7 +434,7 @@ test_that("The terraneous and flexible C++ back-ends work", {
     system.file("extdata/MixedConifer.laz", package = "lidR")
   )
 
-  crown_diameter_to_tree_height_grid <- terra::rast(
+  kernel_diameter_slope_grid <- terra::rast(
     matrix(c(0.3, 0.8), ncol = 2),
     crs = lidR::st_crs(test_points)$wkt,
     extent = terra::ext(
@@ -447,8 +447,8 @@ test_that("The terraneous and flexible C++ back-ends work", {
 
   segmented_points <- crownsegmentr::segment_tree_crowns(
     point_cloud = test_points,
-    crown_diameter_to_tree_height = crown_diameter_to_tree_height_grid,
-    crown_length_to_tree_height = 0.8
+    kernel_diameter_slope = kernel_diameter_slope_grid,
+    kernel_height_slope = 0.8
   )
 
 

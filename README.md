@@ -45,8 +45,8 @@ point_cloud <- lidR::readLAS(system.file(
 # Segment a normalized point cloud
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
-  crown_diameter_to_tree_height = 0.25,
-  crown_length_to_tree_height = 0.5
+  kernel_diameter_slope = 0.25,
+  kernel_height_slope = 0.5
 )
 
 # Generate random crown colors
@@ -228,7 +228,7 @@ three times:
 
 1.  The most simple overload assumes a normalized point cloud with
     ground height at zero and takes single numbers for the
-    `crown_diameter_to_tree_height` and `crown_length_to_tree_height`
+    `kernel_diameter_slope` and `kernel_height_slope`
     arguments
     ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_normalized.cpp)).
 2.  The second overload can deal with not normalized point clouds by
@@ -320,7 +320,7 @@ The raster classes were set up like this to make it possible to pass
 either a single value or an actual raster to the same function argument.
 Without this it would be necessary to code every combination of function
 parameters where the ground height and the
-`crown_diameter_to_tree_height` and `crown_length_to_tree_height`
+`kernel_diameter_slope` and `kernel_height_slope`
 parameters can be either a single value or a raster of values. With the
 `I_Raster` class it is possible to pass either
 `Single_value_pseudo_raster` or `Raster` objects to the same function
