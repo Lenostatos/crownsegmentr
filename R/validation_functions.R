@@ -198,7 +198,14 @@ validate_kernel_params <- function(
         msg = paste(
           "Used a kernel", which, "slope equal to or less than zero. This does",
           "not work when intercept is zero."
-        )
+          )
+      )
+    }else{ # if kernel intercept > 0
+      assert_that(
+          raster_minmax["min"] >= 0,
+          msg = paste(
+          "The kernel", which, "slope raster contains values below zero."
+          )  
       )
     }
 
@@ -224,10 +231,21 @@ validate_kernel_params <- function(
       assertthat::noNA(kernel_slope)
     )
 
-    assert_that(
-      kernel_slope > 0,
-      msg = "Used a kernel diameter slope below zero which doesn't work."
-    )
+    if(kernel_intercept == 0){
+      assert_that(
+        kernel_slope > 0,
+        msg = paste(
+          "Used a kernel", which, "slope equal to or less than zero. This does",
+          "not work when intercept is zero."
+        )
+      )
+    }else{ # if kernel intercept > 0
+      assert_that(
+          kernel_slope >= 0,
+          msg = paste(
+          "Used a kernel", which, "slope below zero."
+        ))
+    }
 
     if (kernel_slope > 2) {
       warning( "A kernel height slope greater than 2 is likely too high.")
