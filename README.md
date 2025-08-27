@@ -195,7 +195,7 @@ actual exposition to R. The functions are
 - `calculate_modes_flexible`
   ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_flexible.cpp))
   for processing both normalized and non-normalized while possibly also
-  using rasters for the crown diameter and crown length to tree height
+  using rasters for the crown diameter and crown height to tree height
   parameters.
 
 They are all doing basically the same thing, which is looping over
@@ -234,7 +234,7 @@ three times:
 2.  The second overload can deal with not normalized point clouds by
     reading ground heights from a raster
     ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_terraneous.cpp)).
-3.  The third overload reads both ground height and cylinder dimension
+3.  The third overload reads both ground height and kernel dimension
     parameters from rasters
     ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_flexible.cpp)).
 
@@ -243,12 +243,11 @@ There is also an internal `_Kernel` class
 that models the cylinder used to find points in the neighborhood of a
 point or centroid. It also contains the logic to calculate the weighted
 centroid of all points inside the cylinder. A `_Kernel` object is
-instantiated with a point or centroid and the
-crown-diameter-to-tree-height and crown-height-to-tree-height
-parameters. It features only one public method:
-`calculate_centroid_in( point_cloud )`. Cylinder dimensions are
-calculated in the constructor and the centroid calculation logic is
-implemented in a few private methods.
+instantiated with a point or centroid and the parameters for its dimensions:
+slope and intercept for its diameter and height. The object features only 
+one public method: `calculate_centroid_in( point_cloud )`. Cylinder 
+dimensions are calculated in the constructor and the centroid calculation 
+logic is implemented in a few private methods.
 
 There is one more very small internal namespace in `ams3d` called
 `_math_functions` that contains the gaussian and epanechnikov functions
@@ -320,7 +319,7 @@ The raster classes were set up like this to make it possible to pass
 either a single value or an actual raster to the same function argument.
 Without this it would be necessary to code every combination of function
 parameters where the ground height and the
-`kernel_diameter_slope` and `kernel_height_slope`
+`crown_diameter_to_tree_height` and `crown_height_to_tree_height`
 parameters can be either a single value or a raster of values. With the
 `I_Raster` class it is possible to pass either
 `Single_value_pseudo_raster` or `Raster` objects to the same function
@@ -425,18 +424,19 @@ lists. The syntax of these initializer lists looks like this:
         
         
     # the cylinder's size is calculated using its above-ground height and the
-    # two main parameters to the algorithm
+    # four main parameters to the algorithm
     vertical_cylinder_at( point ):
         cylinder = new cylinder (
-            height   = above_ground_height_of( point ) * cl_2_th
-            diameter = above_ground_height_of( point ) * cd_2_th
+            height   = above_ground_height_of( point ) * khs + khi
+            diameter = above_ground_height_of( point ) * kds + khi
         )
         
         return( upper_three_quarters_of( cylinder ) )
 
-        # cl_2_th and cd_2_th are available as parameters to the
-        # algorithm and stand for "crown length to tree height" and
-        # "crown diameter to tree height"
+        # khs, khi, kds and kdi are available as parameters to the
+        # algorithm and stand for "kernel height slope", 
+        # "kernel height intercept", "kernel diameter slope" and 
+        # "kernel diameter intercept"
         
         
     points_in( cylinder ):

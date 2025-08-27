@@ -83,6 +83,8 @@ test_that("the data.frame/data.table method works", {
     point_cloud = test_point_cloud@data,
     kernel_diameter_slope = 0.25,
     kernel_height_slope = 0.5,
+    kernel_diameter_intercept = 1,
+    kernel_height_intercept = 2,
     verbose = FALSE,
     centroid_convergence_distance = 0.1,
     max_num_centroids_per_mode = 50,

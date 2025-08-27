@@ -97,6 +97,12 @@ usethis::use_author("Nikolai", "Knapp",
   role = "aut"
 )
 
+usethis::use_author("Timon", "Miesner",
+  email = "timon.miesner@thuenen.de",
+  comment = c(ORCID = "0000-0001-5091-7456", "Added optimization tools and further options."),
+  role = "aut"
+)
+
 # Add citation information
 usethis::use_citation()
 # Read the ?bibentry help topic on how to fill in this information.

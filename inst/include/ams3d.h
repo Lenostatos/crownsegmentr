@@ -219,10 +219,10 @@ namespace ams3d
      *      to tree height ratios.
      *
      *  \param kernel_diameter_slope_grid A raster object expected to
-     *      hold crown diameter to tree height ratio values for the entire area
+     *      hold kernel diameter slope values for the entire area
      *      of the point cloud.
      *  \param kernel_height_slope_grid A raster object expected to hold
-     *      crown diameter to tree height ratio values for the entire area of
+     *      kernel height slope values for the entire area of
      *      the point cloud.
      *
      *  \return A pair with the calculated mode at the first position and an
