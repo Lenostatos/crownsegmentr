@@ -39,6 +39,13 @@
 #' *a list of arguments to the
 #' [lidR rasterize_terrain()][lidR::rasterize_terrain()] function to normalize
 #' the point cloud.
+#' @return a terra SpatRaster
+#' @section Details
+#' The output raster can serve as input for the parameter 
+#' "kernel_diameter_slope" (hence "kds") for the function segment_tree_crowns.
+#' It averages the ratio of crown diameter to tree height for a 5 m radius, 
+#' for trees that were detected with watershed segmentation.
+#' @export 
 
 watershed_kds_raster <- function(las,
                                  bandwidth_intercept = 0,
@@ -158,6 +165,14 @@ watershed_kds_raster <- function(las,
 #' *a list of arguments to the
 #' [lidR rasterize_terrain()][lidR::rasterize_terrain()] function to normalize
 #' the point cloud.
+#' @return terra SpatRaster
+#' @section Details
+#' The output raster can serve as input for the parameter 
+#' "kernel_diameter_slope" (hence  "kds") for the function 
+#' segment_tree_crowns. It averages the ratio of crown diameter to tree height
+#' for a 5 m radius, for trees that were detected with the Li2012 tree 
+#' segmentation algorithm.
+#' @export 
 
 li_kds_raster <- function(las,
                           bandwidth_intercept = 0,

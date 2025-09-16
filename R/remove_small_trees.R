@@ -9,6 +9,13 @@
 #' will be removed
 #' @param min_height (num) the threshold for crown height, below which trees
 #' will be removed. Works only if las is normalized.
+#' @return lidR LAS
+#' @section Details
+#' returns the same las object that was given as input, but with 
+#' altered crown id's. Trees that are considered too small have their crown id
+#' set to NA, and all other crown id's are re-assigned so that they are 
+#' without gaps
+#' @export 
 
 remove_small_trees <- function(las, min_radius = 1, min_height = -Inf){
   # assumes that "las" is a las object with "crown_id" as a data column

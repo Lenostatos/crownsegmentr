@@ -15,6 +15,12 @@ will be removed}
 \item{min_height}{(num) the threshold for crown height, below which trees
 will be removed. Works only if las is normalized.}
 }
+\value{
+returns the same las object that was given as input, but with
+altered crown id's. Trees that are considered too small have their crown id
+set to NA, and all other crown id's are re-assigned so that they are
+without gaps
+}
 \description{
 The function takes a point cloud in which trees were segmented, and removes
 tree clusters that are smaller than a certain radius or a certain height
