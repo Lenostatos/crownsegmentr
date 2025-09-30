@@ -40,12 +40,15 @@
 #' [lidR rasterize_terrain()][lidR::rasterize_terrain()] function to normalize
 #' the point cloud.
 #' @return a terra SpatRaster
+#'
 #' @section Details
-#' The output raster can serve as input for the parameter 
+#'
+#' The output raster can serve as input for the parameter
 #' "kernel_diameter_slope" (hence "kds") for the function segment_tree_crowns.
-#' It averages the ratio of crown diameter to tree height for a 5 m radius, 
+#' It averages the ratio of crown diameter to tree height for a 5 m radius,
 #' for trees that were detected with watershed segmentation.
-#' @export 
+#'
+#' @export
 
 watershed_kds_raster <- function(las,
                                  bandwidth_intercept = 0,
@@ -98,7 +101,7 @@ watershed_kds_raster <- function(las,
   # create canopy height model
   chm <- lidR::rasterize_canopy(norm.las,
                                 res = chm.res,
-                                algorithm = p2r(subcircle = 0.25))
+                                algorithm = lidR::p2r(subcircle = 0.25))
 
   # fill in NA values with 0
   chm[is.na(chm)] <- 0
@@ -167,12 +170,14 @@ watershed_kds_raster <- function(las,
 #' the point cloud.
 #' @return terra SpatRaster
 #' @section Details
-#' The output raster can serve as input for the parameter 
-#' "kernel_diameter_slope" (hence  "kds") for the function 
+#'
+#' The output raster can serve as input for the parameter
+#' "kernel_diameter_slope" (hence  "kds") for the function
 #' segment_tree_crowns. It averages the ratio of crown diameter to tree height
-#' for a 5 m radius, for trees that were detected with the Li2012 tree 
+#' for a 5 m radius, for trees that were detected with the Li2012 tree
 #' segmentation algorithm.
-#' @export 
+#'
+#' @export
 
 li_kds_raster <- function(las,
                           bandwidth_intercept = 0,
@@ -226,7 +231,7 @@ li_kds_raster <- function(las,
   # create canopy height model
   chm <- lidR::rasterize_canopy(las,
                                 res = chm.res,
-                                algorithm = p2r(subcircle = 0.25))
+                                algorithm = lidR::p2r(subcircle = 0.25))
 
   # fill in NA values with 0
   chm[is.na(chm)] <- 0

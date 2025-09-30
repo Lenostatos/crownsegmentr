@@ -69,9 +69,6 @@ assert_that_raster_covers_las_point_cloud <- function(
   )
 }
 
-assert_that_raster_crs_matches_las_crs <- function(raster, las, message) {
-  assert_that(terra::crs(raster) == lidR::st_crs(las)$wkt, msg = message)
-}
 
 assert_that_raster_fits_point_cloud <- function(raster, point_cloud, raster_name) {
   if (inherits(point_cloud, "data.frame")) {
@@ -86,14 +83,6 @@ assert_that_raster_fits_point_cloud <- function(raster, point_cloud, raster_name
   } else if (methods::is(point_cloud, "LAS") ||
     methods::is(point_cloud, "LAScatalog")) {
     # if point_cloud is a LAS or LAScatalog object
-    assert_that_raster_crs_matches_las_crs(
-      raster = raster,
-      las = point_cloud,
-      message = paste(
-        "The CRS of the", raster_name, "raster does not match with the CRS of",
-        "the point cloud."
-      )
-    )
 
     assert_that_raster_covers_las_point_cloud(
       raster = raster,
@@ -205,7 +194,7 @@ validate_kernel_params <- function(
           raster_minmax["min"] >= 0,
           msg = paste(
           "The kernel", which, "slope raster contains values below zero."
-          )  
+          )
       )
     }
 

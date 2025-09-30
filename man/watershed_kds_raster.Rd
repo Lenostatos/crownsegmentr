@@ -29,11 +29,7 @@ the ratio}
 the point cloud.}
 }
 \value{
-a terra SpatRaster which covers the area of the point cloud,
-which can serve as input for the parameter "kernel_diameter_slope" (hence
-"kdi") for the function segment_tree_crowns. It averages the ratio of crown
-diameter to tree height for a 5 m radius, for trees that were detected with
-a watershed segmentation.
+a terra SpatRaster
 }
 \description{
 The function calculates a raster with values for the kernel diameter slope
