@@ -199,11 +199,11 @@ validate_kernel_params <- function(
     }
 
 
-    # warning for high diameter
+    # warning for high values
     if (raster_minmax["max"] > 2) {
       warning(paste0(
-        "A crown diameter to tree height ratio greater than 2 is likely too ",
-        "high (the largest of the ratios that you provide is ",
+        "A kernel ", which, " slope greater than 2 is likely too high ",
+        "(the largest of the ratios that you provide is ",
         raster_minmax["max"], ")."
       ))
     }
@@ -211,10 +211,10 @@ validate_kernel_params <- function(
     assert_that_raster_fits_point_cloud(
       raster = kernel_slope,
       point_cloud = point_cloud,
-      raster_name = "crown diameter to tree height"
+      raster_name = paste0("kernel_", which, "_slope")
     )
   } else {
-    # if kernel_diameter_slope is not a raster object
+    # if kernel_slope is not a raster object
     assert_that(
       assertthat::is.number(kernel_slope),
       assertthat::noNA(kernel_slope)
@@ -237,7 +237,8 @@ validate_kernel_params <- function(
     }
 
     if (kernel_slope > 2) {
-      warning( "A kernel height slope greater than 2 is likely too high.")
+      warning(paste( "A kernel", which,
+                     "slope greater than 2 is likely too high."))
     }
   }
 }
@@ -451,4 +452,23 @@ validate_scale_n_offset_are_consistent <- function(LAScatalog) {
       )
     }
   }
+}
+
+## Validation functions for kdi_raster
+
+validate_bandwidth_intercept <- function(intercept){
+  assert_that(
+    assertthat::is.number(intercept),
+    assertthat::noNA(intercept),
+    intercept >= 0
+  )
+}
+
+validate_kds_limits <- function(limits){
+  assert_that(
+    is.vector(limits),
+    is.numeric(limits),
+    length(limits) > 1,
+    assertthat::noNA(limits)
+  )
 }

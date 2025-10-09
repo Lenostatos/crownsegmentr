@@ -263,7 +263,6 @@ methods::setMethod(
       point_cloud,
       which = "height"
     )
-    # TODO: validate kernel_..._intercept
     validate_segment_crowns_only_above(segment_crowns_only_above)
     validate_ground_height(ground_height, point_cloud)
     validate_crown_id_column_name(crown_id_column_name, point_cloud)
@@ -585,7 +584,6 @@ methods::setMethod(
            write_crown_id_also_to_file = TRUE,
            crown_id_file_description = crown_id_column_name) {
     validate_scale_n_offset_are_consistent(point_cloud)
-
     validate_kernel_params(
       kernel_diameter_slope,
       kernel_diameter_intercept,
@@ -598,7 +596,6 @@ methods::setMethod(
       point_cloud,
       which = "height"
     )
-
     # validate_crown_id_column_name(crown_id_column_name, point_cloud@data)
     # TODO find out whether there is a way to validate this here instead of in
     # the individual calls to the LAS methods.
