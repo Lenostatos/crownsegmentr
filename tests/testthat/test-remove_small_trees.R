@@ -9,7 +9,7 @@ test_that("The function works on a point cloud data table",{
   processed_point_cloud <- remove_small_trees(mini_point_cloud)
 
   expect_true(is.na(processed_point_cloud[1,"crown_id"]))
-  expect_equal(processed_point_cloud[5,"crown_id"], 1)
+  expect_equal(processed_point_cloud[5,"crown_id"][[1]], 1)
 
   # vary min_height
   processed_point_cloud <- remove_small_trees(mini_point_cloud,

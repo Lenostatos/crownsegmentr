@@ -57,22 +57,28 @@ methods::setMethod(
 
     # TODO: test if it contains a data column of the required name
 
-    # copy point cloud to a reduced data frame that can be used for crown_polygons
-    point_cloud_reduced_df <- point_cloud[,c("X", "Y", "Z")]
-    point_cloud_reduced_df$crown_id <- point_cloud[[crown_id_column_name]]
+    # create crowns with crown_metrics
+    metrics <- ~list(height = max(Z),
+                     npoints = length(Z))
+    crowns <- lidR::crown_metrics(lidR::LAS(point_cloud),
+                                  metrics,
+                                  attribute = crown_id_column_name,
+                                  geom = "convex")
+    # calculate radius
+    crowns$area <- sf::st_area(crowns)
+    crowns$radius <- sqrt(crowns$area) / 2
 
-    # create crown polgons
-    crown.polygons <- crown_polygons_crown_id(point_cloud_reduced_df)
 
-    # identify ids of small crowns
-    small.ids <- crown.polygons[(crown.polygons$radius < min_radius)|
-                                  (crown.polygons$height < min_height),]$crown_id
+    # identify ids of crowns that are not too small
+    right_size_ids <- crowns[(crowns$radius >= min_radius) &
+                               (crowns$height >= min_height),
+                             crown_id_column_name][[1]]
 
-    # identify for which points the crown is too small
-    crown_is_small <- point_cloud[[crown_id_column_name]] %in% small.ids
+    # identify for which points the crown is not too small
+    crown_is_not_small <- point_cloud[[crown_id_column_name]] %in% right_size_ids
 
     # set crown_id of small trees to NA
-    point_cloud[[crown_id_column_name]][crown_is_small] <- NA
+    point_cloud[[crown_id_column_name]][!crown_is_not_small] <- NA
 
     # create new ids in ascending order without gaps (ugly method, but works)
     point_cloud[[crown_id_column_name]] <-
@@ -98,24 +104,30 @@ methods::setMethod(
            min_height,
            crown_id_column_name){
 
+  # TODO: add crown_id_column_name as variable
   # TODO: test if it contains a data column of the required name
 
-  # copy point cloud to a reduced data frame that can be used for crown_polygons
-  point_cloud_reduced_df <- point_cloud@data[,c("X", "Y", "Z")]
-  point_cloud_reduced_df$crown_id <- point_cloud@data[[crown_id_column_name]]
+  # create crowns with crown_metrics
+  metrics <- ~list(height = max(Z),
+                   npoints = length(Z))
+  crowns <- lidR::crown_metrics(point_cloud,
+                                metrics,
+                                attribute = crown_id_column_name,
+                                geom = "convex")
+  # calculate radius
+  crowns$area <- as.numeric(sf::st_area(crowns))
+  crowns$radius <- sqrt(crowns$area) / 2
 
-  # create crown polgons
-  crown.polygons <- crown_polygons_crown_id(point_cloud_reduced_df)
+  # identify ids of crowns that are not too small
+  right_size_ids <- crowns[(crowns$radius >= min_radius) &
+                             (crowns$height >= min_height),
+                           crown_id_column_name][[1]]
 
-  # identify ids of small crowns
-  small.ids <- crown.polygons[(crown.polygons$radius < min_radius)|
-                                (crown.polygons$height < min_height),]$crown_id
-
-  # identify for which points the crown is too small
-  crown_is_small <- point_cloud@data[[crown_id_column_name]] %in% small.ids
+  # identify for which points the crown is not too small
+  crown_is_not_small <- point_cloud@data[[crown_id_column_name]] %in% right_size_ids
 
   # set crown_id of small trees to NA
-  point_cloud@data[[crown_id_column_name]][crown_is_small] <- NA
+  point_cloud@data[[crown_id_column_name]][!crown_is_not_small] <- NA
 
   # create new ids in ascending order without gaps
   point_cloud@data[[crown_id_column_name]] <-
@@ -128,32 +140,6 @@ methods::setMethod(
 
 # TODO: Add case for LAS Catalog
 
-
-
-# Helper function
-
-crown_polygons_crown_id <- function(point_cloud){
-  # takes a normalized and segmented point cloud with a column "crown_id"
-  # and returns a SpatVector object with the convex hull of each tree as polygon
-
-  # remove NA crown_id
-  point_cloud <- point_cloud[!is.na(point_cloud$crown_id),]
-  # convert into terra vector object
-  points.vect <- terra::vect(point_cloud, geom=c("X", "Y"))
-
-  # calculate convex hull for every tree
-  crowns <- terra::hull(points.vect, by = "crown_id")
-
-  # calculate area
-  crowns$area <- suppressWarnings( terra::expanse(crowns) )
-  crowns$radius <- sqrt(crowns$area) / 2
-  # add Z as the highest Z value in the cluster
-  crowns <- merge(crowns, aggregate(Z ~ crown_id, point_cloud, max), by = "crown_id")
-  # rename column
-  names(crowns)[names(crowns)=="Z"] <- "height"
-
-  return(crowns)
-}
 
 
 
