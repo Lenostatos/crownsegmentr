@@ -63,3 +63,27 @@ test_that("Function works with real-world LAS file",{
   expect_true(length(unique(processed_las@data$crown_id)) <
                 length(unique(segmented_las@data$crown_id)))
 })
+
+#
+# test_that("Function works with LasCatalog",{
+#   # TODO Check whether enabling parallelization like this is CRAN conform
+#   # On some machines, using future::multisession without specifying number of
+#   # workers produces errors
+#   future::plan(strategy = future::multisession(workers = future::availableCores()))
+#
+#   # Load real point cloud data
+#   test_catalog <- lidR::readLAScatalog(
+#     system.file("extdata", "MixedConifer.laz", package = "lidR"),
+#     chunk_size = 57,
+#     chunk_buffer = 20
+#   )
+#
+#   segmented_catalog <- segment_tree_crowns(
+#     test_catalog,
+#     kernel_diameter_slope = 0.1,
+#     kernel_height_slope = 0.3,
+#     kernel_diameter_intercept = 4,
+#     kernel_height_intercept = 3,
+#     crown_id_column_name = "tree_id"
+#   )
+# })

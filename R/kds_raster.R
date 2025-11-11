@@ -50,22 +50,23 @@
 #'
 #' @export
 
-watershed_kds_raster <- function(las,
+watershed_kds_raster <- function(point_cloud,
                                  bandwidth_intercept = 0,
                                  limits = c(0,1),
-                                 ground_height = NULL){
+                                 ground_height = NULL) {
+
   # TODO: Tests, e.g.: are the input values plausible
   #       - maybe progress bar?
   #       - require libraries inside function
   validate_bandwidth_intercept(bandwidth_intercept)
   validate_kds_limits(limits)
-  validate_ground_height(ground_height, las)
+  validate_ground_height(ground_height, point_cloud)
 
   # If ground_height is a list of arguments, pass them to
   # lidR::rasterize_terrain
   if (is.list(ground_height)) {
     ground_height <- do.call(lidR::rasterize_terrain,
-                             args = c(las = las, ground_height)
+                             args = c(las = point_cloud, ground_height)
     )
   }
 
@@ -82,7 +83,7 @@ watershed_kds_raster <- function(las,
                                        algorithm = lidR::kriging(),
                                        dtm = ground_height)
   } else {
-   norm.las <- las
+   norm.las <- point_cloud
   }
 
   # define the resolution for the chm: if the point density is higher than 16
@@ -184,15 +185,12 @@ li_kds_raster <- function(las,
                           bandwidth_intercept = 0,
                           limits = c(0,1),
                           ground_height = NULL# TODO: add parameters for li
-                          ){
+){
 
   # validate input
   validate_bandwidth_intercept(bandwidth_intercept)
   validate_kds_limits(limits)
   validate_ground_height(ground_height, las)
-
-
-
 
 
   # If ground_height is a list of arguments, pass them to
@@ -244,9 +242,17 @@ li_kds_raster <- function(las,
   segm <- lidR::segment_trees(las, lidR::li2012())
 
 
+  # create crowns with crown_metrics
+  metrics <- ~list(height = max(Z),
+                   npoints = length(Z))
+  crowns <- lidR::crown_metrics(segm,
+                                metrics,
+                                attribute = "treeID",
+                                geom = "convex")
+  # calculate radius
+  crowns$area <- as.numeric(sf::st_area(crowns))
+  crowns$diameter <- sqrt(crowns$area)
 
-  # create crown polygons from point cloud
-  crowns <- crown_polygons_treeID(segm)
 
   # calculate cdr, and cap it with limits
   crowns$diam.height.ratio <- pmin(pmax((crowns$diameter - bandwidth_intercept) /
@@ -269,35 +275,5 @@ li_kds_raster <- function(las,
   return(ratio.avg)
 }
 
-
-
-####
-# Helper functions
-
-crown_polygons_treeID <- function(las){
-  # takes a normalized and segmented point cloud with a column "treeID"
-  # and returns a SpatVector object with the convex hull of each tree as polygon
-
-  # create data frame with points
-  points.df <- las@data[,c("X","Y", "Z", "treeID")]
-  # remove NA treeID
-  points.df <- points.df[!is.na(points.df$treeID)]
-  # convert into terra vector object
-  points.vect <- terra::vect(points.df, geom=c("X", "Y"))
-
-  # calculate convex hull for every tree
-  crowns <- terra::hull(points.vect, by = "treeID")
-
-  # calculate area
-  crowns$area <- suppressWarnings( terra::expanse(crowns) )
-  crowns$diameter <- sqrt(crowns$area)
-  # add Z as the highest Z value in the cluster
-  crowns <- merge(crowns, stats::aggregate(Z ~ treeID, points.df, max),
-                  by = "treeID")
-  # rename column
-  names(crowns)[names(crowns)=="Z"] <- "height"
-
-  return(crowns)
-}
 
 
