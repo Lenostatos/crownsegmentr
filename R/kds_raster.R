@@ -51,12 +51,26 @@
 #' for trees that were detected with watershed segmentation.
 #'
 #' @export
+methods::setGeneric("watershed_kds_raster",
+                    function(point_cloud,
+                             bandwidth_intercept = 0,
+                             limits = c(0,1),
+                             ground_height = NULL,
+                             ...) {
+                      standardGeneric("watershed_kds_raster")
+                    },
+                    signature = "point_cloud"
+)
 
-watershed_kds_raster <- function(point_cloud,
-                                 bandwidth_intercept = 0,
-                                 limits = c(0,1),
-                                 ground_height = NULL,
-                                 ...) {
+
+methods::setMethod(
+  "watershed_kds_raster",
+  signature(point_cloud = "LAS"),
+  function(point_cloud,
+           bandwidth_intercept,
+           limits,
+           ground_height,
+           ...) {
 
   # TODO: Tests, e.g.: are the input values plausible
   #       - maybe progress bar?
@@ -147,9 +161,37 @@ watershed_kds_raster <- function(point_cloud,
   ratio.avg[is.na(ratio.avg)] <- 0.5
 
   return(ratio.avg)
-}
+})
 
 
+
+methods::setMethod(
+  "watershed_kds_raster",
+  signature(point_cloud = "data.frame"),
+  function(point_cloud,
+           bandwidth_intercept,
+           limits,
+           ground_height,
+           ...) {
+    warning(paste("watershed_kds_raster is not yet implemented for point cloud",
+                  "of type data.frame. Please contact us if this would be ",
+                  "important for you."))
+    return(1)
+  })
+
+methods::setMethod(
+  "watershed_kds_raster",
+  signature(point_cloud = "LAScatalog"),
+  function(point_cloud,
+           bandwidth_intercept,
+           limits,
+           ground_height,
+           ...) {
+    warning(paste("watershed_kds_raster is not yet implemented for point cloud",
+                  "of type LasCatalog. Please contact us if this would be ",
+                  "important for you."))
+    return(1)
+})
 
 
 # ----------------------------------------------------------
@@ -184,25 +226,39 @@ watershed_kds_raster <- function(point_cloud,
 #' segmentation algorithm.
 #'
 #' @export
+methods::setGeneric("li_kds_raster",
+                    function(point_cloud,
+                             bandwidth_intercept = 0,
+                             limits = c(0,1),
+                             ground_height = NULL,
+                             ...) {
+                      standardGeneric("li_kds_raster")
+                    },
+                    signature = "point_cloud"
+)
 
-li_kds_raster <- function(las,
-                          bandwidth_intercept = 0,
-                          limits = c(0,1),
-                          ground_height = NULL,
-                          ...
-){
+
+methods::setMethod(
+  "li_kds_raster",
+  signature(point_cloud = "LAS"),
+  function(point_cloud,
+           bandwidth_intercept = 0,
+           limits = c(0,1),
+           ground_height = NULL,
+           ...)
+    {
 
   # validate input
   validate_bandwidth_intercept(bandwidth_intercept)
   validate_kds_limits(limits)
-  validate_ground_height(ground_height, las)
+  validate_ground_height(ground_height, point_cloud)
 
 
   # If ground_height is a list of arguments, pass them to
   # lidR::rasterize_terrain
   if (is.list(ground_height)) {
     ground_height <- do.call(lidR::rasterize_terrain,
-                             args = c(las = las, ground_height)
+                             args = c(las = point_cloud, ground_height)
     )
   }
 
@@ -213,17 +269,17 @@ li_kds_raster <- function(las,
   # normalize point cloud if applicable
   if(!is.null(ground_height)){
     err.msg <- "Ground height raster does not cover the area of the point cloud."
-    assert_that_raster_covers_las_point_cloud(ground_height, las, err.msg)
+    assert_that_raster_covers_las_point_cloud(ground_height, point_cloud, err.msg)
 
-    las <- lidR::normalize_height(las = las,
-                                  algorithm = lidR::kriging(),
-                                  dtm = ground_height)
+    point_cloud <- lidR::normalize_height(las = point_cloud,
+                                          algorithm = lidR::kriging(),
+                                          dtm = ground_height)
   }
 
   # define the resolution for the chm: if the point density is higher than 16
   # in more than half of the relevant area, use 0.25m resolution. If point
   # density is higher than 5, use 0.5 m resolution, otherwise 1 m.
-  dens <- lidR::rasterize_density(las, res = 1)
+  dens <- lidR::rasterize_density(point_cloud, res = 1)
   if(terra::global(dens, function(x) sum(x >= 16)) >=
      0.5 * terra::global(dens, function(x) sum(x > 0))){
     chm.res <- 0.25
@@ -235,7 +291,7 @@ li_kds_raster <- function(las,
   }
 
   # create canopy height model
-  chm <- lidR::rasterize_canopy(las,
+  chm <- lidR::rasterize_canopy(point_cloud,
                                 res = chm.res,
                                 algorithm = lidR::p2r(subcircle = 0.25))
 
@@ -244,7 +300,7 @@ li_kds_raster <- function(las,
 
 
   # segment trees with Li2012 algorithm with default parameters
-  segm <- lidR::segment_trees(las, lidR::li2012(...))
+  segm <- lidR::segment_trees(point_cloud, lidR::li2012(...))
 
 
   # create crowns with crown_metrics
@@ -278,7 +334,36 @@ li_kds_raster <- function(las,
   ratio.avg[is.na(ratio.avg)] <- 0.5
 
   return(ratio.avg)
-}
+})
 
+
+methods::setMethod(
+  "li_kds_raster",
+  signature(point_cloud = "data.frame"),
+  function(point_cloud,
+           bandwidth_intercept,
+           limits,
+           ground_height,
+           ...) {
+    warning(paste("li_kds_raster is not yet implemented for point cloud",
+                  "of type data.frame. Please contact us if this would be ",
+                  "important for you."))
+    return(1)
+  })
+
+
+methods::setMethod(
+  "li_kds_raster",
+  signature(point_cloud = "LAScatalog"),
+  function(point_cloud,
+           bandwidth_intercept,
+           limits,
+           ground_height,
+           ...) {
+    warning(paste("li_kds_raster is not yet implemented for point cloud",
+                  "of type LasCatalog. Please contact us if this would be ",
+                  "important for you."))
+    return(1)
+  })
 
 

@@ -24,7 +24,8 @@ Imports:
     terra
 Suggests: 
     future,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    EBImage
 LinkingTo: 
     BH (>= 1.75.0-0),
     progress,
