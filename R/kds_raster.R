@@ -39,6 +39,8 @@
 #' *a list of arguments to the
 #' [lidR rasterize_terrain()][lidR::rasterize_terrain()] function to normalize
 #' the point cloud.
+#' @param ... further parameters will be passed to the function
+#' [lidR::watershed]
 #' @return a terra SpatRaster
 #'
 #' @section Details
@@ -53,7 +55,8 @@
 watershed_kds_raster <- function(point_cloud,
                                  bandwidth_intercept = 0,
                                  limits = c(0,1),
-                                 ground_height = NULL) {
+                                 ground_height = NULL,
+                                 ...) {
 
   # TODO: Tests, e.g.: are the input values plausible
   #       - maybe progress bar?
@@ -109,7 +112,7 @@ watershed_kds_raster <- function(point_cloud,
   chm[is.na(chm)] <- 0
 
   # watershed delineation
-  wsh <- lidR::watershed(chm)()
+  wsh <- lidR::watershed(chm,...)()
 
   # convert to polygon
   poly.wsh <- terra::as.polygons(wsh)
@@ -170,6 +173,7 @@ watershed_kds_raster <- function(point_cloud,
 #' *a list of arguments to the
 #' [lidR rasterize_terrain()][lidR::rasterize_terrain()] function to normalize
 #' the point cloud.
+#' @param ... further parameters will be passed to the function [lidR::li2012]
 #' @return terra SpatRaster
 #' @section Details
 #'
@@ -184,7 +188,8 @@ watershed_kds_raster <- function(point_cloud,
 li_kds_raster <- function(las,
                           bandwidth_intercept = 0,
                           limits = c(0,1),
-                          ground_height = NULL# TODO: add parameters for li
+                          ground_height = NULL,
+                          ...
 ){
 
   # validate input
@@ -239,7 +244,7 @@ li_kds_raster <- function(las,
 
 
   # segment trees with Li2012 algorithm with default parameters
-  segm <- lidR::segment_trees(las, lidR::li2012())
+  segm <- lidR::segment_trees(las, lidR::li2012(...))
 
 
   # create crowns with crown_metrics

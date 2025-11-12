@@ -13,9 +13,8 @@
 #' The function takes a point cloud in which trees were segmented, and removes
 #' tree clusters that are smaller than a certain radius or a certain height
 #'
-#' @param point_cloud a point cloud, either as data.frame/data.table, as
-#' lidR::LAS object, or as LasCatalog. Needs to have a data column with the
-#' name
+#' @param point_cloud a point cloud, either as data.frame/data.table, or as
+#' lidR::LAS object.
 #' @param min_radius (num) the threshold for crown radius, below which trees
 #' will be removed
 #' @param min_height (num) the threshold for crown height, below which trees
