@@ -454,7 +454,7 @@ validate_scale_n_offset_are_consistent <- function(LAScatalog) {
   }
 }
 
-## Validation functions for kdi_raster
+#' Validation functions for kds_raster
 
 validate_bandwidth_intercept <- function(intercept){
   assert_that(
@@ -470,5 +470,13 @@ validate_kds_limits <- function(limits){
     is.numeric(limits),
     length(limits) > 1,
     assertthat::noNA(limits)
+  )
+}
+
+validate_smoothing_radius <- function(smoothing_radius){
+  assert_that(
+    assertthat::is.number(smoothing_radius),
+    assertthat::noNA(smoothing_radius),
+    smoothing_radius >= 0
   )
 }

@@ -26,6 +26,15 @@ test_that("The kds_raster functions work",{
     #                                    test_point_cloud)
   })
 
+  # test with modified parameters
+  testthat::expect_no_failure({
+    li_kds <- li_kds_raster(test_point_cloud,
+                            bandwidth_intercept = 10,
+                            limits = c(0.3,0.4),
+                            smoothing_radius = 0)
+  })
+
+
 })
 
 

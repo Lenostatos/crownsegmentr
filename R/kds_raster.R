@@ -56,6 +56,7 @@ methods::setGeneric("watershed_kds_raster",
                              bandwidth_intercept = 0,
                              limits = c(0,1),
                              ground_height = NULL,
+                             smoothing_radius = 5,
                              ...) {
                       standardGeneric("watershed_kds_raster")
                     },
@@ -70,6 +71,7 @@ methods::setMethod(
            bandwidth_intercept,
            limits,
            ground_height,
+           smoothing_radius,
            ...) {
 
   # TODO: Tests, e.g.: are the input values plausible
@@ -147,13 +149,31 @@ methods::setMethod(
                                           my_limits[1]),
                                      my_limits[2])
 
-  # build smooth raster of average ratio in 5m Radius
-  dhr.rast <- terra::rasterize(poly.wsh, chm, field = "diam.height.ratio")
-  ratio.avg <- terra::focal(x=dhr.rast, w = 11, fun = "mean", na.rm = T, pad=T)
+  # build raster of average ratio
+  dhr.rast <- terra::rasterize(poly.wsh,
+                               chm,
+                               field = "diam.height.ratio")
+  # smooth raster if applicable
+  if(smoothing_radius >= chm.res){
+    window_size <- floor(smoothing_radius / chm.res) * 2 + 1
+    double_window_size <- floor(2 * smoothing_radius / chm.res) * 2 + 1
+    ratio.avg <- terra::focal(x = dhr.rast,
+                              w = window_size,
+                              fun = "mean",
+                              na.rm = T,
+                              pad = T)
+    # where there are NA values, fill with double smoothing radius average
+    ratio.avg[is.na(ratio.avg)] <- terra::focal(x = dhr.rast,
+                                                w = double_window_size,
+                                                fun = "mean",
+                                                na.rm = T,
+                                                pad = T)
+  }else{ # if smoothing radius is too small to be meaningful
+    ratio.avg <- dhr.rast
+  }
 
   # where there are NA values, fill with 10m average
   ratio.avg[is.na(ratio.avg)] <- terra::focal(x = dhr.rast,
-                                              w = 21,
                                               fun = "mean",
                                               na.rm = T,
                                               pad=T)
@@ -172,6 +192,7 @@ methods::setMethod(
            bandwidth_intercept,
            limits,
            ground_height,
+           smoothing_radius,
            ...) {
     warning(paste("watershed_kds_raster is not yet implemented for point cloud",
                   "of type data.frame. Please contact us if this would be ",
@@ -186,6 +207,7 @@ methods::setMethod(
            bandwidth_intercept,
            limits,
            ground_height,
+           smoothing_radius,
            ...) {
     warning(paste("watershed_kds_raster is not yet implemented for point cloud",
                   "of type LasCatalog. Please contact us if this would be ",
@@ -231,6 +253,7 @@ methods::setGeneric("li_kds_raster",
                              bandwidth_intercept = 0,
                              limits = c(0,1),
                              ground_height = NULL,
+                             smoothing_radius = 5,
                              ...) {
                       standardGeneric("li_kds_raster")
                     },
@@ -242,9 +265,10 @@ methods::setMethod(
   "li_kds_raster",
   signature(point_cloud = "LAS"),
   function(point_cloud,
-           bandwidth_intercept = 0,
-           limits = c(0,1),
-           ground_height = NULL,
+           bandwidth_intercept,
+           limits,
+           ground_height,
+           smoothing_radius,
            ...)
     {
 
@@ -321,15 +345,30 @@ methods::setMethod(
                                         limits[1]),
                                    limits[2])
 
-  # build smooth raster of average ratio in 5m Radius
-  dhr.rast <- terra::rasterize(crowns, chm, field = "diam.height.ratio")
-  ratio.avg <- terra::focal(x=dhr.rast, w = 11, fun = "mean", na.rm = T, pad=T)
-  # where there are NA values, fill with 10m average
-  ratio.avg[is.na(ratio.avg)] <- terra::focal(x = dhr.rast,
-                                              w = 21,
-                                              fun = "mean",
-                                              na.rm = T,
-                                              pad=T)
+  # build raster of average ratio
+  dhr.rast <- terra::rasterize(crowns,
+                               chm,
+                               field = "diam.height.ratio",
+                               fun = mean)
+  # smooth raster if applicable
+  if(smoothing_radius >= chm.res){
+    window_size <- floor(smoothing_radius / chm.res) * 2 + 1
+    double_window_size <- floor(2 * smoothing_radius / chm.res) * 2 + 1
+    ratio.avg <- terra::focal(x = dhr.rast,
+                              w = window_size,
+                              fun = "mean",
+                              na.rm = T,
+                              pad = T)
+    # where there are NA values, fill with double smoothing radius average
+    ratio.avg[is.na(ratio.avg)] <- terra::focal(x = dhr.rast,
+                                                w = double_window_size,
+                                                fun = "mean",
+                                                na.rm = T,
+                                                pad = T)
+  }else{ # if smoothing radius is too small to be meaningful
+    ratio.avg <- dhr.rast
+  }
+
   # if there are still NA values, arbitrarily fill with 0.5
   ratio.avg[is.na(ratio.avg)] <- 0.5
 
