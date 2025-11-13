@@ -284,11 +284,8 @@ test_that("the LAS method works", {
 # LAScatalog method -------------------------------------------
 
 test_that("the LAScatalog method works", {
-  # TODO Check whether enabling parallelization like this is CRAN conform
-  # On some machines, using future::multisession without specifying number of
-  # workers produces errors
-  n_cores <- min(2, future::availableCores())
-  future::plan(strategy = future::multisession(workers = n_cores))
+  # Parallelization to maximum 2 cores
+  future::plan(strategy = future::multisession(workers = min(2, future::availableCores())))
 
   # Load real point cloud data
   test_catalog <- lidR::readLAScatalog(
