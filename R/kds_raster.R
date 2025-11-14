@@ -194,9 +194,8 @@ methods::setMethod(
            ground_height,
            smoothing_radius,
            ...) {
-    warning(paste("watershed_kds_raster is not yet implemented for point cloud",
-                  "of type data.frame. Please contact us if this would be ",
-                  "important for you."))
+    stop(paste("watershed_kds_raster is not (yet) implemented for point cloud",
+               "of type data.frame."), call. = FALSE)
     return(1)
   })
 
@@ -209,9 +208,8 @@ methods::setMethod(
            ground_height,
            smoothing_radius,
            ...) {
-    warning(paste("watershed_kds_raster is not yet implemented for point cloud",
-                  "of type LasCatalog. Please contact us if this would be ",
-                  "important for you."))
+    stop(paste("watershed_kds_raster is not (yet) implemented for point cloud",
+               "of type LasCatalog."), call. = FALSE)
     return(1)
 })
 
@@ -384,9 +382,8 @@ methods::setMethod(
            limits,
            ground_height,
            ...) {
-    warning(paste("li_kds_raster is not yet implemented for point cloud",
-                  "of type data.frame. Please contact us if this would be ",
-                  "important for you."))
+    stop(paste("li_kds_raster is not (yet) implemented for point cloud",
+               "of type data.frame."), call. = FALSE)
     return(1)
   })
 
@@ -399,9 +396,8 @@ methods::setMethod(
            limits,
            ground_height,
            ...) {
-    warning(paste("li_kds_raster is not yet implemented for point cloud",
-                  "of type LasCatalog. Please contact us if this would be ",
-                  "important for you."))
+    stop(paste("li_kds_raster is not (yet) implemented for point cloud",
+               "of type LasCatalog."), call. = FALSE)
     return(1)
   })
 
