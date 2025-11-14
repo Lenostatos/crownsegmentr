@@ -43,7 +43,7 @@
 #' [lidR::watershed]
 #' @return a terra SpatRaster
 #'
-#' @section Details
+#' @section Details:
 #'
 #' The output raster can serve as input for the parameter
 #' "kernel_diameter_slope" (hence "kds") for the function segment_tree_crowns.
@@ -239,7 +239,7 @@ methods::setMethod(
 #' the point cloud.
 #' @param ... further parameters will be passed to the function [lidR::li2012]
 #' @return terra SpatRaster
-#' @section Details
+#' @section Details:
 #'
 #' The output raster can serve as input for the parameter
 #' "kernel_diameter_slope" (hence  "kds") for the function

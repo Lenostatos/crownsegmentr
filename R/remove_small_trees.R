@@ -1,9 +1,4 @@
 # Remove small trees
-#' remove small trees
-#'
-
-#'
-#'
 #'
 
 # Generic S4 Function -------------------------------------------------
@@ -22,7 +17,7 @@
 #' @param crown_id_column_name the name of the column in which the id of the
 #' crown is saved
 #' @return lidR LAS
-#' @section Details
+#' @section Details:
 #' returns the same las object that was given as input, but with
 #' altered crown id's. Trees that are considered too small have their crown id
 #' set to NA, and all other crown id's are re-assigned so that they are

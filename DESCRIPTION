@@ -7,6 +7,7 @@ Authors@R: c(
     person("Nikolai", "Knapp", , "nikolai.knapp@thuenen.de", role = "aut",
            comment = "Initialized and motivated the development of the package and provided an R draft of the AMS3D algorithm.")
   )
+Maintainer: timon.miesner@thuenen.de
 Description: Provides a function that performs the adaptive mean shift
     algorithm for individual tree crown delineation in 3D point clouds as
     proposed by Ferraz et. al, 2016.
@@ -34,5 +35,5 @@ Config/testthat/edition: 3
 Contact: Leon.Steinmeier@posteo.net, nikolai.knapp@thuenen.de
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 SystemRequirements: C++17, GNU make
