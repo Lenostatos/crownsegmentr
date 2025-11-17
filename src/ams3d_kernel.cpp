@@ -27,19 +27,19 @@ namespace ams3d
 {
     _Kernel::_Kernel (
         const spatial::point_3d_t &center,
-        const double kernel_diameter_slope,
-        const double kernel_height_slope,
-        const double kernel_diameter_intercept,
-        const double kernel_height_intercept
+        const double crown_diameter_to_tree_height,
+        const double crown_length_to_tree_height,
+        const double crown_diameter_constant,
+        const double crown_length_constant
     ):
         _xy_center{ spatial::get_x( center ), spatial::get_y( center ) },
         _center_height_initial{ spatial::get_z( center ) },
-        _radius{ (kernel_diameter_slope * _center_height_initial
-            + kernel_diameter_intercept
+        _radius{ (crown_diameter_to_tree_height * _center_height_initial
+            + crown_diameter_constant
             )* 0.5
           },
-        _height{ (kernel_height_slope * _center_height_initial
-            + kernel_height_intercept
+        _height{ (crown_length_to_tree_height * _center_height_initial
+            + crown_length_constant
             )* 0.75
           },
 
@@ -57,25 +57,25 @@ namespace ams3d
     _Kernel::_Kernel (
         const spatial::point_3d_t &center,
         const spatial::coordinate_t &ground_height_at_center,
-        const double kernel_diameter_slope,
-        const double kernel_height_slope,
-        const double kernel_diameter_intercept,
-        const double kernel_height_intercept
+        const double crown_diameter_to_tree_height,
+        const double crown_length_to_tree_height,
+        const double crown_diameter_constant,
+        const double crown_length_constant
     ):
         _xy_center{ spatial::get_x( center ), spatial::get_y( center ) },
         _center_height_initial{ spatial::get_z( center ) },
         _radius
         {
-            (kernel_diameter_slope
+            (crown_diameter_to_tree_height
             * (_center_height_initial - ground_height_at_center)
-            + kernel_diameter_intercept
+            + crown_diameter_constant
             )* 0.5
         },
         _height
         {
-            (kernel_height_slope
+            (crown_length_to_tree_height
             * (_center_height_initial - ground_height_at_center)
-            + kernel_height_intercept
+            + crown_length_constant
             )* 0.75
 
         },

@@ -142,58 +142,59 @@ validate_coordinate_table <- function(coordinate_table) {
 }
 
 validate_kernel_params <- function(
-    kernel_slope,
-    kernel_intercept,
+    kernel_to_tree_height,
+    kernel_constant,
     point_cloud,
     which = "diameter") {
 
   # intercept is numeric and not NA
   assert_that(
-    assertthat::is.number(kernel_intercept),
-    assertthat::noNA(kernel_intercept)
+    assertthat::is.number(kernel_constant),
+    assertthat::noNA(kernel_constant)
   )
 
   # if intercept >= 0
   assert_that(
-    kernel_intercept >= 0,
-    msg = paste( "Used a kernel",
+    kernel_constant >= 0,
+    msg = paste( "Used a crown",
                  which,
-                 "intercept below 0 which doesn't work.")
+                 "constant below 0 which doesn't work.")
   )
 
 
-  # if kernel_slope is a raster
-  if (methods::is(kernel_slope, "SpatRaster")) {
-    if (terra::nlyr(kernel_slope) > 1) {
+  # if kernel_to_tree_height is a raster
+  if (methods::is(kernel_to_tree_height, "SpatRaster")) {
+    if (terra::nlyr(kernel_to_tree_height) > 1) {
       warning(
         paste0(
-          "kernel_",
+          "crown_",
           which,
-          "_slope has more than one raster layer. Only the first layer is",
-          "considered."
+          "_to_tree_height has more than one raster layer. Only the first",
+          "layer is considered."
       ))
     }
 
     assert_that_raster_has_numeric_values(
-      raster = kernel_slope,
+      raster = kernel_to_tree_height,
       raster_name = paste0("kernel_", which, "_slope")
     )
 
-    raster_minmax <- terra::minmax(kernel_slope, compute = TRUE)[, 1]
+    raster_minmax <- terra::minmax(kernel_to_tree_height, compute = TRUE)[, 1]
 
-    if(kernel_intercept == 0){
+    if(kernel_constant == 0){
       assert_that(
         raster_minmax["min"] > 0,
         msg = paste(
-          "Used a kernel", which, "slope equal to or less than zero. This does",
-          "not work when intercept is zero."
+          "Used a crown", which, " to tree height value equal to or less than",
+          "zero. This does not work when the constant is zero."
           )
       )
     }else{ # if kernel intercept > 0
       assert_that(
           raster_minmax["min"] >= 0,
           msg = paste(
-          "The kernel", which, "slope raster contains values below zero."
+          "The crown", which, "to tree height raster contains values below",
+          "zero."
           )
       )
     }
@@ -202,43 +203,43 @@ validate_kernel_params <- function(
     # warning for high values
     if (raster_minmax["max"] > 2) {
       warning(paste0(
-        "A kernel ", which, " slope greater than 2 is likely too high ",
-        "(the largest of the ratios that you provide is ",
+        "A crown ", which, " to tree height value greater than 2 is likely",
+        " too high (the largest of the ratios that you provide is ",
         raster_minmax["max"], ")."
       ))
     }
 
     assert_that_raster_fits_point_cloud(
-      raster = kernel_slope,
+      raster = kernel_to_tree_height,
       point_cloud = point_cloud,
-      raster_name = paste0("kernel_", which, "_slope")
+      raster_name = paste0("crown_", which, "_to_tree_height")
     )
   } else {
-    # if kernel_slope is not a raster object
+    # if kernel_to_tree_height is not a raster object
     assert_that(
-      assertthat::is.number(kernel_slope),
-      assertthat::noNA(kernel_slope)
+      assertthat::is.number(kernel_to_tree_height),
+      assertthat::noNA(kernel_to_tree_height)
     )
 
-    if(kernel_intercept == 0){
+    if(kernel_constant == 0){
       assert_that(
-        kernel_slope > 0,
+        kernel_to_tree_height > 0,
         msg = paste(
-          "Used a kernel", which, "slope equal to or less than zero. This does",
-          "not work when intercept is zero."
+          "Used a crown", which, "to tree height value equal to or less than",
+          "zero. This does not work when the constant is zero."
         )
       )
     }else{ # if kernel intercept > 0
       assert_that(
-          kernel_slope >= 0,
+          kernel_to_tree_height >= 0,
           msg = paste(
-          "Used a kernel", which, "slope below zero."
+          "Used a crown", which, "to tree height value below zero."
         ))
     }
 
-    if (kernel_slope > 2) {
-      warning(paste( "A kernel", which,
-                     "slope greater than 2 is likely too high."))
+    if (kernel_to_tree_height > 2) {
+      warning(paste( "A crown", which,
+                     "to tree height greater than 2 is likely too high."))
     }
   }
 }
@@ -344,10 +345,10 @@ validate_centroid_convergence_distance <-
     )
   }
 
-validate_max_num_centroids_per_mode <- function(max_num_centroids_per_mode) {
+validate_max_iterations_per_point <- function(max_iterations_per_point) {
   assert_that(
-    assertthat::is.count(max_num_centroids_per_mode),
-    max_num_centroids_per_mode >= 1
+    assertthat::is.count(max_iterations_per_point),
+    max_iterations_per_point >= 1
   )
 }
 
@@ -359,11 +360,11 @@ validate_dbscan_neighborhood_radius <- function(dbscan_neighborhood_radius) {
   )
 }
 
-validate_min_num_modes_per_neighborhood <-
-  function(min_num_modes_per_neighborhood) {
+validate_min_num_points_per_crown <-
+  function(min_num_points_per_crown) {
     assert_that(
-      assertthat::is.count(min_num_modes_per_neighborhood),
-      min_num_modes_per_neighborhood >= 1
+      assertthat::is.count(min_num_points_per_crown),
+      min_num_points_per_crown >= 1
     )
   }
 
@@ -454,7 +455,7 @@ validate_scale_n_offset_are_consistent <- function(LAScatalog) {
   }
 }
 
-#' Validation functions for kds_raster
+# Validation functions for diameter_raster
 
 validate_bandwidth_intercept <- function(intercept){
   assert_that(
@@ -464,7 +465,7 @@ validate_bandwidth_intercept <- function(intercept){
   )
 }
 
-validate_kds_limits <- function(limits){
+validate_diameter_limits <- function(limits){
   assert_that(
     is.vector(limits),
     is.numeric(limits),

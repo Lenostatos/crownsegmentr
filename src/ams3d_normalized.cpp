@@ -29,12 +29,12 @@ namespace ams3d
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
-        const double kernel_diameter_slope,
-        const double kernel_height_slope,
-        const double kernel_diameter_intercept,
-        const double kernel_height_intercept,
+        const double crown_diameter_to_tree_height,
+        const double crown_length_to_tree_height,
+        const double crown_diameter_constant,
+        const double crown_length_constant,
         const spatial::distance_t &centroid_convergence_distance,
-        const int max_num_centroids_per_mode
+        const int max_iterations_per_point
     ) {
         // If any coordinate value of point is non-finite or point lies below
         // the minimum point height, return an NaN mode.
@@ -55,10 +55,10 @@ namespace ams3d
             // Create a kernel at the current centroid.
             _Kernel kernel {
                 current_centroid,
-                kernel_diameter_slope,
-                kernel_height_slope,
-                kernel_diameter_intercept,
-                kernel_height_intercept
+                crown_diameter_to_tree_height,
+                crown_length_to_tree_height,
+                crown_diameter_constant,
+                crown_length_constant
             };
 
             // Store the current centroid and calculate a new centroid with the
@@ -73,7 +73,7 @@ namespace ams3d
         while (
             spatial::distance( former_centroid, current_centroid ) >
                 centroid_convergence_distance
-            && num_calculated_centroids < max_num_centroids_per_mode
+            && num_calculated_centroids < max_iterations_per_point
         );
 
         return current_centroid;
@@ -85,12 +85,12 @@ namespace ams3d
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
-        const double kernel_diameter_slope,
-        const double kernel_height_slope,
-        const double kernel_diameter_intercept,
-        const double kernel_height_intercept,
+        const double crown_diameter_to_tree_height,
+        const double crown_length_to_tree_height,
+        const double crown_diameter_constant,
+        const double crown_length_constant,
         const spatial::distance_t &centroid_convergence_distance,
-        const int max_num_centroids_per_mode
+        const int max_iterations_per_point
     ) {
         // If any coordinate value of point is non-finite or point lies below
         // the minimum point height, return an NaN mode.
@@ -118,10 +118,10 @@ namespace ams3d
             // the starting point during the first iteration).
             _Kernel kernel {
                 current_centroid,
-                kernel_diameter_slope,
-                kernel_height_slope,
-                kernel_diameter_intercept,
-                kernel_height_intercept
+                crown_diameter_to_tree_height,
+                crown_length_to_tree_height,
+                crown_diameter_constant,
+                crown_length_constant
             };
 
             // Store the current centroid and calculate a new centroid with the
@@ -139,7 +139,7 @@ namespace ams3d
         while (
             spatial::distance( former_centroid, current_centroid ) >
                 centroid_convergence_distance
-            && num_calculated_centroids < max_num_centroids_per_mode
+            && num_calculated_centroids < max_iterations_per_point
         );
 
         // Return the last centroid as the mode plus all centroids in an array.

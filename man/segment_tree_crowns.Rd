@@ -9,33 +9,33 @@
 \usage{
 segment_tree_crowns(
   point_cloud,
-  kernel_diameter_slope,
-  kernel_height_slope,
-  kernel_diameter_intercept = 0,
-  kernel_height_intercept = 0,
+  crown_diameter_to_tree_height,
+  crown_length_to_tree_height,
+  crown_diameter_constant = 0,
+  crown_length_constant = 0,
   segment_crowns_only_above = 0,
   ground_height = NULL,
   crown_id_column_name = "crown_id",
   centroid_convergence_distance = 0.01,
-  max_num_centroids_per_mode = 500,
+  max_iterations_per_point = 500,
   dbscan_neighborhood_radius = 0.3,
-  min_num_modes_per_neighborhood = 5,
+  min_num_points_per_crown = 5,
   ...
 )
 
 \S4method{segment_tree_crowns}{data.frame}(
   point_cloud,
-  kernel_diameter_slope,
-  kernel_height_slope,
-  kernel_diameter_intercept,
-  kernel_height_intercept,
+  crown_diameter_to_tree_height,
+  crown_length_to_tree_height,
+  crown_diameter_constant,
+  crown_length_constant,
   segment_crowns_only_above,
   ground_height,
   crown_id_column_name,
   centroid_convergence_distance,
-  max_num_centroids_per_mode,
+  max_iterations_per_point,
   dbscan_neighborhood_radius,
-  min_num_modes_per_neighborhood,
+  min_num_points_per_crown,
   verbose = TRUE,
   also_return_modes = FALSE,
   also_return_centroids = FALSE
@@ -43,17 +43,17 @@ segment_tree_crowns(
 
 \S4method{segment_tree_crowns}{LAS}(
   point_cloud,
-  kernel_diameter_slope,
-  kernel_height_slope,
-  kernel_diameter_intercept,
-  kernel_height_intercept,
+  crown_diameter_to_tree_height,
+  crown_length_to_tree_height,
+  crown_diameter_constant,
+  crown_length_constant,
   segment_crowns_only_above,
   ground_height,
   crown_id_column_name,
   centroid_convergence_distance,
-  max_num_centroids_per_mode,
+  max_iterations_per_point,
   dbscan_neighborhood_radius,
-  min_num_modes_per_neighborhood,
+  min_num_points_per_crown,
   verbose = TRUE,
   also_return_modes = FALSE,
   also_return_centroids = FALSE,
@@ -63,17 +63,17 @@ segment_tree_crowns(
 
 \S4method{segment_tree_crowns}{LAScatalog}(
   point_cloud,
-  kernel_diameter_slope,
-  kernel_height_slope,
-  kernel_diameter_intercept,
-  kernel_height_intercept,
+  crown_diameter_to_tree_height,
+  crown_length_to_tree_height,
+  crown_diameter_constant,
+  crown_length_constant,
   segment_crowns_only_above,
   ground_height,
   crown_id_column_name,
   centroid_convergence_distance,
-  max_num_centroids_per_mode,
+  max_iterations_per_point,
   dbscan_neighborhood_radius,
-  min_num_modes_per_neighborhood,
+  min_num_points_per_crown,
   write_crown_id_also_to_file = TRUE,
   crown_id_file_description = crown_id_column_name
 )
@@ -90,26 +90,25 @@ columns by looking for the first numeric columns named "x"/"X", "y"/"Y", or
 "z"/"Z". For each instance where it can't find one of those it selects the
 next available numeric column in the table and issues a warning.}
 
-\item{kernel_diameter_slope, kernel_height_slope}{Single
+\item{crown_diameter_to_tree_height, crown_length_to_tree_height}{Single
 numbers or \link[terra:SpatRaster-class]{SpatRasters} covering the area of the
-\code{point_cloud}. Slope for the linear function determining the kernel
-diameter (bandwidth) and kernel height, respectively, in relationship to
-the height above ground. Roughly equivalent to the ratio of crown diameter
-to tree height, or crown length to tree height, respectively. Points will
-not be segmented wherever a raster contains \code{NA} values.}
+\code{point_cloud}. The dimensions of the search kernel will be calculated from
+these values and the height above ground of the kernel center, plus the
+constants. For details see "How the algorithm works". Points will not be
+segmented wherever a raster contains \code{NA} values.}
 
-\item{kernel_diameter_intercept, kernel_height_intercept}{Single number >=0.
-Intercept for the linear function determining the kernel diameter
-(bandwidth), or kernel height, respectively, in relationship to the
-height above ground.}
+\item{crown_diameter_constant, crown_length_constant}{Single number >=0.
+Used to determine the dimensions of the search kernel, together with the
+respective ratios to tree height. For details see "How the algorithm
+works".}
 
 \item{segment_crowns_only_above}{A single positive number denoting the
 minimum height above ground at which crown IDs will be calculated.
 
 Note that points directly below this threshold will still be considered
-during the segmentation if they are within reach of search cylinders
+during the segmentation if they are within reach of search kernels
 constructed at the \code{segment_crowns_only_above} height. See "How the
-algorithm works" to learn about the search cylinders.}
+algorithm works" to learn about the search kernels.}
 
 \item{ground_height}{One of
 \itemize{
@@ -135,7 +134,7 @@ assumed that subsequently calculated centroids have converged to the
 nearest mode. See "How the algorithm works" to learn about centroids and
 modes in the context of the AMS3D algorithm.}
 
-\item{max_num_centroids_per_mode}{A single integer. Maximum number of
+\item{max_iterations_per_point}{A single integer. Maximum number of
 centroids calculated before the search for the nearest mode is aborted. See
 "How the algorithm works" to learn about centroids and modes in the context
 of the AMS3D algorithm.}
@@ -144,11 +143,11 @@ of the AMS3D algorithm.}
 DBSCAN neighborhood around a mode. See "How the algorithm works" to learn
 about neighborhoods in the context of the DBSCAN algorithm.}
 
-\item{min_num_modes_per_neighborhood}{A single integer. The minimum number of
-modes within a DBSCAN neighborhood at which the mode in the neighborhood's
-center will be treated as a core point. See "How the algorithm works" to
-learn about neighborhoods and core points in the context of the DBSCAN
-algorithm.}
+\item{min_num_points_per_crown}{A single integer. The minimum number of
+converged centroids within a DBSCAN neighborhood at which the centroid in
+the neighborhood's center will be treated as a core point. See "How the
+algorithm works" to learn about neighborhoods and core points in the
+context of the DBSCANb algorithm.}
 
 \item{...}{Unused.}
 
@@ -251,13 +250,16 @@ and height within lidar point clouds. These local maxima are called
 is done by looking at the surrounding points and moving into the direction
 of the highest point density until the nearest mode is reached.
 
-The surrounding points are found with a three-dimensional search window
-which is roughly shaped like a crown itself, i.e. it is a vertical cylinder
-whose diameter and height are similar to those of the surrounding tree
-crowns. The exact diameter and height are dependent on the cylinder's
-height above ground and are controlled with the two main parameters of the
-algorithm: \code{kernel_diameter_slope} and
-\code{kernel_height_slope}.
+The surrounding points are found with a search kernel (a three-dimensional
+search window) which has the shape of a vertical cylinder. According to
+literature, the algorithm works best if the search kernel has roughly the
+size of the surrounding crowns. Therefore, the parameters controlling the
+kernels dimension are simplistically called
+\code{crown_diameter_to_tree_height}, \code{crown_diameter_constant}, and
+\code{crown_lenght...} respectively. The diameter of the kernel is calculated
+from the  height above ground of the kernels center times the value for
+crown_diameter_to_tree_height, plus the crown_diameter constant. The
+height of the kernel is calculated respectively.
 
 The direction of the highest point density is found by calculating the
 average position of all points within the cylinder, the cylinder's so
@@ -272,7 +274,7 @@ mode.
 It sometimes happens that centroids converge only after a lot of
 iterations. In order to prevent situations where an excessive number of
 centroids is calculated for just one point, the parameter
-\code{max_num_centroids_per_mode} is used to abort the centroid
+\code{max_iterations_per_point} is used to abort the centroid
 calculations after a certain number of them has been performed.
 Nonetheless, the last centroid found before the abortion is still taken as
 a good enough guess of the nearest mode's position.
@@ -293,7 +295,7 @@ core point of the cluster.
 
 In order to be core points, points need to have enough neighbors. The
 parameter \code{dbscan_neighborhood_radius} determines the radius of the
-neighborhood and the parameter \code{min_num_modes_per_neighborhood}
+neighborhood and the parameter \code{min_num_points_per_crown}
 determines the minimum number of points in the neighborhood (including the
 to-be-classified one), which are needed for a core point.
 
@@ -345,8 +347,8 @@ plot_segmented_point_cloud <- function(
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
-  kernel_diameter_slope = 0.25,
-  kernel_height_slope = 0.5
+  crown_diameter_to_tree_height = 0.25,
+  crown_length_to_tree_height = 0.5
 )
 
 plot_segmented_point_cloud(segmented_point_cloud)
@@ -356,8 +358,8 @@ plot_segmented_point_cloud(segmented_point_cloud)
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
-  kernel_diameter_slope = 0.25,
-  kernel_height_slope = 0.5,
+  crown_diameter_to_tree_height = 0.25,
+  crown_length_to_tree_height = 0.5,
   segment_crowns_only_above = 15 # exclude points below 15 m
 )
 
@@ -374,8 +376,8 @@ terraneous_point_cloud <- lidR::readLAS(system.file(
 # Either pass arguments for the lidR::rasterize_terrain() function
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   terraneous_point_cloud,
-  kernel_diameter_slope = 0.5,
-  kernel_height_slope = 1,
+  crown_diameter_to_tree_height = 0.5,
+  crown_length_to_tree_height = 1,
   segment_crowns_only_above = 2,
   ground_height = list(algorithm = lidR::tin())
 )
@@ -388,8 +390,8 @@ ground_height_grid <- lidR::rasterize_terrain(
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   terraneous_point_cloud,
-  kernel_diameter_slope = 0.5,
-  kernel_height_slope = 1,
+  crown_diameter_to_tree_height = 0.5,
+  crown_length_to_tree_height = 1,
   segment_crowns_only_above = 2,
   ground_height = ground_height_grid
 )
@@ -399,9 +401,9 @@ plot_segmented_point_cloud(segmented_point_cloud)
 
 # Account for Different Crown Shapes with Parameter Rasters ---------------
 
-# Create a raster of kernel_diameter_slope ratios with 0.25 in the
+# Create a raster of crown_diameter_to_tree_height ratios with 0.25 in the
 # western half and 0.75 in the eastern half
-kernel_diameter_slope_grid <- terra::rast(
+crown_diameter_to_tree_height_grid <- terra::rast(
   matrix(c(0.25, 0.75), ncol = 2),
   crs = lidR::st_crs(point_cloud)$wkt,
   extent = terra::ext(
@@ -414,12 +416,12 @@ kernel_diameter_slope_grid <- terra::rast(
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
-  kernel_diameter_slope = kernel_diameter_slope_grid,
-  kernel_height_slope = 0.5
+  crown_diameter_to_tree_height = crown_diameter_to_tree_height_grid,
+  crown_length_to_tree_height = 0.5
 )
 
 # Observe how adjacent crowns are undersegmented in the right half of the plot
-# where the kernel_diameter_slope parameter is set too high
+# where the crown_diameter_to_tree_height parameter is set too high
 plot_segmented_point_cloud(segmented_point_cloud)
 
 
@@ -430,8 +432,8 @@ plot_segmented_point_cloud(segmented_point_cloud)
 # internally.
 segmentation_results <- crownsegmentr::segment_tree_crowns(
   point_cloud,
-  kernel_diameter_slope = 0.25,
-  kernel_height_slope = 0.5,
+  crown_diameter_to_tree_height = 0.25,
+  crown_length_to_tree_height = 0.5,
   also_return_modes = TRUE,
   also_return_centroids = TRUE
 )
@@ -468,8 +470,8 @@ plot_segmented_point_cloud(
 system.time(
   segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
     point_cloud,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5,
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5,
     centroid_convergence_distance = 0.02,
     dbscan_neighborhood_radius = 0.5
   )
@@ -480,8 +482,8 @@ plot_segmented_point_cloud(segmented_point_cloud)
 system.time(
   segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
     point_cloud,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5,
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5,
     centroid_convergence_distance = 0.01, # default value
     dbscan_neighborhood_radius = 0.3 # default value
   )
@@ -492,6 +494,11 @@ plot_segmented_point_cloud(segmented_point_cloud)
 \references{
 Ferraz, A., S. Saatchi, C. Mallet, and V. Meyer (2016)
 \emph{Lidar detection of individual tree size in tropical forests}. Remote
-Sensing of Environment 183:318–333.
-\url{https://doi.org/10.1016/j.rse.2016.05.028}.
+Sensing of Environment 183:318–333. \url{doi:10.1016/j.rse.2016.05.028}
+
+Ferraz, A., F. Bretar, S. Jaquemond, G. Gonçalves, L. Pereira,
+M. Tomé, and P. Soares (2012)
+\emph{3-D mapping of a multi-layered Mediteranean forest using ALS data}.
+Remote Sensing of Environment, 121:210-223.
+\url{doi:10.1016/j.rse.2012.01.020}
 }

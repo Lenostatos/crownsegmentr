@@ -53,10 +53,10 @@ test_that("Function works with real-world LAS file",{
   )
   # segment point cloud as raw material
   segmented_las <- segment_tree_crowns(test_point_cloud,
-                                       kernel_diameter_slope = 0.2,
-                                       kernel_height_slope = 0.6,
-                                       kernel_diameter_intercept = 2,
-                                       kernel_height_intercept = 1)
+                                       crown_diameter_to_tree_height = 0.2,
+                                       crown_length_to_tree_height = 0.6,
+                                       crown_diameter_constant = 2,
+                                       crown_length_constant = 1)
 
   processed_las <- remove_small_trees(segmented_las)
 
@@ -80,10 +80,10 @@ test_that("Function works with real-world LAS file",{
 #
 #   segmented_catalog <- segment_tree_crowns(
 #     test_catalog,
-#     kernel_diameter_slope = 0.1,
-#     kernel_height_slope = 0.3,
-#     kernel_diameter_intercept = 4,
-#     kernel_height_intercept = 3,
+#     crown_diameter_to_tree_height = 0.1,
+#     crown_length_to_tree_height = 0.3,
+#     crown_diameter_constant = 4,
+#     crown_length_constant = 3,
 #     crown_id_column_name = "tree_id"
 #   )
 # })

@@ -45,8 +45,8 @@ point_cloud <- lidR::readLAS(system.file(
 # Segment a normalized point cloud
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
-  kernel_diameter_slope = 0.25,
-  kernel_height_slope = 0.5
+  crown_diameter_to_tree_height = 0.25,
+  crown_height_to_tree_height = 0.5
 )
 
 # Generate random crown colors
@@ -228,13 +228,13 @@ three times:
 
 1.  The most simple overload assumes a normalized point cloud with
     ground height at zero and takes single numbers for the
-    `kernel_diameter_slope` and `kernel_height_slope`
+    `crown_diameter_to_tree_height` and `crown_height_to_tree_height`
     arguments
     ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_normalized.cpp)).
 2.  The second overload can deal with not normalized point clouds by
     reading ground heights from a raster
     ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_terraneous.cpp)).
-3.  The third overload reads both ground height and kernel dimension
+3.  The third overload reads both ground height and cylinder dimension
     parameters from rasters
     ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_flexible.cpp)).
 
@@ -243,11 +243,12 @@ There is also an internal `_Kernel` class
 that models the cylinder used to find points in the neighborhood of a
 point or centroid. It also contains the logic to calculate the weighted
 centroid of all points inside the cylinder. A `_Kernel` object is
-instantiated with a point or centroid and the parameters for its dimensions:
-slope and intercept for its diameter and height. The object features only 
-one public method: `calculate_centroid_in( point_cloud )`. Cylinder 
-dimensions are calculated in the constructor and the centroid calculation 
-logic is implemented in a few private methods.
+instantiated with a point or centroid and the
+crown-diameter-to-tree-height and crown-height-to-tree-height
+parameters. It features only one public method:
+`calculate_centroid_in( point_cloud )`. Cylinder dimensions are
+calculated in the constructor and the centroid calculation logic is
+implemented in a few private methods.
 
 There is one more very small internal namespace in `ams3d` called
 `_math_functions` that contains the gaussian and epanechnikov functions
@@ -424,19 +425,18 @@ lists. The syntax of these initializer lists looks like this:
         
         
     # the cylinder's size is calculated using its above-ground height and the
-    # four main parameters to the algorithm
+    # two main parameters to the algorithm
     vertical_cylinder_at( point ):
         cylinder = new cylinder (
-            height   = above_ground_height_of( point ) * khs + khi
-            diameter = above_ground_height_of( point ) * kds + khi
+            height   = above_ground_height_of( point ) * ch_2_th
+            diameter = above_ground_height_of( point ) * cd_2_th
         )
         
         return( upper_three_quarters_of( cylinder ) )
 
-        # khs, khi, kds and kdi are available as parameters to the
-        # algorithm and stand for "kernel height slope", 
-        # "kernel height intercept", "kernel diameter slope" and 
-        # "kernel diameter intercept"
+        # ch_2_th and cd_2_th are available as parameters to the
+        # algorithm and stand for "crown height to tree height" and
+        # "crown diameter to tree height"
         
         
     points_in( cylinder ):

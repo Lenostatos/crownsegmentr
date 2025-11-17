@@ -1,4 +1,4 @@
-test_that("The kds_raster functions work",{
+test_that("The diameter_raster functions work",{
 
   test_point_cloud_file_path <- system.file(
     "extdata", "MixedConifer.laz",
@@ -15,12 +15,12 @@ test_that("The kds_raster functions work",{
   range(test_point_cloud@data$Z)
 
   testthat::expect_no_failure({
-    li_kds <- li_kds_raster(test_point_cloud)
+    li_kds <- li_diameter_raster(test_point_cloud)
 
     assert_that_raster_fits_point_cloud(li_kds,
                                         test_point_cloud)
 
-    #ws_kds <- watershed_kds_raster(test_point_cloud)
+    #ws_kds <- watershed_diameter_raster(test_point_cloud)
 
     #assert_that_raster_fits_point_cloud(ws_kds,
     #                                    test_point_cloud)
@@ -28,7 +28,7 @@ test_that("The kds_raster functions work",{
 
   # test with modified parameters
   testthat::expect_no_failure({
-    li_kds <- li_kds_raster(test_point_cloud,
+    li_kds <- li_diameter_raster(test_point_cloud,
                             bandwidth_intercept = 10,
                             limits = c(0.3,0.4),
                             smoothing_radius = 0)

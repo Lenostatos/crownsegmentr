@@ -41,8 +41,8 @@ test_that("the data.frame/data.table method works", {
   # test the most simple form
   segmented_points <- segment_tree_crowns(
     point_cloud = as.data.frame(pseudo_point_cloud),
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5
   )
   expect_s3_class(segmented_points, class = "data.frame", exact = TRUE)
   expect_named(segmented_points,
@@ -51,8 +51,8 @@ test_that("the data.frame/data.table method works", {
   # test with data.table and custom column name
   segmented_points <- segment_tree_crowns(
     point_cloud = test_point_cloud@data,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5,
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5,
     crown_id_column_name = "test id col name"
   )
   expect_s3_class(segmented_points,
@@ -67,8 +67,8 @@ test_that("the data.frame/data.table method works", {
   expect_error(
     segment_tree_crowns(
       point_cloud = test_point_cloud@data[1],
-      kernel_diameter_slope = 0.25,
-      kernel_height_slope = 0.5,
+      crown_diameter_to_tree_height = 0.25,
+      crown_length_to_tree_height = 0.5,
       crown_id_column_name = "treeID"
     ),
     regexp = paste0(
@@ -81,24 +81,24 @@ test_that("the data.frame/data.table method works", {
   # Test varying different arguments
   segment_tree_crowns(
     point_cloud = test_point_cloud@data,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5,
-    kernel_diameter_intercept = 1,
-    kernel_height_intercept = 2,
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5,
+    crown_diameter_constant = 1,
+    crown_length_constant = 2,
     verbose = FALSE,
     centroid_convergence_distance = 0.1,
-    max_num_centroids_per_mode = 50,
+    max_iterations_per_point = 50,
     dbscan_neighborhood_radius = 1,
-    min_num_modes_per_neighborhood = 10
+    min_num_points_per_crown = 10
   )
 
   # Also return modes and centroids and vary some arguments
   segmentation_res <- segment_tree_crowns(
     point_cloud = test_point_cloud@data,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5,
-    max_num_centroids_per_mode = 1000,
-    min_num_modes_per_neighborhood = 10,
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5,
+    max_iterations_per_point = 1000,
+    min_num_points_per_crown = 10,
     also_return_modes = TRUE,
     also_return_centroids = TRUE
   )
@@ -161,8 +161,8 @@ test_that("the LAS method works", {
   # test the most simple form
   segmented_points <- segment_tree_crowns(
     point_cloud = test_points,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5
   )
   expect_s4_class(segmented_points, class = "LAS")
   expect_named(segmented_points@data,
@@ -179,8 +179,8 @@ test_that("the LAS method works", {
   # "file-writable"
   segmented_points <- segment_tree_crowns(
     point_cloud = test_points,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5,
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5,
     verbose = FALSE,
     crown_id_column_name = "test id col name",
     write_crown_id_also_to_file = TRUE
@@ -199,8 +199,8 @@ test_that("the LAS method works", {
   expect_error(
     segment_tree_crowns(
       point_cloud = test_points,
-      kernel_diameter_slope = 0.25,
-      kernel_height_slope = 0.5,
+      crown_diameter_to_tree_height = 0.25,
+      crown_length_to_tree_height = 0.5,
       crown_id_column_name = "treeID"
     ),
     regexp = paste0(
@@ -213,23 +213,23 @@ test_that("the LAS method works", {
   # Test varying different arguments
   segmented_points <- segment_tree_crowns(
     point_cloud = test_point_cloud,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5,
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5,
     verbose = FALSE,
     centroid_convergence_distance = 0.1,
-    max_num_centroids_per_mode = 50,
+    max_iterations_per_point = 50,
     dbscan_neighborhood_radius = 1,
-    min_num_modes_per_neighborhood = 10
+    min_num_points_per_crown = 10
   )
   expect_s4_class(segmented_points, class = "LAS")
 
   # Also return modes and centroids and vary some arguments
   segmentation_res <- segment_tree_crowns(
     point_cloud = test_point_cloud,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5,
-    max_num_centroids_per_mode = 1000,
-    min_num_modes_per_neighborhood = 10,
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5,
+    max_iterations_per_point = 1000,
+    min_num_points_per_crown = 10,
     also_return_modes = TRUE,
     also_return_centroids = TRUE
   )
@@ -296,8 +296,8 @@ test_that("the LAScatalog method works", {
 
   segmented_points <- segment_tree_crowns(
     test_catalog,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5,
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5,
     crown_id_column_name = "tree_id"
   )
   expect_s4_class(segmented_points, class = "LAS")
@@ -338,8 +338,8 @@ test_that("the calculation of unique crown IDs works for LAScatalog", {
     filter = "-drop_z_below 1"
   )
   segmented_las <- segment_tree_crowns(las_object,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5
   )
 
   las_catalog <- lidR::readLAScatalog(
@@ -349,8 +349,8 @@ test_that("the calculation of unique crown IDs works for LAScatalog", {
   )
 
   segmented_las_catalog <- segment_tree_crowns(las_catalog,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5
   )
 
   expect_equal(
@@ -394,24 +394,26 @@ test_that("The terraneous and flexible C++ back-ends work", {
     algorithm = lidR::tin()
   )
 
-  segmented_points <- crownsegmentr::segment_tree_crowns(
+  segmented_points_grid <- crownsegmentr::segment_tree_crowns(
     point_cloud = test_points,
-    kernel_diameter_slope = 0.5,
-    kernel_height_slope = 1,
+    crown_diameter_to_tree_height = 0.5,
+    crown_length_to_tree_height = 1,
     segment_crowns_only_above = 2,
     ground_height = ground_height_grid
   )
 
-  segmented_points <- crownsegmentr::segment_tree_crowns(
+  segmented_points_alg <- crownsegmentr::segment_tree_crowns(
     point_cloud = test_points,
-    kernel_diameter_slope = 0.5,
-    kernel_height_slope = 1,
+    crown_diameter_to_tree_height = 0.5,
+    crown_length_to_tree_height = 1,
     segment_crowns_only_above = 2,
     ground_height = list(algorithm = lidR::tin())
   )
 
+  testthat::expect_equal(segmented_points_alg, segmented_points_grid)
+
   # The flexible back-end
-  kernel_height_slope_grid <- terra::rast(
+  crown_length_to_tree_height_grid <- terra::rast(
     matrix(c(0.5, 1), ncol = 2),
     crs = lidR::st_crs(test_points)$wkt,
     extent = terra::ext(
@@ -424,8 +426,8 @@ test_that("The terraneous and flexible C++ back-ends work", {
 
   segmented_points <- crownsegmentr::segment_tree_crowns(
     point_cloud = test_points,
-    kernel_diameter_slope = 0.5,
-    kernel_height_slope = kernel_height_slope_grid,
+    crown_diameter_to_tree_height = 0.5,
+    crown_length_to_tree_height = crown_length_to_tree_height_grid,
     ground_height = list(algorithm = lidR::tin())
   )
 
@@ -434,7 +436,7 @@ test_that("The terraneous and flexible C++ back-ends work", {
     system.file("extdata/MixedConifer.laz", package = "lidR")
   )
 
-  kernel_diameter_slope_grid <- terra::rast(
+  crown_diameter_to_tree_height_grid <- terra::rast(
     matrix(c(0.3, 0.8), ncol = 2),
     crs = lidR::st_crs(test_points)$wkt,
     extent = terra::ext(
@@ -447,8 +449,8 @@ test_that("The terraneous and flexible C++ back-ends work", {
 
   segmented_points <- crownsegmentr::segment_tree_crowns(
     point_cloud = test_points,
-    kernel_diameter_slope = kernel_diameter_slope_grid,
-    kernel_height_slope = 0.8
+    crown_diameter_to_tree_height = crown_diameter_to_tree_height_grid,
+    crown_length_to_tree_height = 0.8
   )
 
 

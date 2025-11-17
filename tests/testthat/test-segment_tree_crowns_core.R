@@ -41,17 +41,17 @@ test_that("the core function works with 'normal' arguments", {
     test_point_cloud@data,
     ground_height = NULL,
     segment_crowns_only_above = 0,
-    kernel_diameter_slope = 0.3,
-    kernel_height_slope = 0.5,
-    kernel_diameter_intercept = 1,
-    kernel_height_intercept = 1,
+    crown_diameter_to_tree_height = 0.3,
+    crown_length_to_tree_height = 0.5,
+    crown_diameter_constant = 1,
+    crown_length_constant = 1,
     verbose = TRUE,
     also_return_modes = FALSE,
     also_return_centroids = FALSE,
     centroid_convergence_distance = 0.02,
-    max_num_centroids_per_mode = 200,
+    max_iterations_per_point = 200,
     dbscan_neighborhood_radius = 0.3,
-    min_num_modes_per_neighborhood = 5
+    min_num_points_per_crown = 5
   )
   expect_length(test_output, 1)
   expect_named(test_output, expected = "crown_ids")
@@ -64,17 +64,17 @@ test_that("the core function works with 'normal' arguments", {
     test_point_cloud@data,
     ground_height = NULL,
     segment_crowns_only_above = 0,
-    kernel_diameter_slope = 0.3,
-    kernel_height_slope = 0.5,
-    kernel_diameter_intercept = 1,
-    kernel_height_intercept = 1,
+    crown_diameter_to_tree_height = 0.3,
+    crown_length_to_tree_height = 0.5,
+    crown_diameter_constant = 1,
+    crown_length_constant = 1,
     verbose = TRUE,
     also_return_modes = TRUE,
     also_return_centroids = FALSE,
     centroid_convergence_distance = 0.02,
-    max_num_centroids_per_mode = 200,
+    max_iterations_per_point = 200,
     dbscan_neighborhood_radius = 0.3,
-    min_num_modes_per_neighborhood = 5
+    min_num_points_per_crown = 5
   )
   expect_length(test_output, 2)
   expect_named(test_output,
@@ -100,17 +100,17 @@ test_that("the core function works with 'normal' arguments", {
     test_point_cloud@data,
     ground_height = NULL,
     segment_crowns_only_above = 0,
-    kernel_diameter_slope = 0.3,
-    kernel_height_slope = 0.5,
-    kernel_diameter_intercept = 1,
-    kernel_height_intercept = 1,
+    crown_diameter_to_tree_height = 0.3,
+    crown_length_to_tree_height = 0.5,
+    crown_diameter_constant = 1,
+    crown_length_constant = 1,
     verbose = TRUE,
     also_return_modes = FALSE,
     also_return_centroids = TRUE,
     centroid_convergence_distance = 0.02,
-    max_num_centroids_per_mode = 200,
+    max_iterations_per_point = 200,
     dbscan_neighborhood_radius = 0.3,
-    min_num_modes_per_neighborhood = 5
+    min_num_points_per_crown = 5
   )
   expect_length(test_output, 2)
   expect_named(test_output,
@@ -140,17 +140,17 @@ test_that("the core function works with 'normal' arguments", {
     test_point_cloud@data,
     ground_height = NULL,
     segment_crowns_only_above = 0,
-    kernel_diameter_slope = 0.3,
-    kernel_height_slope = 0.5,
-    kernel_diameter_intercept = 1,
-    kernel_height_intercept = 1,
+    crown_diameter_to_tree_height = 0.3,
+    crown_length_to_tree_height = 0.5,
+    crown_diameter_constant = 1,
+    crown_length_constant = 1,
     verbose = TRUE,
     also_return_modes = TRUE,
     also_return_centroids = TRUE,
     centroid_convergence_distance = 0.02,
-    max_num_centroids_per_mode = 200,
+    max_iterations_per_point = 200,
     dbscan_neighborhood_radius = 0.3,
-    min_num_modes_per_neighborhood = 5
+    min_num_points_per_crown = 5
   )
   expect_length(test_output, 3)
   expect_named(test_output,

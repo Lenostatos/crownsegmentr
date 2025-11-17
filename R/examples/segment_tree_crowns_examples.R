@@ -32,8 +32,8 @@ plot_segmented_point_cloud <- function(
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
-  kernel_diameter_slope = 0.25,
-  kernel_height_slope = 0.5
+  crown_diameter_to_tree_height = 0.25,
+  crown_length_to_tree_height = 0.5
 )
 
 plot_segmented_point_cloud(segmented_point_cloud)
@@ -43,8 +43,8 @@ plot_segmented_point_cloud(segmented_point_cloud)
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
-  kernel_diameter_slope = 0.25,
-  kernel_height_slope = 0.5,
+  crown_diameter_to_tree_height = 0.25,
+  crown_length_to_tree_height = 0.5,
   segment_crowns_only_above = 15 # exclude points below 15 m
 )
 
@@ -61,8 +61,8 @@ terraneous_point_cloud <- lidR::readLAS(system.file(
 # Either pass arguments for the lidR::rasterize_terrain() function
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   terraneous_point_cloud,
-  kernel_diameter_slope = 0.5,
-  kernel_height_slope = 1,
+  crown_diameter_to_tree_height = 0.5,
+  crown_length_to_tree_height = 1,
   segment_crowns_only_above = 2,
   ground_height = list(algorithm = lidR::tin())
 )
@@ -75,8 +75,8 @@ ground_height_grid <- lidR::rasterize_terrain(
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   terraneous_point_cloud,
-  kernel_diameter_slope = 0.5,
-  kernel_height_slope = 1,
+  crown_diameter_to_tree_height = 0.5,
+  crown_length_to_tree_height = 1,
   segment_crowns_only_above = 2,
   ground_height = ground_height_grid
 )
@@ -86,9 +86,9 @@ plot_segmented_point_cloud(segmented_point_cloud)
 
 # Account for Different Crown Shapes with Parameter Rasters ---------------
 
-# Create a raster of kernel_diameter_slope ratios with 0.25 in the
+# Create a raster of crown_diameter_to_tree_height ratios with 0.25 in the
 # western half and 0.75 in the eastern half
-kernel_diameter_slope_grid <- terra::rast(
+crown_diameter_to_tree_height_grid <- terra::rast(
   matrix(c(0.25, 0.75), ncol = 2),
   crs = lidR::st_crs(point_cloud)$wkt,
   extent = terra::ext(
@@ -101,12 +101,12 @@ kernel_diameter_slope_grid <- terra::rast(
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
-  kernel_diameter_slope = kernel_diameter_slope_grid,
-  kernel_height_slope = 0.5
+  crown_diameter_to_tree_height = crown_diameter_to_tree_height_grid,
+  crown_length_to_tree_height = 0.5
 )
 
 # Observe how adjacent crowns are undersegmented in the right half of the plot
-# where the kernel_diameter_slope parameter is set too high
+# where the crown_diameter_to_tree_height parameter is set too high
 plot_segmented_point_cloud(segmented_point_cloud)
 
 
@@ -117,8 +117,8 @@ plot_segmented_point_cloud(segmented_point_cloud)
 # internally.
 segmentation_results <- crownsegmentr::segment_tree_crowns(
   point_cloud,
-  kernel_diameter_slope = 0.25,
-  kernel_height_slope = 0.5,
+  crown_diameter_to_tree_height = 0.25,
+  crown_length_to_tree_height = 0.5,
   also_return_modes = TRUE,
   also_return_centroids = TRUE
 )
@@ -155,8 +155,8 @@ plot_segmented_point_cloud(
 system.time(
   segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
     point_cloud,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5,
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5,
     centroid_convergence_distance = 0.02,
     dbscan_neighborhood_radius = 0.5
   )
@@ -167,8 +167,8 @@ plot_segmented_point_cloud(segmented_point_cloud)
 system.time(
   segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
     point_cloud,
-    kernel_diameter_slope = 0.25,
-    kernel_height_slope = 0.5,
+    crown_diameter_to_tree_height = 0.25,
+    crown_length_to_tree_height = 0.5,
     centroid_convergence_distance = 0.01, # default value
     dbscan_neighborhood_radius = 0.3 # default value
   )

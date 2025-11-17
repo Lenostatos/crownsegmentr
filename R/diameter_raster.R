@@ -18,17 +18,19 @@
 # along with crownsegmentr in a file called "COPYING". If not,
 # see <http://www.gnu.org/licenses/>.
 #
-# ----------------------------------------------------------
-# watershed kds raster
-#' calculate a raster of kernel diameter slope for AMS3D
+# Generic S4 Function ------------------------------------------------
+
+#' Calculate a raster of crown diameter to tree height using watershed
+#' segmentation
 #'
-#' The function calculates a raster with values for the kernel diameter slope
-#' as input for the AMS3D algorithm. It segments the tree crowns with
-#' the watershed algorithm, calculates a ratio of crown diameter to tree height
-#' for each tree, and converts this into a raster
+#' The function calculates a raster with values for
+#' crown_diameter_to_tree_height as input for the AMS3D algorithm. It segments
+#' the tree crowns with the watershed algorithm from the EBImage package,
+#' calculates a ratio of crown diameter to tree height for each tree, and
+#' converts this into a raster.
 #'
-#' @param las a point cloud as lidR LAS object
-#' @param bandwidth_intercept a fixed value for kernel_diameter_intercept, which
+#' @param point_cloud the input point cloud, either as LAS or as data.frame.
+#' @param bandwidth_intercept a fixed value for crown_diameter_constant, which
 #' reduces the crown diameters by the given value before calculating the ratio
 #' of crown diameter to tree height
 #' @param limits a numeric vector with minimum and maximum allowed values for
@@ -39,6 +41,8 @@
 #' *a list of arguments to the
 #' [lidR rasterize_terrain()][lidR::rasterize_terrain()] function to normalize
 #' the point cloud.
+#' @param smoothing_radius The radius of the filter used for smoothing the
+#' diameter-to-height ratio from individual trees.
 #' @param ... further parameters will be passed to the function
 #' [lidR::watershed]
 #' @return a terra SpatRaster
@@ -46,26 +50,31 @@
 #' @section Details:
 #'
 #' The output raster can serve as input for the parameter
-#' "kernel_diameter_slope" (hence "kds") for the function segment_tree_crowns.
+#' "crown_diameter_to_tree_height" for the function
+#' segment_tree_crowns.
 #' It averages the ratio of crown diameter to tree height for a 5 m radius,
 #' for trees that were detected with watershed segmentation.
 #'
 #' @export
-methods::setGeneric("watershed_kds_raster",
+methods::setGeneric("watershed_diameter_raster",
                     function(point_cloud,
                              bandwidth_intercept = 0,
                              limits = c(0,1),
                              ground_height = NULL,
                              smoothing_radius = 5,
                              ...) {
-                      standardGeneric("watershed_kds_raster")
+                      standardGeneric("watershed_diameter_raster")
                     },
                     signature = "point_cloud"
 )
 
-
+# watershed_diameter_raster for LAS ----------------------------------
+#' @describeIn watershed_diameter_raster Calculate a raster of crown diameter
+#' for tree height using watershed segmentation
+#'
+#' @importClassesFrom lidR LAS
 methods::setMethod(
-  "watershed_kds_raster",
+  "watershed_diameter_raster",
   signature(point_cloud = "LAS"),
   function(point_cloud,
            bandwidth_intercept,
@@ -74,11 +83,8 @@ methods::setMethod(
            smoothing_radius,
            ...) {
 
-  # TODO: Tests, e.g.: are the input values plausible
-  #       - maybe progress bar?
-  #       - require libraries inside function
   validate_bandwidth_intercept(bandwidth_intercept)
-  validate_kds_limits(limits)
+  validate_diameter_limits(limits)
   validate_ground_height(ground_height, point_cloud)
 
   # If ground_height is a list of arguments, pass them to
@@ -184,9 +190,12 @@ methods::setMethod(
 })
 
 
-
+# watershed_diameter_raster (dummy) for data frame  ----------------------------
+#' @describeIn watershed_diameter_raster Calculate a raster of crown diameter
+#' for tree height using watershed segmentation
+#'
 methods::setMethod(
-  "watershed_kds_raster",
+  "watershed_diameter_raster",
   signature(point_cloud = "data.frame"),
   function(point_cloud,
            bandwidth_intercept,
@@ -194,13 +203,18 @@ methods::setMethod(
            ground_height,
            smoothing_radius,
            ...) {
-    stop(paste("watershed_kds_raster is not (yet) implemented for point cloud",
+    stop(paste("watershed_diameter_raster is not (yet) implemented for point cloud",
                "of type data.frame."), call. = FALSE)
     return(1)
   })
 
+# watershed_diameter_raster (dummy) for LAScatalog -----------------------------
+#' @describeIn watershed_diameter_raster Calculate a raster of crown diameter
+#' for tree height using watershed segmentation
+#'
+#' @importClassesFrom lidR LAScatalog
 methods::setMethod(
-  "watershed_kds_raster",
+  "watershed_diameter_raster",
   signature(point_cloud = "LAScatalog"),
   function(point_cloud,
            bandwidth_intercept,
@@ -208,23 +222,23 @@ methods::setMethod(
            ground_height,
            smoothing_radius,
            ...) {
-    stop(paste("watershed_kds_raster is not (yet) implemented for point cloud",
+    stop(paste("watershed_diameter_raster is not (yet) implemented for point cloud",
                "of type LasCatalog."), call. = FALSE)
     return(1)
 })
 
 
-# ----------------------------------------------------------
-# Li kds raster
-#' calculate a raster of kernel diameter slope for AMS3D
+# Generic S4 Function -------------------------------------------------
+
+#' Calculate a raster of crown diameter for tree height for AMS3D
 #'
-#' The function calculates a raster with values for the kernel diameter slope
-#' as input for the AMS3D algorithm. It segments the tree crowns with
-#' the Li2012 algorithm, calculates a ratio of crown diameter to tree height
-#' for each tree, and converts this into a raster
+#' The function calculates a raster with values for
+#' crown_diameter_to_tree_height as input for the AMS3D algorithm. It segments
+#' the tree crowns with the Li2012 algorithm, calculates a ratio of crown
+#' diameter to tree height for each tree, and converts this into a raster.
 #'
-#' @param las a point cloud as lidR LAS object
-#' @param bandwidth_intercept a fixed value for kernel_diameter_intercept, which
+#' @param point_cloud the input point cloud, either as LAS or as data.frame.
+#' @param bandwidth_intercept a fixed value for crown_diameter_constant, which
 #' reduces the crown diameters by the given value before calculating the ratio
 #' of crown diameter to tree height
 #' @param limits a numeric vector with minimum and maximum allowed values for
@@ -235,32 +249,38 @@ methods::setMethod(
 #' *a list of arguments to the
 #' [lidR rasterize_terrain()][lidR::rasterize_terrain()] function to normalize
 #' the point cloud.
+#' @param smoothing_radius The radius of the filter used for smoothing the
+#' diameter-to-height ratio from individual trees.
 #' @param ... further parameters will be passed to the function [lidR::li2012]
 #' @return terra SpatRaster
 #' @section Details:
 #'
 #' The output raster can serve as input for the parameter
-#' "kernel_diameter_slope" (hence  "kds") for the function
+#' "crown_diameter_to_tree_height" (hence  "kds") for the function
 #' segment_tree_crowns. It averages the ratio of crown diameter to tree height
 #' for a 5 m radius, for trees that were detected with the Li2012 tree
 #' segmentation algorithm.
 #'
 #' @export
-methods::setGeneric("li_kds_raster",
+methods::setGeneric("li_diameter_raster",
                     function(point_cloud,
                              bandwidth_intercept = 0,
                              limits = c(0,1),
                              ground_height = NULL,
                              smoothing_radius = 5,
                              ...) {
-                      standardGeneric("li_kds_raster")
+                      standardGeneric("li_diameter_raster")
                     },
                     signature = "point_cloud"
 )
 
-
+# li_diameter_raster for LAS ----------------------------------
+#' @describeIn watershed_diameter_raster Calculate a raster of crown diameter
+#' for tree height using li2012 segmentation
+#'
+#' @importClassesFrom lidR LAS
 methods::setMethod(
-  "li_kds_raster",
+  "li_diameter_raster",
   signature(point_cloud = "LAS"),
   function(point_cloud,
            bandwidth_intercept,
@@ -272,7 +292,7 @@ methods::setMethod(
 
   # validate input
   validate_bandwidth_intercept(bandwidth_intercept)
-  validate_kds_limits(limits)
+  validate_diameter_limits(limits)
   validate_ground_height(ground_height, point_cloud)
 
 
@@ -373,30 +393,37 @@ methods::setMethod(
   return(ratio.avg)
 })
 
-
+# li_diameter_raster (dummy) for data.frame ------------------------------------
+#' @describeIn watershed_diameter_raster Calculate a raster of crown diameter
+#' for tree height using li2012 segmentation
+#'
 methods::setMethod(
-  "li_kds_raster",
+  "li_diameter_raster",
   signature(point_cloud = "data.frame"),
   function(point_cloud,
            bandwidth_intercept,
            limits,
            ground_height,
            ...) {
-    stop(paste("li_kds_raster is not (yet) implemented for point cloud",
+    stop(paste("li_diameter_raster is not (yet) implemented for point cloud",
                "of type data.frame."), call. = FALSE)
     return(1)
   })
 
-
+# li_diameter_raster (dummy) for LAScatalog ------------------------------------
+#' @describeIn watershed_diameter_raster Calculate a raster of crown diameter
+#' for tree height using li2012 segmentation
+#'
+#' @importClassesFrom lidR LAScatalog
 methods::setMethod(
-  "li_kds_raster",
+  "li_diameter_raster",
   signature(point_cloud = "LAScatalog"),
   function(point_cloud,
            bandwidth_intercept,
            limits,
            ground_height,
            ...) {
-    stop(paste("li_kds_raster is not (yet) implemented for point cloud",
+    stop(paste("li_diameter_raster is not (yet) implemented for point cloud",
                "of type LasCatalog."), call. = FALSE)
     return(1)
   })

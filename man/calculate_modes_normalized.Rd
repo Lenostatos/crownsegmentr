@@ -10,12 +10,12 @@ calculate_modes_flexible(
   coordinate_table,
   min_point_height_above_ground,
   ground_height_data,
-  kernel_diameter_slope_data,
-  kernel_height_slope_data,
-  kernel_diameter_intercept,
-  kernel_height_intercept,
+  crown_diameter_to_tree_height_data,
+  crown_length_to_tree_height_data,
+  crown_diameter_constant,
+  crown_length_constant,
   centroid_convergence_distance,
-  max_num_centroids_per_mode,
+  max_iterations_per_point,
   also_return_centroids,
   show_progress_bar
 )
@@ -23,12 +23,12 @@ calculate_modes_flexible(
 calculate_modes_normalized(
   coordinate_table,
   min_point_height_above_ground,
-  kernel_diameter_slope,
-  kernel_height_slope,
-  kernel_diameter_intercept,
-  kernel_height_intercept,
+  crown_diameter_to_tree_height,
+  crown_length_to_tree_height,
+  crown_diameter_constant,
+  crown_length_constant,
   centroid_convergence_distance,
-  max_num_centroids_per_mode,
+  max_iterations_per_point,
   also_return_centroids,
   show_progress_bar
 )
@@ -37,12 +37,12 @@ calculate_modes_terraneous(
   coordinate_table,
   min_point_height_above_ground,
   ground_height_grid_data,
-  kernel_diameter_slope,
-  kernel_height_slope,
-  kernel_diameter_intercept,
-  kernel_height_intercept,
+  crown_diameter_to_tree_height,
+  crown_length_to_tree_height,
+  crown_diameter_constant,
+  crown_length_constant,
   centroid_convergence_distance,
-  max_num_centroids_per_mode,
+  max_iterations_per_point,
   also_return_centroids,
   show_progress_bar
 )
@@ -61,25 +61,25 @@ raster covering the whole area of the point cloud. Such a set has to
 consist of the named elements described in the section "Raster argument
 structure" below.}
 
-\item{kernel_diameter_slope_data}{A list containing either a single
+\item{crown_diameter_to_tree_height_data}{A list containing either a single
 numeric value (named "value") or the data for a raster of values (see
 section "Raster argument structure" below for how the raster data has to
 be stored in the list). The values indicate the estimated ratio of crown
 diameter to tree height for the whole plot or individual raster pixels
 respectively.}
 
-\item{kernel_height_slope_data}{A list containing either a single
+\item{crown_length_to_tree_height_data}{A list containing either a single
 numeric value (named "value") or the data for a raster of values (see
 section "Raster argument structure" below for how the raster data has to
 be stored in the list). The values indicate the estimated ratio of crown
 height to tree height for the whole plot or individual raster pixels
 respectively.}
 
-\item{kernel_diameter_intercept}{Single number >=0. Intercept for the linear
+\item{crown_diameter_constant}{Single number >=0. Intercept for the linear
 function determining the kernel diameter (bandwidth) in relationship to
 the height above ground.}
 
-\item{kernel_height_intercept}{Single number >=0.  Intercept for the linear
+\item{crown_length_constant}{Single number >=0.  Intercept for the linear
 function determining the kernel height (bandwidth) in relationship to
 the height above ground.}
 
@@ -87,7 +87,7 @@ the height above ground.}
 assumed that subsequently calculated centroids have converged to the
 nearest mode.}
 
-\item{max_num_centroids_per_mode}{Integer Scalar. Maximum number of
+\item{max_iterations_per_point}{Integer Scalar. Maximum number of
 centroids calculated before the search for the nearest mode is aborted.}
 
 \item{also_return_centroids}{Boolean Scalar. Should centroid coordinates be
@@ -96,7 +96,7 @@ returned as well?}
 \item{show_progress_bar}{Boolean Scalar. Should a progress bar be shown
 during the computation?}
 
-\item{kernel_diameter_slope, kernel_height_slope}{Single
+\item{crown_diameter_to_tree_height, crown_length_to_tree_height}{Single
 numbers. Determine the size of the search kernel (bandwidth) of the
 algorithm, as a function of height above ground. The kernel should have
 roughly the size of the expected tree crowns. If the intercepts are
@@ -136,8 +136,8 @@ crown point cloud, that is usually located shortly below the crown apex.
 \itemize{
 \item \code{calculate_modes_flexible()}: Can take either a single value or
 raster data for both the ground height and the
-\code{kernel_diameter_slope} and
-\code{kernel_height_slope} parameters.
+\code{crown_diameter_to_tree_height} and
+\code{crown_length_to_tree_height} parameters.
 
 \item \code{calculate_modes_terraneous()}: Use a ground height raster to find
 modes in a non-normalized point cloud.

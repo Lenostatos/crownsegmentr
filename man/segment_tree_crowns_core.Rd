@@ -8,15 +8,15 @@ segment_tree_crowns_core(
   coordinate_table,
   segment_crowns_only_above,
   ground_height,
-  kernel_diameter_slope,
-  kernel_height_slope,
-  kernel_diameter_intercept,
-  kernel_height_intercept,
+  crown_diameter_to_tree_height,
+  crown_length_to_tree_height,
+  crown_diameter_constant,
+  crown_length_constant,
   verbose,
   centroid_convergence_distance,
-  max_num_centroids_per_mode,
+  max_iterations_per_point,
   dbscan_neighborhood_radius,
-  min_num_modes_per_neighborhood,
+  min_num_points_per_crown,
   also_return_modes,
   also_return_centroids
 )
@@ -30,9 +30,9 @@ which is a valid coordinate table according to \code{validate_coordinate_table}.
 minimum height above ground at which crown IDs will be calculated.
 
 Note that points directly below this threshold will still be considered
-during the segmentation if they are within reach of search cylinders
+during the segmentation if they are within reach of search kernels
 constructed at the \code{segment_crowns_only_above} height. See "How the
-algorithm works" to learn about the search cylinders.}
+algorithm works" to learn about the search kernels.}
 
 \item{ground_height}{One of
 \itemize{
@@ -43,18 +43,17 @@ the area of the (not normalized) point cloud stored in
 \code{coordinate_table}.
 }}
 
-\item{kernel_diameter_slope, kernel_height_slope}{Single
+\item{crown_diameter_to_tree_height, crown_length_to_tree_height}{Single
 numbers or \link[terra:SpatRaster-class]{SpatRasters} covering the area of the
-\code{point_cloud}. Slope for the linear function determining the kernel
-diameter (bandwidth) and kernel height, respectively, in relationship to
-the height above ground. Roughly equivalent to the ratio of crown diameter
-to tree height, or crown length to tree height, respectively. Points will
-not be segmented wherever a raster contains \code{NA} values.}
+\code{point_cloud}. The dimensions of the search kernel will be calculated from
+these values and the height above ground of the kernel center, plus the
+constants. For details see "How the algorithm works". Points will not be
+segmented wherever a raster contains \code{NA} values.}
 
-\item{kernel_diameter_intercept, kernel_height_intercept}{Single number >=0.
-Intercept for the linear function determining the kernel diameter
-(bandwidth), or kernel height, respectively, in relationship to the
-height above ground.}
+\item{crown_diameter_constant, crown_length_constant}{Single number >=0.
+Used to determine the dimensions of the search kernel, together with the
+respective ratios to tree height. For details see "How the algorithm
+works".}
 
 \item{verbose}{\code{TRUE} or \code{FALSE}. Should the function show a progress bar and
 other runtime information in the console?}
@@ -64,7 +63,7 @@ assumed that subsequently calculated centroids have converged to the
 nearest mode. See "How the algorithm works" to learn about centroids and
 modes in the context of the AMS3D algorithm.}
 
-\item{max_num_centroids_per_mode}{A single integer. Maximum number of
+\item{max_iterations_per_point}{A single integer. Maximum number of
 centroids calculated before the search for the nearest mode is aborted. See
 "How the algorithm works" to learn about centroids and modes in the context
 of the AMS3D algorithm.}
@@ -73,11 +72,11 @@ of the AMS3D algorithm.}
 DBSCAN neighborhood around a mode. See "How the algorithm works" to learn
 about neighborhoods in the context of the DBSCAN algorithm.}
 
-\item{min_num_modes_per_neighborhood}{A single integer. The minimum number of
-modes within a DBSCAN neighborhood at which the mode in the neighborhood's
-center will be treated as a core point. See "How the algorithm works" to
-learn about neighborhoods and core points in the context of the DBSCAN
-algorithm.}
+\item{min_num_points_per_crown}{A single integer. The minimum number of
+converged centroids within a DBSCAN neighborhood at which the centroid in
+the neighborhood's center will be treated as a core point. See "How the
+algorithm works" to learn about neighborhoods and core points in the
+context of the DBSCANb algorithm.}
 
 \item{also_return_modes}{\code{TRUE} or \code{FALSE}. Should mode coordinates be
 returned as well?}
@@ -135,13 +134,16 @@ and height within lidar point clouds. These local maxima are called
 is done by looking at the surrounding points and moving into the direction
 of the highest point density until the nearest mode is reached.
 
-The surrounding points are found with a three-dimensional search window
-which is roughly shaped like a crown itself, i.e. it is a vertical cylinder
-whose diameter and height are similar to those of the surrounding tree
-crowns. The exact diameter and height are dependent on the cylinder's
-height above ground and are controlled with the two main parameters of the
-algorithm: \code{kernel_diameter_slope} and
-\code{kernel_height_slope}.
+The surrounding points are found with a search kernel (a three-dimensional
+search window) which has the shape of a vertical cylinder. According to
+literature, the algorithm works best if the search kernel has roughly the
+size of the surrounding crowns. Therefore, the parameters controlling the
+kernels dimension are simplistically called
+\code{crown_diameter_to_tree_height}, \code{crown_diameter_constant}, and
+\code{crown_lenght...} respectively. The diameter of the kernel is calculated
+from the  height above ground of the kernels center times the value for
+crown_diameter_to_tree_height, plus the crown_diameter constant. The
+height of the kernel is calculated respectively.
 
 The direction of the highest point density is found by calculating the
 average position of all points within the cylinder, the cylinder's so
@@ -156,7 +158,7 @@ mode.
 It sometimes happens that centroids converge only after a lot of
 iterations. In order to prevent situations where an excessive number of
 centroids is calculated for just one point, the parameter
-\code{max_num_centroids_per_mode} is used to abort the centroid
+\code{max_iterations_per_point} is used to abort the centroid
 calculations after a certain number of them has been performed.
 Nonetheless, the last centroid found before the abortion is still taken as
 a good enough guess of the nearest mode's position.
@@ -177,7 +179,7 @@ core point of the cluster.
 
 In order to be core points, points need to have enough neighbors. The
 parameter \code{dbscan_neighborhood_radius} determines the radius of the
-neighborhood and the parameter \code{min_num_modes_per_neighborhood}
+neighborhood and the parameter \code{min_num_points_per_crown}
 determines the minimum number of points in the neighborhood (including the
 to-be-classified one), which are needed for a core point.
 

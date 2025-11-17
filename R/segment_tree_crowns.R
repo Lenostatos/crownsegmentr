@@ -37,24 +37,23 @@
 #'   columns by looking for the first numeric columns named "x"/"X", "y"/"Y", or
 #'   "z"/"Z". For each instance where it can't find one of those it selects the
 #'   next available numeric column in the table and issues a warning.
-#' @param kernel_diameter_slope,kernel_height_slope Single
+#' @param crown_diameter_to_tree_height,crown_length_to_tree_height Single
 #'   numbers or [SpatRasters][terra::SpatRaster] covering the area of the
-#'   `point_cloud`. Slope for the linear function determining the kernel
-#'   diameter (bandwidth) and kernel height, respectively, in relationship to
-#'   the height above ground. Roughly equivalent to the ratio of crown diameter
-#'   to tree height, or crown length to tree height, respectively. Points will
-#'   not be segmented wherever a raster contains `NA` values.
-#' @param kernel_diameter_intercept,kernel_height_intercept Single number >=0.
-#'     Intercept for the linear function determining the kernel diameter
-#'     (bandwidth), or kernel height, respectively, in relationship to the
-#'     height above ground.
+#'   `point_cloud`. The dimensions of the search kernel will be calculated from
+#'   these values and the height above ground of the kernel center, plus the
+#'   constants. For details see "How the algorithm works". Points will not be
+#'   segmented wherever a raster contains `NA` values.
+#' @param crown_diameter_constant,crown_length_constant Single number >=0.
+#'    Used to determine the dimensions of the search kernel, together with the
+#'    respective ratios to tree height. For details see "How the algorithm
+#'    works".
 #' @param segment_crowns_only_above A single positive number denoting the
 #'   minimum height above ground at which crown IDs will be calculated.
 #'
 #'   Note that points directly below this threshold will still be considered
-#'   during the segmentation if they are within reach of search cylinders
+#'   during the segmentation if they are within reach of search kernels
 #'   constructed at the `segment_crowns_only_above` height. See "How the
-#'   algorithm works" to learn about the search cylinders.
+#'   algorithm works" to learn about the search kernels.
 #' @param ground_height One of
 #'   * `NULL`, indicating that `point_cloud` is normalized with ground height at
 #'     zero.
@@ -74,18 +73,18 @@
 #'   assumed that subsequently calculated centroids have converged to the
 #'   nearest mode. See "How the algorithm works" to learn about centroids and
 #'   modes in the context of the AMS3D algorithm.
-#' @param max_num_centroids_per_mode A single integer. Maximum number of
+#' @param max_iterations_per_point A single integer. Maximum number of
 #'   centroids calculated before the search for the nearest mode is aborted. See
 #'   "How the algorithm works" to learn about centroids and modes in the context
 #'   of the AMS3D algorithm.
 #' @param dbscan_neighborhood_radius A single number. Radius for the spherical
 #'   DBSCAN neighborhood around a mode. See "How the algorithm works" to learn
 #'   about neighborhoods in the context of the DBSCAN algorithm.
-#' @param min_num_modes_per_neighborhood A single integer. The minimum number of
-#'   modes within a DBSCAN neighborhood at which the mode in the neighborhood's
-#'   center will be treated as a core point. See "How the algorithm works" to
-#'   learn about neighborhoods and core points in the context of the DBSCAN
-#'   algorithm.
+#' @param min_num_points_per_crown A single integer. The minimum number of
+#'   converged centroids within a DBSCAN neighborhood at which the centroid in
+#'   the neighborhood's center will be treated as a core point. See "How the
+#'   algorithm works" to learn about neighborhoods and core points in the
+#'   context of the DBSCANb algorithm.
 #' @param ... Unused.
 #'
 #' @return The point cloud which was passed to the function but extended with a
@@ -133,13 +132,16 @@
 #'   is done by looking at the surrounding points and moving into the direction
 #'   of the highest point density until the nearest mode is reached.
 #'
-#'   The surrounding points are found with a three-dimensional search window
-#'   which is roughly shaped like a crown itself, i.e. it is a vertical cylinder
-#'   whose diameter and height are similar to those of the surrounding tree
-#'   crowns. The exact diameter and height are dependent on the cylinder's
-#'   height above ground and are controlled with the two main parameters of the
-#'   algorithm: `kernel_diameter_slope` and
-#'   `kernel_height_slope`.
+#'   The surrounding points are found with a search kernel (a three-dimensional
+#'   search window) which has the shape of a vertical cylinder. According to
+#'   literature, the algorithm works best if the search kernel has roughly the
+#'   size of the surrounding crowns. Therefore, the parameters controlling the
+#'   kernels dimension are simplistically called
+#'   `crown_diameter_to_tree_height`, `crown_diameter_constant`, and
+#'   `crown_lenght...` respectively. The diameter of the kernel is calculated
+#'   from the  height above ground of the kernels center times the value for
+#'   crown_diameter_to_tree_height, plus the crown_diameter constant. The
+#'   height of the kernel is calculated respectively.
 #'
 #'   The direction of the highest point density is found by calculating the
 #'   average position of all points within the cylinder, the cylinder's so
@@ -154,7 +156,7 @@
 #'   It sometimes happens that centroids converge only after a lot of
 #'   iterations. In order to prevent situations where an excessive number of
 #'   centroids is calculated for just one point, the parameter
-#'   `max_num_centroids_per_mode` is used to abort the centroid
+#'   `max_iterations_per_point` is used to abort the centroid
 #'   calculations after a certain number of them has been performed.
 #'   Nonetheless, the last centroid found before the abortion is still taken as
 #'   a good enough guess of the nearest mode's position.
@@ -175,7 +177,7 @@
 #'
 #'   In order to be core points, points need to have enough neighbors. The
 #'   parameter `dbscan_neighborhood_radius` determines the radius of the
-#'   neighborhood and the parameter `min_num_modes_per_neighborhood`
+#'   neighborhood and the parameter `min_num_points_per_crown`
 #'   determines the minimum number of points in the neighborhood (including the
 #'   to-be-classified one), which are needed for a core point.
 #'
@@ -193,25 +195,30 @@
 #'
 #' @references Ferraz, A., S. Saatchi, C. Mallet, and V. Meyer (2016)
 #'   \emph{Lidar detection of individual tree size in tropical forests}. Remote
-#'   Sensing of Environment 183:318–333.
-#'   \url{https://doi.org/10.1016/j.rse.2016.05.028}.
+#'   Sensing of Environment 183:318–333. <doi:10.1016/j.rse.2016.05.028>
+#' @references Ferraz, A., F. Bretar, S. Jaquemond, G. Gonçalves, L. Pereira,
+#'   M. Tomé, and P. Soares (2012)
+#'   \emph{3-D mapping of a multi-layered Mediteranean forest using ALS data}.
+#'   Remote Sensing of Environment, 121:210-223.
+#'   <doi:10.1016/j.rse.2012.01.020>
+#'
 #'
 #' @example R/examples/segment_tree_crowns_examples.R
 #'
 #' @export
 methods::setGeneric("segment_tree_crowns",
   function(point_cloud,
-           kernel_diameter_slope,
-           kernel_height_slope,
-           kernel_diameter_intercept = 0,
-           kernel_height_intercept = 0,
+           crown_diameter_to_tree_height,
+           crown_length_to_tree_height,
+           crown_diameter_constant = 0,
+           crown_length_constant = 0,
            segment_crowns_only_above = 0,
            ground_height = NULL,
            crown_id_column_name = "crown_id",
            centroid_convergence_distance = 0.01,
-           max_num_centroids_per_mode = 500,
+           max_iterations_per_point = 500,
            dbscan_neighborhood_radius = 0.3,
-           min_num_modes_per_neighborhood = 5,
+           min_num_points_per_crown = 5,
            ...) {
     standardGeneric("segment_tree_crowns")
   },
@@ -236,40 +243,40 @@ methods::setMethod(
   "segment_tree_crowns",
   signature(point_cloud = c("data.frame")),
   function(point_cloud,
-           kernel_diameter_slope,
-           kernel_height_slope,
-           kernel_diameter_intercept,
-           kernel_height_intercept,
+           crown_diameter_to_tree_height,
+           crown_length_to_tree_height,
+           crown_diameter_constant,
+           crown_length_constant,
            segment_crowns_only_above,
            ground_height,
            crown_id_column_name,
            centroid_convergence_distance,
-           max_num_centroids_per_mode,
+           max_iterations_per_point,
            dbscan_neighborhood_radius,
-           min_num_modes_per_neighborhood,
+           min_num_points_per_crown,
            verbose = TRUE,
            also_return_modes = FALSE,
            also_return_centroids = FALSE) {
     validate_coordinate_table(point_cloud)
     validate_kernel_params(
-      kernel_diameter_slope,
-      kernel_diameter_intercept,
+      crown_diameter_to_tree_height,
+      crown_diameter_constant,
       point_cloud,
       which = "diameter"
     )
     validate_kernel_params(
-      kernel_height_slope,
-      kernel_height_intercept,
+      crown_length_to_tree_height,
+      crown_length_constant,
       point_cloud,
-      which = "height"
+      which = "length"
     )
     validate_segment_crowns_only_above(segment_crowns_only_above)
     validate_ground_height(ground_height, point_cloud)
     validate_crown_id_column_name(crown_id_column_name, point_cloud)
     validate_centroid_convergence_distance(centroid_convergence_distance)
-    validate_max_num_centroids_per_mode(max_num_centroids_per_mode)
+    validate_max_iterations_per_point(max_iterations_per_point)
     validate_dbscan_neighborhood_radius(dbscan_neighborhood_radius)
-    validate_min_num_modes_per_neighborhood(min_num_modes_per_neighborhood)
+    validate_min_num_points_per_crown(min_num_points_per_crown)
     validate_verbose(verbose)
     validate_also_return_modes(also_return_modes)
     validate_also_return_centroids(also_return_centroids)
@@ -279,15 +286,15 @@ methods::setMethod(
       point_cloud,
       segment_crowns_only_above,
       ground_height,
-      kernel_diameter_slope,
-      kernel_height_slope,
-      kernel_diameter_intercept,
-      kernel_height_intercept,
+      crown_diameter_to_tree_height,
+      crown_length_to_tree_height,
+      crown_diameter_constant,
+      crown_length_constant,
       verbose,
       centroid_convergence_distance,
-      max_num_centroids_per_mode,
+      max_iterations_per_point,
       dbscan_neighborhood_radius,
-      min_num_modes_per_neighborhood,
+      min_num_points_per_crown,
       also_return_modes,
       also_return_centroids
     )
@@ -375,31 +382,31 @@ methods::setMethod(
   "segment_tree_crowns",
   signature(point_cloud = "LAS"),
   function(point_cloud,
-           kernel_diameter_slope,
-           kernel_height_slope,
-           kernel_diameter_intercept,
-           kernel_height_intercept,
+           crown_diameter_to_tree_height,
+           crown_length_to_tree_height,
+           crown_diameter_constant,
+           crown_length_constant,
            segment_crowns_only_above,
            ground_height,
            crown_id_column_name,
            centroid_convergence_distance,
-           max_num_centroids_per_mode,
+           max_iterations_per_point,
            dbscan_neighborhood_radius,
-           min_num_modes_per_neighborhood,
+           min_num_points_per_crown,
            verbose = TRUE,
            also_return_modes = FALSE,
            also_return_centroids = FALSE,
            write_crown_id_also_to_file = FALSE,
            crown_id_file_description = crown_id_column_name) {
     validate_kernel_params(
-      kernel_diameter_slope,
-      kernel_diameter_intercept,
+      crown_diameter_to_tree_height,
+      crown_diameter_constant,
       point_cloud,
       which = "diameter"
     )
     validate_kernel_params(
-      kernel_height_slope,
-      kernel_height_intercept,
+      crown_length_to_tree_height,
+      crown_length_constant,
       point_cloud,
       which = "height"
     )
@@ -407,9 +414,9 @@ methods::setMethod(
     validate_ground_height(ground_height, point_cloud)
     validate_crown_id_column_name(crown_id_column_name, point_cloud@data)
     validate_centroid_convergence_distance(centroid_convergence_distance)
-    validate_max_num_centroids_per_mode(max_num_centroids_per_mode)
+    validate_max_iterations_per_point(max_iterations_per_point)
     validate_dbscan_neighborhood_radius(dbscan_neighborhood_radius)
-    validate_min_num_modes_per_neighborhood(min_num_modes_per_neighborhood)
+    validate_min_num_points_per_crown(min_num_points_per_crown)
     validate_verbose(verbose)
     validate_also_return_modes(also_return_modes)
     validate_also_return_centroids(also_return_centroids)
@@ -429,15 +436,15 @@ methods::setMethod(
       point_cloud@data,
       segment_crowns_only_above,
       ground_height,
-      kernel_diameter_slope,
-      kernel_height_slope,
-      kernel_diameter_intercept,
-      kernel_height_intercept,
+      crown_diameter_to_tree_height,
+      crown_length_to_tree_height,
+      crown_diameter_constant,
+      crown_length_constant,
       verbose,
       centroid_convergence_distance,
-      max_num_centroids_per_mode,
+      max_iterations_per_point,
       dbscan_neighborhood_radius,
-      min_num_modes_per_neighborhood,
+      min_num_points_per_crown,
       also_return_modes,
       also_return_centroids
     )
@@ -570,29 +577,29 @@ methods::setMethod(
   "segment_tree_crowns",
   signature(point_cloud = "LAScatalog"),
   function(point_cloud,
-           kernel_diameter_slope,
-           kernel_height_slope,
-           kernel_diameter_intercept,
-           kernel_height_intercept,
+           crown_diameter_to_tree_height,
+           crown_length_to_tree_height,
+           crown_diameter_constant,
+           crown_length_constant,
            segment_crowns_only_above,
            ground_height,
            crown_id_column_name,
            centroid_convergence_distance,
-           max_num_centroids_per_mode,
+           max_iterations_per_point,
            dbscan_neighborhood_radius,
-           min_num_modes_per_neighborhood,
+           min_num_points_per_crown,
            write_crown_id_also_to_file = TRUE,
            crown_id_file_description = crown_id_column_name) {
     validate_scale_n_offset_are_consistent(point_cloud)
     validate_kernel_params(
-      kernel_diameter_slope,
-      kernel_diameter_intercept,
+      crown_diameter_to_tree_height,
+      crown_diameter_constant,
       point_cloud,
       which = "diameter"
     )
     validate_kernel_params(
-      kernel_height_slope,
-      kernel_height_intercept,
+      crown_length_to_tree_height,
+      crown_length_constant,
       point_cloud,
       which = "height"
     )
@@ -602,9 +609,9 @@ methods::setMethod(
     validate_segment_crowns_only_above(segment_crowns_only_above)
     validate_ground_height(ground_height, point_cloud)
     validate_centroid_convergence_distance(centroid_convergence_distance)
-    validate_max_num_centroids_per_mode(max_num_centroids_per_mode)
+    validate_max_iterations_per_point(max_iterations_per_point)
     validate_dbscan_neighborhood_radius(dbscan_neighborhood_radius)
-    validate_min_num_modes_per_neighborhood(min_num_modes_per_neighborhood)
+    validate_min_num_points_per_crown(min_num_points_per_crown)
     write_crown_id_also_to_file <-
       validate_write_crown_id_also_to_file_for_LAScatalogs(
         write_crown_id_also_to_file,
@@ -629,17 +636,17 @@ methods::setMethod(
       # segment the chunk with the LAS method
       segmented_las <- segment_tree_crowns(
         point_cloud = las,
-        kernel_diameter_slope,
-        kernel_height_slope,
-        kernel_diameter_intercept,
-        kernel_height_intercept,
+        crown_diameter_to_tree_height,
+        crown_length_to_tree_height,
+        crown_diameter_constant,
+        crown_length_constant,
         segment_crowns_only_above,
         ground_height,
         crown_id_column_name,
         centroid_convergence_distance,
-        max_num_centroids_per_mode,
+        max_iterations_per_point,
         dbscan_neighborhood_radius,
-        min_num_modes_per_neighborhood,
+        min_num_points_per_crown,
         verbose = FALSE,
         also_return_modes = FALSE,
         also_return_centroids = FALSE,

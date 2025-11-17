@@ -36,22 +36,22 @@
 //'     cloud.
 //' @param min_point_height_above_ground A single positive number. The minimum
 //'     point height above ground at which the function will calculate modes.
-//' @param kernel_diameter_slope,kernel_height_slope Single
+//' @param crown_diameter_to_tree_height,crown_length_to_tree_height Single
 //'     numbers. Determine the size of the search kernel (bandwidth) of the
 //'     algorithm, as a function of height above ground. The kernel should have 
 //'     roughly the size of the expected tree crowns. If the intercepts are 
 //'     zero, the slopes translate to ratios of crown diameter to tree height
 //'     or crown length to tree height, respectively.
-//' @param kernel_diameter_intercept Single number >=0. Intercept for the linear
+//' @param crown_diameter_constant Single number >=0. Intercept for the linear
 //'     function determining the kernel diameter (bandwidth) in relationship to
 //'     the height above ground.
-//' @param kernel_height_intercept Single number >=0.  Intercept for the linear
+//' @param crown_length_constant Single number >=0.  Intercept for the linear
 //'     function determining the kernel height (bandwidth) in relationship to
 //'     the height above ground.
 //' @param centroid_convergence_distance Numeric Scalar. Distance at which it is
 //'     assumed that subsequently calculated centroids have converged to the
 //'     nearest mode.
-//' @param max_num_centroids_per_mode Integer Scalar. Maximum number of
+//' @param max_iterations_per_point Integer Scalar. Maximum number of
 //'     centroids calculated before the search for the nearest mode is aborted.
 //' @param also_return_centroids Boolean Scalar. Should centroid coordinates be
 //'     returned as well?
@@ -84,12 +84,12 @@
 Rcpp::List calculate_modes_normalized (
     const Rcpp::DataFrame &coordinate_table,
     const spatial::coordinate_t &min_point_height_above_ground,
-    const double kernel_diameter_slope,
-    const double kernel_height_slope,
-    const double kernel_diameter_intercept,
-    const double kernel_height_intercept,
+    const double crown_diameter_to_tree_height,
+    const double crown_length_to_tree_height,
+    const double crown_diameter_constant,
+    const double crown_length_constant,
     const spatial::distance_t &centroid_convergence_distance,
-    const int max_num_centroids_per_mode,
+    const int max_iterations_per_point,
     const bool also_return_centroids,
     const bool show_progress_bar
 ) {
@@ -104,8 +104,8 @@ Rcpp::List calculate_modes_normalized (
             points,
             ams3d::_Kernel::bottom_height_above_ground_with (
                 min_point_height_above_ground,
-                kernel_height_slope,
-                kernel_height_intercept
+                crown_length_to_tree_height,
+                crown_length_constant
             )
         )
     };
@@ -141,12 +141,12 @@ Rcpp::List calculate_modes_normalized (
                     point,
                     point_cloud_index,
                     min_point_height_above_ground,
-                    kernel_diameter_slope,
-                    kernel_height_slope,
-                    kernel_diameter_intercept,
-                    kernel_height_intercept,
+                    crown_diameter_to_tree_height,
+                    crown_length_to_tree_height,
+                    crown_diameter_constant,
+                    crown_length_constant,
                     centroid_convergence_distance,
-                    max_num_centroids_per_mode
+                    max_iterations_per_point
                 )
             };
 
@@ -195,12 +195,12 @@ Rcpp::List calculate_modes_normalized (
                     point,
                     point_cloud_index,
                     min_point_height_above_ground,
-                    kernel_diameter_slope,
-                    kernel_height_slope,
-                    kernel_diameter_intercept,
-                    kernel_height_intercept,
+                    crown_diameter_to_tree_height,
+                    crown_length_to_tree_height,
+                    crown_diameter_constant,
+                    crown_length_constant,
                     centroid_convergence_distance,
-                    max_num_centroids_per_mode
+                    max_iterations_per_point
                 )
             );
 
