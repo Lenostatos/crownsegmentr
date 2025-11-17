@@ -67,26 +67,40 @@ lidR::plot(
 
 ## Code Structure
 
-The code base is split into an R “front-end” and a C++ “back-end”.
+The package provides four functions: The central function
+[`segment_tree_crowns`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R),
+the preprocessing functions
+[`watershed_diameter_raster`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/diameter_raster.R)
+and
+[`li_diameter_raster`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/diameter_raster.R),
+and the postprocessing function
+[`remove_small_trees`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/remove_small_trees.R).
+While the latter three are implemented only in R, the code base of
+`segment_tree_crowns` is split into an R “front-end” and a C++
+“back-end”.
 
-### R Front-End
+#### Design principles
 
-The front-end exposes just one R function called
-[`segment_tree_crowns`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R).
-This function is an [S4
-generic](https://adv-r.hadley.nz/s4.html#s4-generics), i.e. it can be
-passed point cloud data stored in different data types and behaves
+All functions are [S4
+generics](https://adv-r.hadley.nz/s4.html#s4-generics), i.e. they can be
+passed point cloud data stored in different data types and behave
 differently according to that type. More specifically, the generic
 function chooses one out of several so called “methods” based on the
-input data type. There currently are methods for
+input data type. All functions have methods for
 
 - `data.frame`s/`data.table`s,
 - [`lidR::LAS`](https://github.com/Jean-Romain/lidR/blob/HEAD/R/Class-LAS.R)
   objects, and
 - [`lidR::LAScatalog`](https://github.com/Jean-Romain/lidR/blob/HEAD/R/Class-LAScatalog.R)s.
 
-All of these methods just deal with specifics of their data type. The
-actual segmentation is done by the internal function
+Currently, only `segment_tree_crowns` works with all three input data
+types. The other function work only for LAS, but have the other methods
+as dummies for future expansion.
+
+### segment_tree_crowns front end
+
+The data type specific methods deal with specifics of their data type.
+The actual segmentation is done by the internal function
 [`segment_tree_crowns_core`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns_core.R),
 which is used by the `data.frame`/`data.table` and `lidR::LAS` methods.
 The `lidR::LAScatalog` method internally calls the `lidR::LAS` method.

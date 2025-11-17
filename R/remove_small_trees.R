@@ -149,8 +149,23 @@ methods::setMethod(
 })
 
 
-# TODO: Add case for LAS Catalog
-
-
+# Method for LAScatalog (dummy) ----------------------------------
+#' @describeIn remove_small_trees removes small tree clusters in a segmented
+#'   [LAScatalog][lidR::LAScatalog-class].
+#'
+#'
+#' @importClassesFrom lidR LAScatalog
+methods::setMethod(
+  "remove_small_trees",
+  signature(point_cloud = "LAScatalog"),
+  function(point_cloud,
+           min_radius,
+           min_height,
+           crown_id_column_name){
+    stop(paste("remove_small_trees is not (yet) implemented for point cloud of",
+               "type LasCatalog."), call. = FALSE)
+    return(1)
+  }
+)
 
 

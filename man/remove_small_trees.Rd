@@ -4,6 +4,7 @@
 \alias{remove_small_trees}
 \alias{remove_small_trees,data.frame-method}
 \alias{remove_small_trees,LAS-method}
+\alias{remove_small_trees,LAScatalog-method}
 \title{Remove small clusters from segmented point cloud}
 \usage{
 remove_small_trees(
@@ -21,6 +22,13 @@ remove_small_trees(
 )
 
 \S4method{remove_small_trees}{LAS}(
+  point_cloud,
+  min_radius = 1,
+  min_height = -Inf,
+  crown_id_column_name = "crown_id"
+)
+
+\S4method{remove_small_trees}{LAScatalog}(
   point_cloud,
   min_radius = 1,
   min_height = -Inf,
@@ -54,6 +62,9 @@ tree clusters that are smaller than a certain radius or a certain height
 
 \item \code{remove_small_trees(LAS)}: removes small tree clusters in a segmented
 \link[lidR:LAS-class]{LAS object}.
+
+\item \code{remove_small_trees(LAScatalog)}: removes small tree clusters in a segmented
+\link[lidR:LAScatalog-class]{LAScatalog}.
 
 }}
 \section{Details}{
