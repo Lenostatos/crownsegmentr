@@ -68,6 +68,9 @@ methods::setGeneric("watershed_diameter_raster",
                     signature = "point_cloud"
 )
 
+# Declare variables to aviod check notes for watershed_diameter_raster
+utils::globalVariables(c("Z", "ID", "."))
+
 # watershed_diameter_raster for LAS ----------------------------------
 #' @describeIn watershed_diameter_raster Calculate a raster of crown diameter
 #' for tree height using watershed segmentation
@@ -102,9 +105,9 @@ methods::setMethod(
   # normalize point cloud if applicable
   if(!is.null(ground_height)){
     err.msg <- "Ground height raster does not cover the area of the point cloud."
-    assert_that_raster_covers_las_point_cloud(ground_height, las, err.msg)
+    assert_that_raster_covers_las_point_cloud(ground_height, point_cloud, err.msg)
 
-    norm.las <- lidR::normalize_height(las = las,
+    norm.las <- lidR::normalize_height(las = point_cloud,
                                        algorithm = lidR::kriging(),
                                        dtm = ground_height)
   } else {

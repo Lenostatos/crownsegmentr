@@ -408,7 +408,7 @@ methods::setMethod(
       crown_length_to_tree_height,
       crown_length_constant,
       point_cloud,
-      which = "height"
+      which = "length"
     )
     validate_segment_crowns_only_above(segment_crowns_only_above)
     validate_ground_height(ground_height, point_cloud)
@@ -564,6 +564,7 @@ methods::setMethod(
 
 
 # Method for lidR::LAScatalog Objects ---------------------------------
+utils::globalVariables(c("crown_id_column_name", "..crown_id_column_name"))
 
 #' @describeIn segment_tree_crowns Segments the point cloud data of a
 #'   [LAScatalog][lidR::LAScatalog-class]. This method does not support
@@ -601,7 +602,7 @@ methods::setMethod(
       crown_length_to_tree_height,
       crown_length_constant,
       point_cloud,
-      which = "height"
+      which = "length"
     )
     # validate_crown_id_column_name(crown_id_column_name, point_cloud@data)
     # TODO find out whether there is a way to validate this here instead of in
