@@ -25,7 +25,7 @@
 
 namespace ams3d
 {
-    spatial::point_3d_t calculate_a_single_mode (
+    spatial::point_3d_t calculate_terminal_centroid (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
@@ -37,7 +37,7 @@ namespace ams3d
         const int max_iterations_per_point
     ) {
         // If any coordinate value of point is non-finite or point lies below
-        // the minimum point height, return an NaN mode.
+        // the minimum point height, return NaN.
         if (spatial::has_non_finite_coordinate_value( point ) ||
             spatial::get_z( point ) < min_point_height_above_ground)
         {
@@ -81,7 +81,7 @@ namespace ams3d
 
 
     std::pair< spatial::point_3d_t, std::vector< spatial::point_3d_t > >
-    calculate_a_single_mode_plus_centroids (
+    calculate_all_centroids (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
@@ -93,7 +93,7 @@ namespace ams3d
         const int max_iterations_per_point
     ) {
         // If any coordinate value of point is non-finite or point lies below
-        // the minimum point height, return an NaN mode.
+        // the minimum point height, return NaN.
         if (spatial::has_non_finite_coordinate_value( point ) ||
             spatial::get_z( point ) < min_point_height_above_ground)
         {
@@ -142,7 +142,7 @@ namespace ams3d
             && num_calculated_centroids < max_iterations_per_point
         );
 
-        // Return the last centroid as the mode plus all centroids in an array.
+        // Return the terminal centroid plus all prior centroids in an array.
         return std::pair{ current_centroid, centroids };
     }
 }

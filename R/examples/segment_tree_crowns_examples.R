@@ -1,3 +1,5 @@
+# Preparation ------------------------------------------------------------------
+
 # Load a point cloud of some trees included in the lidR package
 point_cloud <- lidR::readLAS(system.file(
   "extdata/MixedConifer.laz",
@@ -28,7 +30,7 @@ plot_segmented_point_cloud <- function(
 }
 
 
-# Segment Normalized Point Clouds ----------------------------------------
+# Simple case: Segment Normalized Point Clouds ---------------------------------
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
@@ -38,6 +40,33 @@ segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
 
 plot_segmented_point_cloud(segmented_point_cloud)
 
+
+# Complete workflow with pre- and postprocessing -------------------------------
+
+diameter_raster <- crownsegmentr::watershed_diameter_raster(
+  point_cloud,
+  bandwidth_intercept = 2
+)
+
+terra::plot(diameter_raster)
+
+segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
+  point_cloud,
+  crown_diameter_to_tree_height = diameter_raster,
+  crown_length_to_tree_height = 0.4,
+  crown_diameter_constant = 2,
+  crown_length_constant = 3
+)
+
+plot_segmented_point_cloud(segmented_point_cloud)
+
+processed_point_cloud <- crownsegmentr::remove_small_trees(
+  segmented_point_cloud,
+  min_radius = 1,
+  min_height = 5
+)
+
+plot_segmented_point_cloud(processed_point_cloud)
 
 # Exclude Points Below any Height on the Fly ------------------------------
 
@@ -110,21 +139,21 @@ segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
 plot_segmented_point_cloud(segmented_point_cloud)
 
 
-# Additionally Return Modes and/or Centroids ------------------------------
+# Additionally Return Centroids (terminal and/or prior) ------------------------------
 
-# You can also return the modes and centroids which were calculated during the
+# You can also return the centroids which were calculated during the
 # segmentation in order to get a more in-depth impression of what happened
 # internally.
 segmentation_results <- crownsegmentr::segment_tree_crowns(
   point_cloud,
   crown_diameter_to_tree_height = 0.25,
   crown_length_to_tree_height = 0.5,
-  also_return_modes = TRUE,
-  also_return_centroids = TRUE
+  also_return_terminal_centroids = TRUE,
+  also_return_all_centroids = TRUE
 )
 
 # Generate crown colors "manually" so that we can use the same colors for
-# points, modes, and centroids.
+# points, terminal centroids, and prior centroids.
 crown_colors <- lidR::random.colors(
   n = length(unique(
     segmentation_results$segmented_point_cloud@data[["crown_id"]]
@@ -135,13 +164,13 @@ crown_colors <- lidR::random.colors(
 plot_segmented_point_cloud(
   segmentation_results$segmented_point_cloud, crown_colors
 )
-# Plot the modes
+# Plot the terminal_centroids
 plot_segmented_point_cloud(
-  segmentation_results$modes, crown_colors
+  segmentation_results$terminal_centroids, crown_colors
 )
 # Plot the centroids
 plot_segmented_point_cloud(
-  segmentation_results$centroids,
+  segmentation_results$prior_centroids,
   crown_colors,
   size = 1
 )

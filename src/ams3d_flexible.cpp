@@ -25,7 +25,7 @@
 
 namespace ams3d
 {
-    spatial::point_3d_t calculate_a_single_mode (
+    spatial::point_3d_t calculate_terminal_centroid (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
@@ -37,7 +37,7 @@ namespace ams3d
         const spatial::distance_t &centroid_convergence_distance,
         const int max_iterations_per_point
     ) {
-        // If any coordinate value of point is non-finite, return an NaN mode.
+        // If any coordinate value of point is non-finite, return NaN.
         if (spatial::has_non_finite_coordinate_value( point ))
             { return spatial::nan_point(); }
 
@@ -47,7 +47,7 @@ namespace ams3d
         };
 
         // If the ground height is non-finite or the point lies below the
-        // minimum above-ground height, return an NaN mode.
+        // minimum above-ground height, return NaN.
         if (!std::isfinite( ground_height ) ||
             spatial::get_z( point ) - ground_height
                 < min_point_height_above_ground)
@@ -80,7 +80,7 @@ namespace ams3d
             };
 
             // If the ground height or the kernel dimension parameters are
-            // non-finite, return an NaN mode.
+            // non-finite, return NaN.
             if (!std::isfinite( ground_height ) ||
                 !std::isfinite( crown_diameter_to_tree_height ) ||
                 !std::isfinite( crown_length_to_tree_height ))
@@ -119,7 +119,7 @@ namespace ams3d
 
 
     std::pair< spatial::point_3d_t, std::vector< spatial::point_3d_t > >
-    calculate_a_single_mode_plus_centroids (
+    calculate_all_centroids (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
@@ -131,8 +131,8 @@ namespace ams3d
         const spatial::distance_t &centroid_convergence_distance,
         const int max_iterations_per_point
     ) {
-        // If any coordinate value of point is non-finite, return an NaN mode
-        // without any centroids.
+        // If any coordinate value of point is non-finite, return NaN as 
+        // terminal centroid, and no prior centroids.
         if (spatial::has_non_finite_coordinate_value( point ))
         {
             return std::pair {
@@ -146,7 +146,8 @@ namespace ams3d
         };
 
         // If the ground height is non-finite or the point lies below the
-        // minimum above-ground height, return an NaN mode without any centroids.
+        // minimum above-ground height, return NaN as terminal centroid, and no
+        // prior centroids.
         if (!std::isfinite( ground_height ) ||
             spatial::get_z( point ) - ground_height
                 < min_point_height_above_ground)
@@ -185,7 +186,8 @@ namespace ams3d
             };
 
             // If the ground height or the kernel dimension parameters are
-            // non-finite, return an NaN mode without any centroids.
+            // non-finite, return NaN as terminal centroid, and no prior 
+            // centroids.
             if (!std::isfinite( ground_height ) ||
                 !std::isfinite( crown_diameter_to_tree_height ) ||
                 !std::isfinite( crown_length_to_tree_height ))
@@ -224,7 +226,7 @@ namespace ams3d
             && num_calculated_centroids < max_iterations_per_point
         );
 
-        // Return the last centroid as the mode plus all centroids in an array.
+        // Return the terminal centroid plus all prior centroids in an array.
         return std::pair{ current_centroid, centroids };
     }
 }

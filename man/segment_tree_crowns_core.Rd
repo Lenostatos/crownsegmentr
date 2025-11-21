@@ -17,8 +17,8 @@ segment_tree_crowns_core(
   max_iterations_per_point,
   dbscan_neighborhood_radius,
   min_num_points_per_crown,
-  also_return_modes,
-  also_return_centroids
+  also_return_terminal_centroids,
+  also_return_all_centroids
 )
 }
 \arguments{
@@ -78,10 +78,10 @@ the neighborhood's center will be treated as a core point. See "How the
 algorithm works" to learn about neighborhoods and core points in the
 context of the DBSCANb algorithm.}
 
-\item{also_return_modes}{\code{TRUE} or \code{FALSE}. Should mode coordinates be
+\item{also_return_terminal_centroids}{\code{TRUE} or \code{FALSE}. Should mode coordinates be
 returned as well?}
 
-\item{also_return_centroids}{\code{TRUE} or \code{FALSE}. Should centroid coordinates
+\item{also_return_all_centroids}{\code{TRUE} or \code{FALSE}. Should all centroid coordinates
 be returned as well? This slows down processing by a little bit and will
 return a data set which requires at least ~10 times more memory than the
 input point cloud.}
@@ -90,8 +90,8 @@ input point cloud.}
 A list with at most three elements:
 \describe{
 \item{crown_ids}{A vector of IDs of segmented bodies.}
-\item{mode_coordinates}{
-If \code{also_return_modes} was set to \code{TRUE}, a
+\item{terminal_coordinates}{
+If \code{also_return_terminal_centroids} was set to \code{TRUE}, a
 \link[data.table:data.table]{data.table} with mode coordinates as the
 second list element.
 The table has two additional columns: \describe{
@@ -105,7 +105,7 @@ Holds row indices of the original points in the input
 }
 }
 \item{centroid_coordinates}{
-If \code{also_return_centroids} was set to \code{TRUE}, a
+If \code{also_return_all_centroids} was set to \code{TRUE}, a
 \link[data.table:data.table]{data.table} with centroid coordinates as the
 last list element.
 The table has two additional columns:

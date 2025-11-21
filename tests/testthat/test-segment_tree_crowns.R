@@ -92,15 +92,15 @@ test_that("the data.frame/data.table method works", {
     min_num_points_per_crown = 10
   )
 
-  # Also return modes and centroids and vary some arguments
+  # Also return all centroids and vary some arguments
   segmentation_res <- segment_tree_crowns(
     point_cloud = test_point_cloud@data,
     crown_diameter_to_tree_height = 0.25,
     crown_length_to_tree_height = 0.5,
     max_iterations_per_point = 1000,
     min_num_points_per_crown = 10,
-    also_return_modes = TRUE,
-    also_return_centroids = TRUE
+    also_return_terminal_centroids = TRUE,
+    also_return_all_centroids = TRUE
   )
 
   # Plot segmentation results (for manual testing only)
@@ -223,22 +223,22 @@ test_that("the LAS method works", {
   )
   expect_s4_class(segmented_points, class = "LAS")
 
-  # Also return modes and centroids and vary some arguments
+  # Also return all centroids and vary some arguments
   segmentation_res <- segment_tree_crowns(
     point_cloud = test_point_cloud,
     crown_diameter_to_tree_height = 0.25,
     crown_length_to_tree_height = 0.5,
     max_iterations_per_point = 1000,
     min_num_points_per_crown = 10,
-    also_return_modes = TRUE,
-    also_return_centroids = TRUE
+    also_return_terminal_centroids = TRUE,
+    also_return_all_centroids = TRUE
   )
   expect_s4_class(segmentation_res$segmented_point_cloud, class = "LAS")
   expect_named(segmentation_res$segmented_point_cloud@data,
     expected = c(names(test_point_cloud@data), "crown_id")
   )
-  expect_s4_class(segmentation_res$modes, class = "LAS")
-  expect_named(segmentation_res$modes@data,
+  expect_s4_class(segmentation_res$terminal_centroids, class = "LAS")
+  expect_named(segmentation_res$terminal_centroids@data,
     expected = c("X", "Y", "Z", "crown_id", "point_index")
   )
   expect_s4_class(segmentation_res$centroids, class = "LAS")

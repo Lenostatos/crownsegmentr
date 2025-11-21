@@ -322,17 +322,17 @@ validate_verbose <- function(verbose) {
   )
 }
 
-validate_also_return_modes <- function(also_return_modes) {
+validate_also_return_terminal_centroids <- function(also_return_terminal_centroids) {
   assert_that(
-    assertthat::is.flag(also_return_modes),
-    assertthat::noNA(also_return_modes)
+    assertthat::is.flag(also_return_terminal_centroids),
+    assertthat::noNA(also_return_terminal_centroids)
   )
 }
 
-validate_also_return_centroids <- function(also_return_centroids) {
+validate_also_return_all_centroids <- function(also_return_all_centroids) {
   assert_that(
-    assertthat::is.flag(also_return_centroids),
-    assertthat::noNA(also_return_centroids)
+    assertthat::is.flag(also_return_all_centroids),
+    assertthat::noNA(also_return_all_centroids)
   )
 }
 

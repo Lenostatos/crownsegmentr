@@ -25,7 +25,7 @@
 
 namespace ams3d
 {
-    spatial::point_3d_t calculate_a_single_mode (
+    spatial::point_3d_t calculate_terminal_centroid (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
@@ -103,7 +103,7 @@ namespace ams3d
 
 
     std::pair< spatial::point_3d_t, std::vector< spatial::point_3d_t > >
-    calculate_a_single_mode_plus_centroids (
+    calculate_all_centroids (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,

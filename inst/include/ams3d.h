@@ -56,10 +56,10 @@
  *  7. The centroid calculated last is then treated as the original point's
  *  mode.
  *
- *  It has been observed that the modes of points that belong to the same tree
- *  crown cluster shortly below the crown apex. In order to assign crown IDs to
- *  points, these clusters have to be identified with another algorithm, e.g.
- *  DBSCAN.
+ *  It has been observed that the terminal centroids of points that belong to 
+ *  the same tree crown cluster shortly below the crown apex. In order to 
+ *  assign crown IDs to points, these clusters have to be identified with 
+ *  another algorithm, e.g. DBSCAN.
  *
  *
  *  \par On Compliance with the Equations Published by Ferraz et. al 2012
@@ -93,7 +93,7 @@ namespace ams3d
      *      any of \p point's coordinate values are non-finite or \p point lies
      *      below \p min_point_height_above_ground.
      */
-    spatial::point_3d_t calculate_a_single_mode (
+    spatial::point_3d_t calculate_terminal_centroid (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
@@ -107,7 +107,7 @@ namespace ams3d
 
     /** \brief Calculates the mode of \p point within \p indexed_point_cloud.
      *
-     *  Same as calculate_a_single_mode but also returns the centroids.
+     *  Same as calculate_terminal_centroid but also returns the centroids.
      *
      *  \return A pair with the calculated mode at the first position and an
      *      array of the calculated centroids at the second position. If any
@@ -116,7 +116,7 @@ namespace ams3d
      *      NaN coordinate values paired with an empty centroid vector.
      */
     std::pair< spatial::point_3d_t, std::vector< spatial::point_3d_t > >
-    calculate_a_single_mode_plus_centroids (
+    calculate_all_centroids (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
@@ -130,7 +130,7 @@ namespace ams3d
 
     /** \brief Calculates the mode of \p point within \p indexed_point_cloud.
      *
-     *  Same as calculate_a_single_mode but assumes absolute point heights and
+     *  Same as calculate_terminal_centroid but assumes absolute point heights and
      *      calculates local above ground heights using the
      *      \p ground_height_grid.
      *
@@ -142,7 +142,7 @@ namespace ams3d
      *      NaN ground height values are encountered during the calculation, the
      *      function returns a mode with NaN coordinate values.
      */
-    spatial::point_3d_t calculate_a_single_mode (
+    spatial::point_3d_t calculate_terminal_centroid (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
@@ -157,7 +157,7 @@ namespace ams3d
 
     /** \brief Calculates the mode of \p point within \p indexed_point_cloud.
      *
-     *  Same as calculate_a_single_mode_plus_centroids but assumes absolute
+     *  Same as calculate_all_centroids but assumes absolute
      *      point heights and calculates local above ground heights using the
      *      \p ground_height_grid.
      *
@@ -169,7 +169,7 @@ namespace ams3d
      *      with NaN coordinate values paired with an empty centroid vector.
      */
     std::pair< spatial::point_3d_t, std::vector< spatial::point_3d_t > >
-    calculate_a_single_mode_plus_centroids (
+    calculate_all_centroids (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
@@ -184,14 +184,15 @@ namespace ams3d
 
     /** \brief Calculates the mode of \p point within \p indexed_point_cloud.
      *
-     *  Same as calculate_a_single_mode for absolute point heights but also uses
-     *      a grid for the kernel diameter slope and the kernel height slope.
+     *  Same as calculate_terminal_centroid for absolute point heights but also uses
+     *      a grid for crown_diameter_to_tree_height and 
+     *      crown_length_to_tree_height.
      *
      *  \param crown_diameter_to_tree_height_grid A raster object expected to
-     *      hold kernel diameter slope (crown diameter to tree height ratio) 
+     *      hold crown diameter to tree height 
      *      values for the entire area of the point cloud.
      *  \param crown_length_to_tree_height_grid A raster object expected to hold
-     *      kernel height slope (crown diameter to tree height ratio) values for
+     *      crown length to tree height values for
      *      the entire area of the point cloud.
      *
      *  \return The mode of \p point. If any coordinate value of \p point is
@@ -199,7 +200,7 @@ namespace ams3d
      *      NaN ground height values are encountered during the calculation, the
      *      function returns a mode with NaN coordinate values.
      */
-    spatial::point_3d_t calculate_a_single_mode (
+    spatial::point_3d_t calculate_terminal_centroid (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
@@ -214,15 +215,15 @@ namespace ams3d
 
     /** \brief Calculates the mode of \p point within \p indexed_point_cloud.
      *
-     *  Same as calculate_a_single_mode_plus_centroids for absolute point
+     *  Same as calculate_all_centroids for absolute point
      *      heights but also uses a grid for the crown diameter and crown length
      *      to tree height ratios.
      *
      *  \param crown_diameter_to_tree_height_grid A raster object expected to
-     *      hold kernel diameter slope values for the entire area
+     *      hold crown diameter to tree height values for the entire area
      *      of the point cloud.
      *  \param crown_length_to_tree_height_grid A raster object expected to hold
-     *      kernel height slope values for the entire area of
+     *      crown length to tree height values for the entire area of
      *      the point cloud.
      *
      *  \return A pair with the calculated mode at the first position and an
@@ -233,7 +234,7 @@ namespace ams3d
      *      with NaN coordinate values paired with an empty centroid vector.
      */
     std::pair< spatial::point_3d_t, std::vector< spatial::point_3d_t > >
-    calculate_a_single_mode_plus_centroids (
+    calculate_all_centroids (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,

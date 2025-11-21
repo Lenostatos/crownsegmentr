@@ -28,7 +28,7 @@ namespace spatial
 {
     /** \note When modifying this function keep in mind that there might be a
      *  significant impact on performance since the function is called very
-     *  often while calculating modes.
+     *  often while calculating centroids.
      */
     std::vector< point_3d_t > get_points_intersecting_vertical_cylinder (
         const index_for_3d_points_t &point_cloud,

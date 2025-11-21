@@ -37,8 +37,8 @@ segment_tree_crowns(
   dbscan_neighborhood_radius,
   min_num_points_per_crown,
   verbose = TRUE,
-  also_return_modes = FALSE,
-  also_return_centroids = FALSE
+  also_return_terminal_centroids = FALSE,
+  also_return_all_centroids = FALSE
 )
 
 \S4method{segment_tree_crowns}{LAS}(
@@ -55,8 +55,8 @@ segment_tree_crowns(
   dbscan_neighborhood_radius,
   min_num_points_per_crown,
   verbose = TRUE,
-  also_return_modes = FALSE,
-  also_return_centroids = FALSE,
+  also_return_terminal_centroids = FALSE,
+  also_return_all_centroids = FALSE,
   write_crown_id_also_to_file = FALSE,
   crown_id_file_description = crown_id_column_name
 )
@@ -154,10 +154,10 @@ context of the DBSCANb algorithm.}
 \item{verbose}{\code{TRUE} or \code{FALSE}. Should the function show a progress bar and
 other runtime information in the console?}
 
-\item{also_return_modes}{\code{TRUE} or \code{FALSE}. Should mode coordinates be
+\item{also_return_terminal_centroids}{\code{TRUE} or \code{FALSE}. Should mode coordinates be
 returned as well?}
 
-\item{also_return_centroids}{\code{TRUE} or \code{FALSE}. Should centroid coordinates
+\item{also_return_all_centroids}{\code{TRUE} or \code{FALSE}. Should all centroid coordinates
 be returned as well? This slows down processing by a little bit and will
 return a data set which requires at least ~10 times more memory than the
 input point cloud.}
@@ -167,8 +167,8 @@ the returned LAS object to disk, should the IDs of segmented bodies be
 written into that file as well? See the
 \link[lidR:add_attribute]{lidR function add_lasattribute()} for additional
 details. Will also be used for all attributes of the
-\link[lidR:LAS-class]{LAS object(s)} which are returned if \code{also_return_modes}
-and/or \code{also_return_centroids} were set to \code{TRUE}.
+\link[lidR:LAS-class]{LAS object(s)} which are returned if \code{also_return_terminal_centroids}
+and/or \code{also_return_all_centroids} were set to \code{TRUE}.
 
 For \link[lidR:LAScatalog-class]{LAScatalogs}, this is only used if the
 result is returned as a \link[lidR:LAS-class]{LAS object} in memory. If the
@@ -188,16 +188,16 @@ column/attribute holding for each point the ID of a segmented body. IDs
 with the value \code{NA} indicate that a point was not assigned to any
 body.
 
-If \code{also_return_modes} and/or \code{also_return_centroids} were set to \code{TRUE}, a
+If \code{also_return_terminal_centroids} and/or \code{also_return_all_centroids} were set to \code{TRUE}, a
 list with at most three named elements in the following order:
 \describe{
 \item{segmented_point_cloud}{
 The segmented point cloud which would have been returned directly if
-\code{also_return_modes} and \code{also_return_centroids} had been set
+\code{also_return_terminal_centroids} and \code{also_return_all_centroids} had been set
 to \code{FALSE}.
 }
 \item{modes}{
-If \code{also_return_modes} was set to \code{TRUE}, a point cloud of
+If \code{also_return_terminal_centroids} was set to \code{TRUE}, a point cloud of
 the same type as the input point cloud holding the modes calculated
 with the AMS3D algorithm and two additional columns/attributes. One of
 these columns/attributes holds IDs of the segmented bodies that the
@@ -205,7 +205,7 @@ modes belong to and the other (named "point_index") holds indices to
 the points in the input point cloud.
 }
 \item{centroids}{
-If \code{also_return_centroids} was set to \code{TRUE}, a point cloud
+If \code{also_return_all_centroids} was set to \code{TRUE}, a point cloud
 of the same type as the input point cloud holding the centroids
 calculated with the AMS3D algorithm and two additional
 columns/attributes. One of these columns/attributes holds IDs of the
@@ -434,8 +434,8 @@ segmentation_results <- crownsegmentr::segment_tree_crowns(
   point_cloud,
   crown_diameter_to_tree_height = 0.25,
   crown_length_to_tree_height = 0.5,
-  also_return_modes = TRUE,
-  also_return_centroids = TRUE
+  also_return_terminal_centroids = TRUE,
+  also_return_all_centroids = TRUE
 )
 
 # Generate crown colors "manually" so that we can use the same colors for

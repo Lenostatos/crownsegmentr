@@ -24,7 +24,7 @@
 #include "spatial.h"
 #include "ams3d.h"
 
-//' @describeIn calculate_modes_normalized Use a ground height raster to find
+//' @describeIn calculate_centroids_normalized Use a ground height raster to find
 //'     modes in a non-normalized point cloud.
 //'
 //' @param ground_height_grid_data A list containing a set of elements that make
@@ -33,7 +33,7 @@
 //'     "Raster argument structure" below.
 //'
 // [[Rcpp::export]]
-Rcpp::List calculate_modes_terraneous (
+Rcpp::List calculate_centroids_terraneous (
     const Rcpp::DataFrame &coordinate_table,
     const spatial::coordinate_t &min_point_height_above_ground,
     const Rcpp::List &ground_height_grid_data,
@@ -43,7 +43,7 @@ Rcpp::List calculate_modes_terraneous (
     const double crown_length_constant,
     const spatial::distance_t &centroid_convergence_distance,
     const int max_iterations_per_point,
-    const bool also_return_centroids,
+    const bool also_return_all_centroids,
     const bool show_progress_bar
 ) {
     // Convert the coordinate table to an array of point objects.
@@ -73,9 +73,10 @@ Rcpp::List calculate_modes_terraneous (
         )
     };
 
-    // Set up an array for the to-be-calculated modes.
-    std::vector< spatial::point_3d_t > modes{};
-    modes.reserve( points.size() );
+    // Set up an array for the terminal centroids to be calculated.
+    std::vector< spatial::point_3d_t > terminal_centroids{};
+    terminal_centroids.reserve( points.size() );
+
 
     // Optionally set up a progress bar.
     RProgress::RProgress progress_bar;
@@ -92,15 +93,15 @@ Rcpp::List calculate_modes_terraneous (
 
     int point_index{ 1 }; // 1-based point index for use with the centroids in R
 
-    if (also_return_centroids)
+    if (also_return_all_centroids)
     {
         // For all points in the input point cloud...
         for (const auto &point : points)
         {
             // ...calculate their mode and get the centroids as well.
             std::pair< spatial::point_3d_t, std::vector< spatial::point_3d_t > >
-            mode_and_centroids {
-                ams3d::calculate_a_single_mode_plus_centroids (
+            all_centroids {
+                ams3d::calculate_all_centroids (
                     point,
                     point_cloud_index,
                     min_point_height_above_ground,
@@ -115,25 +116,25 @@ Rcpp::List calculate_modes_terraneous (
             };
 
             // Store the calculated mode.
-            modes.push_back( mode_and_centroids.first );
+            terminal_centroids.push_back( all_centroids.first );
 
             // Store the calculated centroids.
             centroids.insert (
                 centroids.end(), // append at the end of centroids
-                mode_and_centroids.second.begin(),
-                mode_and_centroids.second.end()
+                all_centroids.second.begin(),
+                all_centroids.second.end()
             );
 
             // Store the current point index as many times as there are centroids.
             point_indices.insert (
                 point_indices.end(), // Append at the end of point_indices...
-                mode_and_centroids.second.size(), // ...n_centroid times...
+                all_centroids.second.size(), // ...n_centroid times...
                 point_index // ...this value.
             );
 
             point_index++;
 
-            if (modes.size() % ams3d_R_interface_constants::num_modes_per_tick == 0)
+            if (terminal_centroids.size() % ams3d_R_interface_constants::num_points_per_tick == 0)
             {
                 // Check whether the R user wants to abort the computation
                 Rcpp::checkUserInterrupt();
@@ -142,7 +143,7 @@ Rcpp::List calculate_modes_terraneous (
                 if (show_progress_bar)
                 {
                     progress_bar.tick (
-                        ams3d_R_interface_constants::num_modes_per_tick
+                        ams3d_R_interface_constants::num_points_per_tick
                     );
                 }
             }
@@ -154,8 +155,8 @@ Rcpp::List calculate_modes_terraneous (
         for (const auto &point : points)
         {
             // ...calculate their mode.
-            modes.push_back (
-                ams3d::calculate_a_single_mode (
+            terminal_centroids.push_back (
+                ams3d::calculate_terminal_centroid (
                     point,
                     point_cloud_index,
                     min_point_height_above_ground,
@@ -169,7 +170,7 @@ Rcpp::List calculate_modes_terraneous (
                 )
             );
 
-            if (modes.size() % ams3d_R_interface_constants::num_modes_per_tick == 0)
+            if (terminal_centroids.size() % ams3d_R_interface_constants::num_points_per_tick == 0)
             {
                 // Check whether the R user wants to abort the computation
                 Rcpp::checkUserInterrupt();
@@ -178,7 +179,7 @@ Rcpp::List calculate_modes_terraneous (
                 if (show_progress_bar)
                 {
                     progress_bar.tick (
-                        ams3d_R_interface_constants::num_modes_per_tick
+                        ams3d_R_interface_constants::num_points_per_tick
                     );
                 }
             }
@@ -190,8 +191,8 @@ Rcpp::List calculate_modes_terraneous (
 
     // Return the modes (and optionally also centroids) to R
     return ams3d_R_interface_util::create_return_data (
-        also_return_centroids,
-        modes,
+        also_return_all_centroids,
+        terminal_centroids,
         centroids,
         point_indices
     );
