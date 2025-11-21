@@ -45,7 +45,7 @@ plot_segmented_point_cloud(segmented_point_cloud)
 
 diameter_raster <- crownsegmentr::watershed_diameter_raster(
   point_cloud,
-  bandwidth_intercept = 2
+  crown_diameter_constant = 2
 )
 
 terra::plot(diameter_raster)

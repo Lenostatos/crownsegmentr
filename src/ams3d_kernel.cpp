@@ -1,8 +1,8 @@
 // This file is part of crownsegmentr, an R package for identifying tree crowns
 // within 3D point clouds.
 //
-// Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
-// Contact: Leon.Steinmeier@posteo.net
+// Copyright (C) 2025 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+// Contact: timon.miesner@thuenen.de
 //
 // crownsegmentr is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,11 +36,11 @@ namespace ams3d
         _center_height_initial{ spatial::get_z( center ) },
         _radius{ (crown_diameter_to_tree_height * _center_height_initial
             + crown_diameter_constant
-            )* 0.5
+            ) * 0.5
           },
         _height{ (crown_length_to_tree_height * _center_height_initial
             + crown_length_constant
-            )* 0.75
+            ) * 0.75
           },
 
         _half_height        { _height * 0.5 },
@@ -69,14 +69,14 @@ namespace ams3d
             (crown_diameter_to_tree_height
             * (_center_height_initial - ground_height_at_center)
             + crown_diameter_constant
-            )* 0.5
+            ) * 0.5
         },
         _height
         {
             (crown_length_to_tree_height
             * (_center_height_initial - ground_height_at_center)
             + crown_length_constant
-            )* 0.75
+            ) * 0.75
 
         },
 

@@ -1,7 +1,7 @@
 // This file is part of crownsegmentr, an R package for identifying tree crowns
 // within 3D point clouds.
 //
-// Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ
+// Copyright (C) 2025 Leon Steinmeier, Nikolai Knapp, UFZ
 // Contact: Lenostatos@gmx.de
 //
 // crownsegmentr is free software: you can redistribute it and/or modify

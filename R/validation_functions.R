@@ -1,8 +1,8 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
-# Contact: Leon.Steinmeier@posteo.net
+# Copyright (C) 2025 Leon Steinmeier, Timon Miesner, Nikolai Knapp
+# Contact: timon.miesner@thuenen.de
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -457,7 +457,7 @@ validate_scale_n_offset_are_consistent <- function(LAScatalog) {
 
 # Validation functions for diameter_raster
 
-validate_bandwidth_intercept <- function(intercept){
+validate_crown_diameter_constant <- function(intercept){
   assert_that(
     assertthat::is.number(intercept),
     assertthat::noNA(intercept),

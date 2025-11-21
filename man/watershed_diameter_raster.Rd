@@ -13,7 +13,7 @@ segmentation}
 \usage{
 watershed_diameter_raster(
   point_cloud,
-  bandwidth_intercept = 0,
+  crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
   smoothing_radius = 5,
@@ -22,7 +22,7 @@ watershed_diameter_raster(
 
 \S4method{watershed_diameter_raster}{LAS}(
   point_cloud,
-  bandwidth_intercept = 0,
+  crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
   smoothing_radius = 5,
@@ -31,7 +31,7 @@ watershed_diameter_raster(
 
 \S4method{watershed_diameter_raster}{data.frame}(
   point_cloud,
-  bandwidth_intercept = 0,
+  crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
   smoothing_radius = 5,
@@ -40,7 +40,7 @@ watershed_diameter_raster(
 
 \S4method{watershed_diameter_raster}{LAScatalog}(
   point_cloud,
-  bandwidth_intercept = 0,
+  crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
   smoothing_radius = 5,
@@ -49,7 +49,7 @@ watershed_diameter_raster(
 
 \S4method{li_diameter_raster}{LAS}(
   point_cloud,
-  bandwidth_intercept = 0,
+  crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
   smoothing_radius = 5,
@@ -58,7 +58,7 @@ watershed_diameter_raster(
 
 \S4method{li_diameter_raster}{data.frame}(
   point_cloud,
-  bandwidth_intercept = 0,
+  crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
   smoothing_radius = 5,
@@ -67,7 +67,7 @@ watershed_diameter_raster(
 
 \S4method{li_diameter_raster}{LAScatalog}(
   point_cloud,
-  bandwidth_intercept = 0,
+  crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
   smoothing_radius = 5,
@@ -77,7 +77,7 @@ watershed_diameter_raster(
 \arguments{
 \item{point_cloud}{the input point cloud, either as LAS or as data.frame.}
 
-\item{bandwidth_intercept}{a fixed value for crown_diameter_constant, which
+\item{crown_diameter_constant}{a fixed value for crown_diameter_constant, which
 reduces the crown diameters by the given value before calculating the ratio
 of crown diameter to tree height}
 

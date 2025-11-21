@@ -1,8 +1,8 @@
 // This file is part of crownsegmentr, an R package for identifying tree crowns
 // within 3D point clouds.
 //
-// Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
-// Contact: Leon.Steinmeier@posteo.net
+// Copyright (C) 2025 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+// Contact: timon.miesner@thuenen.de
 //
 // crownsegmentr is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -56,9 +56,9 @@
  *  7. The centroid calculated last is then treated as the original point's
  *  mode.
  *
- *  It has been observed that the terminal centroids of points that belong to 
- *  the same tree crown cluster shortly below the crown apex. In order to 
- *  assign crown IDs to points, these clusters have to be identified with 
+ *  It has been observed that the terminal centroids of points that belong to
+ *  the same tree crown cluster shortly below the crown apex. In order to
+ *  assign crown IDs to points, these clusters have to be identified with
  *  another algorithm, e.g. DBSCAN.
  *
  *
@@ -185,11 +185,11 @@ namespace ams3d
     /** \brief Calculates the mode of \p point within \p indexed_point_cloud.
      *
      *  Same as calculate_terminal_centroid for absolute point heights but also uses
-     *      a grid for crown_diameter_to_tree_height and 
+     *      a grid for crown_diameter_to_tree_height and
      *      crown_length_to_tree_height.
      *
      *  \param crown_diameter_to_tree_height_grid A raster object expected to
-     *      hold crown diameter to tree height 
+     *      hold crown diameter to tree height
      *      values for the entire area of the point cloud.
      *  \param crown_length_to_tree_height_grid A raster object expected to hold
      *      crown length to tree height values for
@@ -369,7 +369,7 @@ namespace ams3d
               * 0.25
             };
 
-            return (bottom_height_above_ground < -0.25 * crown_length_constant)
+            return (bottom_height_above_ground < 0 )//-0.25 * crown_length_constant)
                         ? spatial::coordinate_t{ 0 }
                         : bottom_height_above_ground;
         }
@@ -398,7 +398,7 @@ namespace ams3d
                            + crown_length_constant) * 0.25
                     };
 
-                    return (bottom_height_above_ground < -0.25 * crown_length_constant)
+                    return (bottom_height_above_ground < 0)//-0.25 * crown_length_constant)
                                 ? spatial::coordinate_t{ 0 }
                                 : bottom_height_above_ground;
                 }

@@ -1,4 +1,5 @@
-test_that("The diameter_raster functions work",{
+test_that("watershed_diameter_raster works",{
+  skip_if_not_installed("EBImage")
 
   test_point_cloud_file_path <- system.file(
     "extdata", "MixedConifer.laz",
@@ -12,30 +13,23 @@ test_that("The diameter_raster functions work",{
     xright = test_point_cloud_header@PHB$`Min X` + 50,
     ytop = test_point_cloud_header@PHB$`Min Y` + 50
   )
-  range(test_point_cloud@data$Z)
 
   testthat::expect_no_failure({
-    li_kds <- li_diameter_raster(test_point_cloud)
+    watershed_raster <- watershed_diameter_raster(test_point_cloud)
 
-    assert_that_raster_fits_point_cloud(li_kds,
+    assert_that_raster_fits_point_cloud(watershed_raster,
                                         test_point_cloud)
-
-    #ws_kds <- watershed_diameter_raster(test_point_cloud)
-
-    #assert_that_raster_fits_point_cloud(ws_kds,
-    #                                    test_point_cloud)
   })
 
   # test with modified parameters
   testthat::expect_no_failure({
-    li_kds <- li_diameter_raster(test_point_cloud,
-                            crown_diameter_constant = 10,
-                            limits = c(0.3,0.4),
-                            smoothing_radius = 0)
+    watershed_kds <- watershed_diameter_raster(test_point_cloud,
+                                               crown_diameter_constant = 10,
+                                               limits = c(0.3,0.4),
+                                               smoothing_radius = 0)
   })
-
-
 })
+
 
 
 

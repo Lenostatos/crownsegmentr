@@ -100,15 +100,15 @@ actual segmentation is done by the internal function [`segment_tree_crowns_core`
 
 #### segment_tree_crowns_core
 
-This function performs the segmentation by first calling the C++ back-end to calculate modes and by then clustering these modes with the DBSCAN algorithm (as implemented in the [`dbscan::dbscan`](https://cran.r-project.org/package=dbscan) function). It takes point cloud data in the tabular form of a `data.frame` or `data.table` and returns a list with at most three elements. The first element always contains a vector of crown IDs with one ID for each point (i.e. row) in the input data. The second and third elements are optional and contain mode and centroid coordinates together with crown IDs and (row) indices of the points they belong to.
+This function performs the segmentation by first calling the C++ back-end to calculate centroids and by then clustering the terminal centroids with the DBSCAN algorithm (as implemented in the [`dbscan::dbscan`](https://cran.r-project.org/package=dbscan) function). It takes point cloud data in the tabular form of a `data.frame` or `data.table` and returns a list with at most three elements. The first element always contains a vector of crown IDs with one ID for each point (i.e. row) in the input data. The second and third elements are optional and contain coordinates of terminal and prior centroids together with crown IDs and (row) indices of the points they belong to.
 
 #### data.frame/data.table Method
 
-This method just calls the core function and binds the returned crown IDs to the input table. It returns this extended table and, if requested, also the modes and/or centroids returned by the core function.
+This method just calls the core function and binds the returned crown IDs to the input table. It returns this extended table and, if requested, also the terminal centroids or all centroids returned by the core function.
 
 #### lidR::LAS Method
 
-Similar to the `data.frame`/`data.table` method in that it extends the input object with a crown ID attribute and, if requested, returns the modes and centroids as separate `lidR::LAS` objects. The mode and centroid objects are assigned the metadata of the input object.
+Similar to the `data.frame`/`data.table` method in that it extends the input object with a crown ID attribute and, if requested, returns the centroids as separate `lidR::LAS` objects. The centroid objects are assigned the metadata of the input object.
 
 #### lidR::LAScatalog Method
 
@@ -126,7 +126,7 @@ The `segment_tree_crowns` method for `lidR::LAScatalog`s internally defines a fu
 
 The back-end is a small C++ library which implements the AMS3D algorithm. The core functionality can be found in:
 
--   `namespace ams3d`: Functionality for calculating a single mode with the AMS3D algorithm ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d.h)), and
+-   `namespace ams3d`: Functionality for calculating a point's terminal centroid with the AMS3D algorithm ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d.h)), and
 -   `namespace spatial`: a facade to the [Boost Geometry](https://www.boost.org/doc/libs/1_75_0/libs/geometry/doc/html/geometry/introduction.html) library which provides e.g. the spatial index used for finding points inside cylinders ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial.h)).
 
 There is also some R interface code outside of any namespace called
@@ -143,7 +143,7 @@ This code contains the C++ functions that are callable from R. They are not cont
 -   `calculate_centroids_terraneous` ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_terraneous.cpp)) for processing non-normalized point clouds, and
 -   `calculate_centroids_flexible` ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_flexible.cpp)) for processing both normalized and non-normalized while possibly also using rasters for the crown diameter and crown height to tree height parameters.
 
-They are all doing basically the same thing, which is looping over points they get from R and call the functionality exposed by `ams3d` and `spatial` to calculate modes for these points.
+They are all doing basically the same thing, which is looping over points they get from R and call the functionality exposed by `ams3d` and `spatial` to calculate terminal centroids for these points.
 
 In addition, there are also some helper functions in the `namespace ams3d_R_interface_util` ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_util.cpp)).
 
@@ -156,7 +156,7 @@ This namespace only exposes two functions ([header](https://github.com/Lenostato
 -   `calculate_terminal_centroid`
 -   `calculate_all_centroids`
 
-They do exactly the same thing, i.e. calculate the mode of a point, except that the `*_plus_centroids` variant also returns the centroids which were calculated during the process. Both functions are overloaded three times:
+They do exactly the same thing, i.e. calculate the centroids of a point, except that the `*_plus_centroids` variant also returns the prior centroids which were calculated during the process. Both functions are overloaded three times:
 
 1.  The most simple overload assumes a normalized point cloud with ground height at zero and takes single numbers for the `crown_diameter_to_tree_height` and `crown_height_to_tree_height` arguments ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_normalized.cpp)).
 2.  The second overload can deal with not normalized point clouds by reading ground heights from a raster ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_terraneous.cpp)).

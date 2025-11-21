@@ -107,29 +107,29 @@ The `lidR::LAScatalog` method internally calls the `lidR::LAS` method.
 #### segment_tree_crowns_core
 
 This function performs the segmentation by first calling the C++
-back-end to calculate centroids and by then clustering the terminal centroids
-with the DBSCAN algorithm (as implemented in the
+back-end to calculate centroids and by then clustering the terminal
+centroids with the DBSCAN algorithm (as implemented in the
 [`dbscan::dbscan`](https://cran.r-project.org/package=dbscan) function).
 It takes point cloud data in the tabular form of a `data.frame` or
 `data.table` and returns a list with at most three elements. The first
 element always contains a vector of crown IDs with one ID for each point
 (i.e. row) in the input data. The second and third elements are optional
-and contain coordinates of terminal and prior centroids together with crown 
-IDs and (row) indices of the points they belong to.
+and contain coordinates of terminal and prior centroids together with
+crown IDs and (row) indices of the points they belong to.
 
 #### data.frame/data.table Method
 
 This method just calls the core function and binds the returned crown
 IDs to the input table. It returns this extended table and, if
-requested, also the terminal centroids or all centroids calculated by the core
-function.
+requested, also the terminal centroids or all centroids returned by the
+core function.
 
 #### lidR::LAS Method
 
 Similar to the `data.frame`/`data.table` method in that it extends the
 input object with a crown ID attribute and, if requested, returns the
-centroids as separate `lidR::LAS` objects. The centroid objects are assigned 
-the metadata of the input object.
+centroids as separate `lidR::LAS` objects. The centroid objects are
+assigned the metadata of the input object.
 
 #### lidR::LAScatalog Method
 
@@ -172,8 +172,8 @@ coordinates.
 The back-end is a small C++ library which implements the AMS3D
 algorithm. The core functionality can be found in:
 
-- `namespace ams3d`: Functionality for calculating a point's terminal centroid 
-  with the AMS3D algorithm
+- `namespace ams3d`: Functionality for calculating a point’s terminal
+  centroid with the AMS3D algorithm
   ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d.h)),
   and
 - `namespace spatial`: a facade to the [Boost
@@ -234,9 +234,9 @@ This namespace only exposes two functions
 - `calculate_terminal_centroid`
 - `calculate_all_centroids`
 
-They do exactly the same thing, i.e. calculate the terminal centroid of a 
-point, except that the `*_plus_centroids` variant also returns all prior 
-centroids which were calculated during the process. Both functions are 
+They do exactly the same thing, i.e. calculate the centroids of a point,
+except that the `*_plus_centroids` variant also returns the prior
+centroids which were calculated during the process. Both functions are
 overloaded three times:
 
 1.  The most simple overload assumes a normalized point cloud with
