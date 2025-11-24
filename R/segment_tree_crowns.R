@@ -1,8 +1,8 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
-# Contact: Leon.Steinmeier@posteo.net
+# Copyright (C) 2025 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+# Contact: timon.miesner@thuenen.de
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,18 +37,29 @@
 #'   columns by looking for the first numeric columns named "x"/"X", "y"/"Y", or
 #'   "z"/"Z". For each instance where it can't find one of those it selects the
 #'   next available numeric column in the table and issues a warning.
-#' @param crown_diameter_to_tree_height,crown_height_to_tree_height Single
-#'   numbers or [SpatRasters][terra::SpatRaster] covering the area of the
-#'   `point_cloud`. The values should be approximate crown diameter and crown
-#'   height to tree height ratios of the trees expected to be found in the point
-#'   cloud. Points will not be segmented wherever a raster contains `NA` values.
+#' @param crown_diameter_to_tree_height Single number or
+#'   [SpatRasters][terra::SpatRaster] covering the area of the `point_cloud`.
+#'   The diameter of the search kernel will be calculated by multiplying this
+#'   value and the height above ground of the kernel center, and adding the
+#'   crown_diameter_constant. For details see "How the algorithm works". Points
+#'   will not be segmented wherever a raster contains `NA` values.
+#' @param crown_length_to_tree_height Single number or
+#'   [SpatRasters][terra::SpatRaster] covering the area of the `point_cloud`.
+#'   The height of the search kernel will be calculated by multiplying this
+#'   value and the height above ground of the kernel center, and adding the
+#'   crown_length_constant. For details see "How the algorithm works". Points
+#'   will not be segmented wherever a raster contains `NA` values.
+#' @param crown_diameter_constant,crown_length_constant Single number >=0.
+#'    Used to determine the dimensions of the search kernel, together with the
+#'    respective ratios to tree height. For details see "How the algorithm
+#'    works".
 #' @param segment_crowns_only_above A single positive number denoting the
 #'   minimum height above ground at which crown IDs will be calculated.
 #'
 #'   Note that points directly below this threshold will still be considered
-#'   during the segmentation if they are within reach of search cylinders
+#'   during the segmentation if they are within reach of search kernels
 #'   constructed at the `segment_crowns_only_above` height. See "How the
-#'   algorithm works" to learn about the search cylinders.
+#'   algorithm works" to learn about the search kernels.
 #' @param ground_height One of
 #'   * `NULL`, indicating that `point_cloud` is normalized with ground height at
 #'     zero.
@@ -68,18 +79,18 @@
 #'   assumed that subsequently calculated centroids have converged to the
 #'   nearest mode. See "How the algorithm works" to learn about centroids and
 #'   modes in the context of the AMS3D algorithm.
-#' @param max_num_centroids_per_mode A single integer. Maximum number of
-#'   centroids calculated before the search for the nearest mode is aborted. See
+#' @param max_iterations_per_point A single integer. Maximum number of
+#'   centroids calculated before the search for the nearest mode stops. See
 #'   "How the algorithm works" to learn about centroids and modes in the context
 #'   of the AMS3D algorithm.
 #' @param dbscan_neighborhood_radius A single number. Radius for the spherical
 #'   DBSCAN neighborhood around a mode. See "How the algorithm works" to learn
 #'   about neighborhoods in the context of the DBSCAN algorithm.
-#' @param min_num_modes_per_neighborhood A single integer. The minimum number of
-#'   modes within a DBSCAN neighborhood at which the mode in the neighborhood's
-#'   center will be treated as a core point. See "How the algorithm works" to
-#'   learn about neighborhoods and core points in the context of the DBSCAN
-#'   algorithm.
+#' @param min_num_points_per_crown A single integer. The minimum number of
+#'   converged centroids within a DBSCAN neighborhood at which the centroid in
+#'   the neighborhood's center will be treated as a core point. See "How the
+#'   algorithm works" to learn about neighborhoods and core points in the
+#'   context of the DBSCANb algorithm.
 #' @param ... Unused.
 #'
 #' @return The point cloud which was passed to the function but extended with a
@@ -87,24 +98,24 @@
 #'   with the value `NA` indicate that a point was not assigned to any
 #'   body.
 #'
-#'   If `also_return_modes` and/or `also_return_centroids` were set to `TRUE`, a
+#'   If `also_return_terminal_centroids` and/or `also_return_all_centroids` were set to `TRUE`, a
 #'   list with at most three named elements in the following order:
 #'   \describe{
 #'     \item{segmented_point_cloud}{
 #'       The segmented point cloud which would have been returned directly if
-#'       `also_return_modes` and `also_return_centroids` had been set
+#'       `also_return_terminal_centroids` and `also_return_all_centroids` had been set
 #'       to `FALSE`.
 #'     }
-#'     \item{modes}{
-#'       If `also_return_modes` was set to `TRUE`, a point cloud of
-#'       the same type as the input point cloud holding the modes calculated
+#'     \item{terminal_centroids}{
+#'       If `also_return_terminal_centroids` was set to `TRUE`, a point cloud of
+#'       the same type as the input point cloud holding the terminal centroids calculated
 #'       with the AMS3D algorithm and two additional columns/attributes. One of
 #'       these columns/attributes holds IDs of the segmented bodies that the
 #'       modes belong to and the other (named "point_index") holds indices to
 #'       the points in the input point cloud.
 #'     }
 #'     \item{centroids}{
-#'       If `also_return_centroids` was set to `TRUE`, a point cloud
+#'       If `also_return_all_centroids` was set to `TRUE`, a point cloud
 #'       of the same type as the input point cloud holding the centroids
 #'       calculated with the AMS3D algorithm and two additional
 #'       columns/attributes. One of these columns/attributes holds IDs of the
@@ -125,40 +136,45 @@
 #'   and height within lidar point clouds. These local maxima are called
 #'   *modes*. The algorithm tries to find the nearest mode for each point. This
 #'   is done by looking at the surrounding points and moving into the direction
-#'   of the highest point density until the nearest mode is reached.
+#'   of the highest point density until the nearest mode is (almost) reached.
 #'
-#'   The surrounding points are found with a three-dimensional search window
-#'   which is roughly shaped like a crown itself, i.e. it is a vertical cylinder
-#'   whose diameter and height are similar to those of the surrounding tree
-#'   crowns. The exact diameter and height are dependent on the cylinder's
-#'   height above ground and are controlled with the two main parameters of the
-#'   algorithm: `crown_diameter_to_tree_height` and
-#'   `crown_height_to_tree_height`.
+#'   The surrounding points are found with a search kernel (a three-dimensional
+#'   search window) which has the shape of a vertical cylinder. According to
+#'   literature, the algorithm works best if the search kernel has roughly the
+#'   size of the surrounding crowns. Therefore, the parameters controlling the
+#'   kernels dimension are simplistically called
+#'   `crown_diameter_to_tree_height`, `crown_diameter_constant`, and
+#'   `crown_lenght...` respectively. The diameter of the kernel is calculated
+#'   from the  height above ground of the kernels center times the value for
+#'   crown_diameter_to_tree_height, plus the crown_diameter constant. The
+#'   height of the kernel is calculated respectively.
 #'
 #'   The direction of the highest point density is found by calculating the
 #'   average position of all points within the cylinder, the cylinder's so
 #'   called *centroid*. In order to move further into the direction of the
 #'   highest point density, a new cylinder is placed on the centroid and a new
-#'   centroid is calculated for that cylinder. This goes on until the cylinders
-#'   "stop moving", i.e. until two subsequently calculated centroids are closer
-#'   to each other than `centroid_convergence_distance`. At this point, the
-#'   most recently calculated centroid, is taken as the original point's nearest
-#'   mode.
+#'   centroid is calculated for that cylinder. This continues on until the
+#'   cylinders "stop moving", i.e. until two subsequently calculated centroids
+#'   are closer to each other than `centroid_convergence_distance`. At this
+#'   point, the most recently calculated centroid, hence called 'terminal
+#'   centroid', is assumed to be close enough to the mode, so that the
+#'   original point can be linked to the respective tree top.
 #'
 #'   It sometimes happens that centroids converge only after a lot of
 #'   iterations. In order to prevent situations where an excessive number of
 #'   centroids is calculated for just one point, the parameter
-#'   `max_num_centroids_per_mode` is used to abort the centroid
+#'   `max_iterations_per_point` is used to stop the centroid
 #'   calculations after a certain number of them has been performed.
-#'   Nonetheless, the last centroid found before the abortion is still taken as
+#'   Nonetheless, the last centroid found before stopping is still taken as
 #'   a good enough guess of the nearest mode's position.
 #'
-#'   After the modes of the individual points have been calculated, it can be
-#'   seen that modes of the same tree crown are positioned very close to each
-#'   other, shortly below their crown's apex. These dense clusters of modes are
+#'   After the terminal centroids of the individual points have been
+#'   calculated, it can be seen that terminal centroids of points belonging to
+#'   the same tree crown are positioned very close to each other, shortly below
+#'   the crown's apex. These dense clusters of terminal centroids are
 #'   identified with the DBSCAN algorithm which assigns a cluster ID to every
-#'   mode. The cluster IDs are then finally connected back to the points of the
-#'   point cloud and used as crown IDs.
+#'   one of them. The cluster IDs are then finally connected back to the points
+#'   of the point cloud and used as crown IDs.
 #'
 #'   The DBSCAN clustering is explained nicely in
 #'   [Wikipedia](https://en.wikipedia.org/wiki/DBSCAN#Preliminary) but here
@@ -169,7 +185,7 @@
 #'
 #'   In order to be core points, points need to have enough neighbors. The
 #'   parameter `dbscan_neighborhood_radius` determines the radius of the
-#'   neighborhood and the parameter `min_num_modes_per_neighborhood`
+#'   neighborhood and the parameter `min_num_points_per_crown`
 #'   determines the minimum number of points in the neighborhood (including the
 #'   to-be-classified one), which are needed for a core point.
 #'
@@ -187,8 +203,13 @@
 #'
 #' @references Ferraz, A., S. Saatchi, C. Mallet, and V. Meyer (2016)
 #'   \emph{Lidar detection of individual tree size in tropical forests}. Remote
-#'   Sensing of Environment 183:318–333.
-#'   \url{https://doi.org/10.1016/j.rse.2016.05.028}.
+#'   Sensing of Environment 183:318–333. <doi:10.1016/j.rse.2016.05.028>
+#' @references Ferraz, A., F. Bretar, S. Jaquemond, G. Gonçalves, L. Pereira,
+#'   M. Tomé, and P. Soares (2012)
+#'   \emph{3-D mapping of a multi-layered Mediteranean forest using ALS data}.
+#'   Remote Sensing of Environment, 121:210-223.
+#'   <doi:10.1016/j.rse.2012.01.020>
+#'
 #'
 #' @example R/examples/segment_tree_crowns_examples.R
 #'
@@ -196,14 +217,16 @@
 methods::setGeneric("segment_tree_crowns",
   function(point_cloud,
            crown_diameter_to_tree_height,
-           crown_height_to_tree_height,
+           crown_length_to_tree_height,
+           crown_diameter_constant = 0,
+           crown_length_constant = 0,
            segment_crowns_only_above = 0,
            ground_height = NULL,
            crown_id_column_name = "crown_id",
            centroid_convergence_distance = 0.01,
-           max_num_centroids_per_mode = 500,
+           max_iterations_per_point = 500,
            dbscan_neighborhood_radius = 0.3,
-           min_num_modes_per_neighborhood = 5,
+           min_num_points_per_crown = 5,
            ...) {
     standardGeneric("segment_tree_crowns")
   },
@@ -218,9 +241,9 @@ methods::setGeneric("segment_tree_crowns",
 #'
 #' @param verbose `TRUE` or `FALSE`. Should the function show a progress bar and
 #'   other runtime information in the console?
-#' @param also_return_modes `TRUE` or `FALSE`. Should mode coordinates be
+#' @param also_return_terminal_centroids `TRUE` or `FALSE`. Should mode coordinates be
 #'   returned as well?
-#' @param also_return_centroids `TRUE` or `FALSE`. Should centroid coordinates
+#' @param also_return_all_centroids `TRUE` or `FALSE`. Should all centroid coordinates
 #'   be returned as well? This slows down processing by a little bit and will
 #'   return a data set which requires at least ~10 times more memory than the
 #'   input point cloud.
@@ -229,95 +252,104 @@ methods::setMethod(
   signature(point_cloud = c("data.frame")),
   function(point_cloud,
            crown_diameter_to_tree_height,
-           crown_height_to_tree_height,
+           crown_length_to_tree_height,
+           crown_diameter_constant,
+           crown_length_constant,
            segment_crowns_only_above,
            ground_height,
            crown_id_column_name,
            centroid_convergence_distance,
-           max_num_centroids_per_mode,
+           max_iterations_per_point,
            dbscan_neighborhood_radius,
-           min_num_modes_per_neighborhood,
+           min_num_points_per_crown,
            verbose = TRUE,
-           also_return_modes = FALSE,
-           also_return_centroids = FALSE) {
+           also_return_terminal_centroids = FALSE,
+           also_return_all_centroids = FALSE) {
     validate_coordinate_table(point_cloud)
-    validate_crown_diameter_to_tree_height(
+    validate_kernel_params(
       crown_diameter_to_tree_height,
-      point_cloud
+      crown_diameter_constant,
+      point_cloud,
+      which = "diameter"
     )
-    validate_crown_height_to_tree_height(
-      crown_height_to_tree_height,
-      point_cloud
+    validate_kernel_params(
+      crown_length_to_tree_height,
+      crown_length_constant,
+      point_cloud,
+      which = "length"
     )
     validate_segment_crowns_only_above(segment_crowns_only_above)
     validate_ground_height(ground_height, point_cloud)
     validate_crown_id_column_name(crown_id_column_name, point_cloud)
     validate_centroid_convergence_distance(centroid_convergence_distance)
-    validate_max_num_centroids_per_mode(max_num_centroids_per_mode)
+    validate_max_iterations_per_point(max_iterations_per_point)
     validate_dbscan_neighborhood_radius(dbscan_neighborhood_radius)
-    validate_min_num_modes_per_neighborhood(min_num_modes_per_neighborhood)
+    validate_min_num_points_per_crown(min_num_points_per_crown)
     validate_verbose(verbose)
-    validate_also_return_modes(also_return_modes)
-    validate_also_return_centroids(also_return_centroids)
+    validate_also_return_terminal_centroids(also_return_terminal_centroids)
+    validate_also_return_all_centroids(also_return_all_centroids)
+
 
     # Segment the point cloud
-    ids_modes_n_centroids <- segment_tree_crowns_core(
+    ids_terminal_centroids <- segment_tree_crowns_core(
       point_cloud,
       segment_crowns_only_above,
       ground_height,
       crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
+      crown_length_to_tree_height,
+      crown_diameter_constant,
+      crown_length_constant,
       verbose,
       centroid_convergence_distance,
-      max_num_centroids_per_mode,
+      max_iterations_per_point,
       dbscan_neighborhood_radius,
-      min_num_modes_per_neighborhood,
-      also_return_modes,
-      also_return_centroids
+      min_num_points_per_crown,
+      also_return_terminal_centroids,
+      also_return_all_centroids
     )
 
     # Bind the IDs to the point cloud data
     if (data.table::is.data.table(point_cloud)) {
       res <- data.table::data.table(
         point_cloud,
-        ids_modes_n_centroids$crown_ids
+        ids_terminal_centroids$crown_ids
       )
     } else {
       res <- cbind(
         point_cloud,
-        ids_modes_n_centroids$crown_ids
+        ids_terminal_centroids$crown_ids
       )
     }
     # Rename the ID column with the requested name
     names(res)[ncol(res)] <- crown_id_column_name
 
     # Return the point cloud with crown IDs if no additional data was requested
-    if (!also_return_modes && !also_return_centroids) {
+    if (!also_return_terminal_centroids && !also_return_all_centroids) {
       return(res)
     } else { # set up a list with the different result data sets
 
       res <- list(segmented_point_cloud = res)
 
-      if (also_return_modes) {
-        # Add the modes to the list
+      if (also_return_terminal_centroids) {
+        # Add the terminal centroids to the list
         if (data.table::is.data.table(point_cloud)) {
-          res[["modes"]] <- ids_modes_n_centroids$mode_coordinates
+          res[["terminal_centroids"]] <- ids_terminal_centroids$terminal_coordinates
         } else {
-          res[["modes"]] <- as.data.frame(
-            ids_modes_n_centroids$mode_coordinates
+          res[["terminal_centroids"]] <- as.data.frame(
+            ids_terminal_centroids$terminal_coordinates
           )
         }
         # Rename the ID column with the requested name
-        names(res$modes)[4] <- crown_id_column_name
+        names(res$terminal_centroids)[4] <- crown_id_column_name
       }
 
-      if (also_return_centroids) {
+      if (also_return_all_centroids) {
         # Add the centroids to the list
         if (data.table::is.data.table(point_cloud)) {
-          res[["centroids"]] <- ids_modes_n_centroids$centroid_coordinates
+          res[["centroids"]] <- ids_terminal_centroids$centroid_coordinates
         } else {
           res[["centroids"]] <- as.data.frame(
-            ids_modes_n_centroids$centroid_coordinates
+            ids_terminal_centroids$centroid_coordinates
           )
         }
         # Rename the ID column with the requested name
@@ -339,8 +371,8 @@ methods::setMethod(
 #'   written into that file as well? See the
 #'   [lidR function add_lasattribute()][lidR::add_lasattribute()] for additional
 #'   details. Will also be used for all attributes of the
-#'   [LAS object(s)][lidR::LAS-class] which are returned if `also_return_modes`
-#'   and/or `also_return_centroids` were set to `TRUE`.
+#'   [LAS object(s)][lidR::LAS-class] which are returned if `also_return_terminal_centroids`
+#'   and/or `also_return_all_centroids` were set to `TRUE`.
 #'
 #'   For [LAScatalogs][lidR::LAScatalog-class], this is only used if the
 #'   result is returned as a [LAS object][lidR::LAS-class] in memory. If the
@@ -360,37 +392,43 @@ methods::setMethod(
   signature(point_cloud = "LAS"),
   function(point_cloud,
            crown_diameter_to_tree_height,
-           crown_height_to_tree_height,
+           crown_length_to_tree_height,
+           crown_diameter_constant,
+           crown_length_constant,
            segment_crowns_only_above,
            ground_height,
            crown_id_column_name,
            centroid_convergence_distance,
-           max_num_centroids_per_mode,
+           max_iterations_per_point,
            dbscan_neighborhood_radius,
-           min_num_modes_per_neighborhood,
+           min_num_points_per_crown,
            verbose = TRUE,
-           also_return_modes = FALSE,
-           also_return_centroids = FALSE,
+           also_return_terminal_centroids = FALSE,
+           also_return_all_centroids = FALSE,
            write_crown_id_also_to_file = FALSE,
            crown_id_file_description = crown_id_column_name) {
-    validate_crown_diameter_to_tree_height(
+    validate_kernel_params(
       crown_diameter_to_tree_height,
-      point_cloud
+      crown_diameter_constant,
+      point_cloud,
+      which = "diameter"
     )
-    validate_crown_height_to_tree_height(
-      crown_height_to_tree_height,
-      point_cloud
+    validate_kernel_params(
+      crown_length_to_tree_height,
+      crown_length_constant,
+      point_cloud,
+      which = "length"
     )
     validate_segment_crowns_only_above(segment_crowns_only_above)
     validate_ground_height(ground_height, point_cloud)
     validate_crown_id_column_name(crown_id_column_name, point_cloud@data)
     validate_centroid_convergence_distance(centroid_convergence_distance)
-    validate_max_num_centroids_per_mode(max_num_centroids_per_mode)
+    validate_max_iterations_per_point(max_iterations_per_point)
     validate_dbscan_neighborhood_radius(dbscan_neighborhood_radius)
-    validate_min_num_modes_per_neighborhood(min_num_modes_per_neighborhood)
+    validate_min_num_points_per_crown(min_num_points_per_crown)
     validate_verbose(verbose)
-    validate_also_return_modes(also_return_modes)
-    validate_also_return_centroids(also_return_centroids)
+    validate_also_return_terminal_centroids(also_return_terminal_centroids)
+    validate_also_return_all_centroids(also_return_all_centroids)
     validate_write_crown_id_also_to_file(write_crown_id_also_to_file)
     validate_crown_id_file_description(crown_id_file_description)
 
@@ -402,40 +440,60 @@ methods::setMethod(
       )
     }
 
+    # If crown_diameter_to_tree_height is an algorithm name, calculate a raster
+    if (is.character(crown_diameter_to_tree_height)) {
+      if (crown_diameter_to_tree_height %in% c("li", "li2012")) {
+        crown_diameter_to_tree_height <-
+          crownsegmentr::li_diameter_raster(point_cloud,
+            crown_diameter_constant,
+            ground_height = ground_height
+          )
+      } else if (crown_diameter_to_tree_height %in% c("ws", "watershed")) {
+        crown_diameter_to_tree_height <-
+          crownsegmentr::watershed_diameter_raster(point_cloud,
+            crown_diameter_constant,
+            ground_height = ground_height
+          )
+      }
+    }
+
+
     # Segment the point cloud
-    ids_modes_n_centroids <- segment_tree_crowns_core(
+    ids_terminal_centroids <- segment_tree_crowns_core(
       point_cloud@data,
       segment_crowns_only_above,
       ground_height,
       crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
+      crown_length_to_tree_height,
+      crown_diameter_constant,
+      crown_length_constant,
       verbose,
       centroid_convergence_distance,
-      max_num_centroids_per_mode,
+      max_iterations_per_point,
       dbscan_neighborhood_radius,
-      min_num_modes_per_neighborhood,
-      also_return_modes,
-      also_return_centroids
+      min_num_points_per_crown,
+      also_return_terminal_centroids,
+      also_return_all_centroids
     )
 
     # Bind the IDs to the point cloud data using the requested name
     if (write_crown_id_also_to_file) { # IDs will be saved with LAS files
       res <- lidR::add_lasattribute(
         las = point_cloud,
-        x = ids_modes_n_centroids$crown_ids,
+        x = ids_terminal_centroids$crown_ids,
         name = crown_id_column_name,
         desc = crown_id_file_description
       )
     } else { # IDs will only be available in memory
       res <- lidR::add_attribute(
         las = point_cloud,
-        x = ids_modes_n_centroids$crown_ids,
+        x = ids_terminal_centroids$crown_ids,
         name = crown_id_column_name
       )
     }
 
     # Return the point cloud with crown IDs if no additional data was requested
-    if (!also_return_modes && !also_return_centroids) {
+    if (!also_return_terminal_centroids && !also_return_all_centroids) {
       return(res)
     } else { # set up a list with the different result data sets
 
@@ -444,13 +502,13 @@ methods::setMethod(
       # For R CMD check which sees variables in data.table syntax as global
       . <- x <- y <- z <- NULL
 
-      if (also_return_modes) {
+      if (also_return_terminal_centroids) {
         # Create a LAS object storing the mode coordinates
-        res[["modes"]] <- suppressWarnings(
+        res[["terminal_centroids"]] <- suppressWarnings(
           lidR::las_update(
             lidR::las_quantize(
               lidR::LAS(
-                ids_modes_n_centroids$mode_coordinates[
+                ids_terminal_centroids$terminal_coordinates[
                   , .(X = x, Y = y, Z = z)
                 ],
                 header = point_cloud@header
@@ -459,23 +517,23 @@ methods::setMethod(
           )
         )
 
-        # Add the crown IDs and point indices to the modes
-        res$modes <- lidR::add_attribute(
+        # Add the crown IDs and point indices to the terminal centroids
+        res$terminal_centroids <- lidR::add_attribute(
           las = lidR::add_attribute(
-            las = res$modes,
-            x = ids_modes_n_centroids$mode_coordinates$crown_id,
+            las = res$terminal_centroids,
+            x = ids_terminal_centroids$terminal_coordinates$crown_id,
             name = crown_id_column_name
           ),
-          x = ids_modes_n_centroids$mode_coordinates$point_index,
+          x = ids_terminal_centroids$terminal_coordinates$point_index,
           name = "point_index"
         )
 
         # If requested for the crown IDs, make the crown ID and point index
-        # attributes of the modes LAS "file-writable" as well
+        # attributes of the terminal_centroids LAS "file-writable" as well
         if (write_crown_id_also_to_file) {
-          res$modes <- lidR::add_lasattribute(
+          res$terminal_centroids <- lidR::add_lasattribute(
             las = lidR::add_lasattribute(
-              las = res$modes,
+              las = res$terminal_centroids,
               name = crown_id_column_name,
               desc = crown_id_file_description
             ),
@@ -483,15 +541,15 @@ methods::setMethod(
             desc = "Index of original points"
           )
         }
-      } # end if also_return_modes
+      } # end if also_return_terminal_centroids
 
-      if (also_return_centroids) {
+      if (also_return_all_centroids) {
         # Create a LAS object storing the centroid coordinates
         res[["centroids"]] <- suppressWarnings(
           lidR::las_update(
             lidR::las_quantize(
               lidR::LAS(
-                ids_modes_n_centroids$centroid_coordinates[
+                ids_terminal_centroids$centroid_coordinates[
                   , .(X = x, Y = y, Z = z)
                 ],
                 header = point_cloud@header
@@ -504,10 +562,10 @@ methods::setMethod(
         res$centroids <- lidR::add_attribute(
           las = lidR::add_attribute(
             las = res$centroids,
-            x = ids_modes_n_centroids$centroid_coordinates$crown_id,
+            x = ids_terminal_centroids$centroid_coordinates$crown_id,
             name = crown_id_column_name
           ),
-          x = ids_modes_n_centroids$centroid_coordinates$point_index,
+          x = ids_terminal_centroids$centroid_coordinates$point_index,
           name = "point_index"
         )
 
@@ -524,7 +582,7 @@ methods::setMethod(
             desc = "Index of original points"
           )
         }
-      } # end if also_return_centroids
+      } # end if also_return_all_centroids
 
       return(res)
     } # end returning mode and/or centroid coordinates
@@ -533,10 +591,11 @@ methods::setMethod(
 
 
 # Method for lidR::LAScatalog Objects ---------------------------------
+utils::globalVariables(c("crown_id_column_name", "..crown_id_column_name"))
 
 #' @describeIn segment_tree_crowns Segments the point cloud data of a
 #'   [LAScatalog][lidR::LAScatalog-class]. This method does not support
-#'   additionally returning modes and/or centroids. Instead of the verbose
+#'   additionally returning centroids. Instead of the verbose
 #'   parameter use the LAScatalog's progress option (see the
 #'   [LAScatalog documentation][lidR::LAScatalog-class] -> "Processing options"
 #'   -> "progress").
@@ -547,25 +606,30 @@ methods::setMethod(
   signature(point_cloud = "LAScatalog"),
   function(point_cloud,
            crown_diameter_to_tree_height,
-           crown_height_to_tree_height,
+           crown_length_to_tree_height,
+           crown_diameter_constant,
+           crown_length_constant,
            segment_crowns_only_above,
            ground_height,
            crown_id_column_name,
            centroid_convergence_distance,
-           max_num_centroids_per_mode,
+           max_iterations_per_point,
            dbscan_neighborhood_radius,
-           min_num_modes_per_neighborhood,
+           min_num_points_per_crown,
            write_crown_id_also_to_file = TRUE,
            crown_id_file_description = crown_id_column_name) {
     validate_scale_n_offset_are_consistent(point_cloud)
-
-    validate_crown_diameter_to_tree_height(
+    validate_kernel_params(
       crown_diameter_to_tree_height,
-      point_cloud
+      crown_diameter_constant,
+      point_cloud,
+      which = "diameter"
     )
-    validate_crown_height_to_tree_height(
-      crown_height_to_tree_height,
-      point_cloud
+    validate_kernel_params(
+      crown_length_to_tree_height,
+      crown_length_constant,
+      point_cloud,
+      which = "length"
     )
     # validate_crown_id_column_name(crown_id_column_name, point_cloud@data)
     # TODO find out whether there is a way to validate this here instead of in
@@ -573,9 +637,9 @@ methods::setMethod(
     validate_segment_crowns_only_above(segment_crowns_only_above)
     validate_ground_height(ground_height, point_cloud)
     validate_centroid_convergence_distance(centroid_convergence_distance)
-    validate_max_num_centroids_per_mode(max_num_centroids_per_mode)
+    validate_max_iterations_per_point(max_iterations_per_point)
     validate_dbscan_neighborhood_radius(dbscan_neighborhood_radius)
-    validate_min_num_modes_per_neighborhood(min_num_modes_per_neighborhood)
+    validate_min_num_points_per_crown(min_num_points_per_crown)
     write_crown_id_also_to_file <-
       validate_write_crown_id_also_to_file_for_LAScatalogs(
         write_crown_id_also_to_file,
@@ -601,17 +665,19 @@ methods::setMethod(
       segmented_las <- segment_tree_crowns(
         point_cloud = las,
         crown_diameter_to_tree_height,
-        crown_height_to_tree_height,
+        crown_length_to_tree_height,
+        crown_diameter_constant,
+        crown_length_constant,
         segment_crowns_only_above,
         ground_height,
         crown_id_column_name,
         centroid_convergence_distance,
-        max_num_centroids_per_mode,
+        max_iterations_per_point,
         dbscan_neighborhood_radius,
-        min_num_modes_per_neighborhood,
+        min_num_points_per_crown,
         verbose = FALSE,
-        also_return_modes = FALSE,
-        also_return_centroids = FALSE,
+        also_return_terminal_centroids = FALSE,
+        also_return_all_centroids = FALSE,
         write_crown_id_also_to_file,
         crown_id_file_description
       )

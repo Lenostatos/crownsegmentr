@@ -1,8 +1,8 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2020 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
-# Contact: Leon.Steinmeier@posteo.net
+# Copyright (C) 2025 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+# Contact: timon.miesner@thuenen.de
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -94,6 +94,12 @@ usethis::use_author("Leon", "Steinmeier",
 usethis::use_author("Nikolai", "Knapp",
   email = "nikolai.knapp@thuenen.de",
   comment = "Initialized and motivated the development of the package and provided an R draft of the AMS3D algorithm.",
+  role = "aut"
+)
+
+usethis::use_author("Timon", "Miesner",
+  email = "timon.miesner@thuenen.de",
+  comment = c(ORCID = "0000-0001-5091-7456", "Added optimization tools and further options."),
   role = "aut"
 )
 

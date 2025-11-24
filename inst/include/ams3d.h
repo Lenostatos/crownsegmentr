@@ -1,8 +1,8 @@
 // This file is part of crownsegmentr, an R package for identifying tree crowns
 // within 3D point clouds.
 //
-// Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
-// Contact: Leon.Steinmeier@posteo.net
+// Copyright (C) 2025 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+// Contact: timon.miesner@thuenen.de
 //
 // crownsegmentr is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -56,10 +56,10 @@
  *  7. The centroid calculated last is then treated as the original point's
  *  mode.
  *
- *  It has been observed that the modes of points that belong to the same tree
- *  crown cluster shortly below the crown apex. In order to assign crown IDs to
- *  points, these clusters have to be identified with another algorithm, e.g.
- *  DBSCAN.
+ *  It has been observed that the terminal centroids of points that belong to
+ *  the same tree crown cluster shortly below the crown apex. In order to
+ *  assign crown IDs to points, these clusters have to be identified with
+ *  another algorithm, e.g. DBSCAN.
  *
  *
  *  \par On Compliance with the Equations Published by Ferraz et. al 2012
@@ -93,19 +93,21 @@ namespace ams3d
      *      any of \p point's coordinate values are non-finite or \p point lies
      *      below \p min_point_height_above_ground.
      */
-    spatial::point_3d_t calculate_a_single_mode (
+    spatial::point_3d_t calculate_terminal_centroid (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
         const double crown_diameter_to_tree_height,
-        const double crown_height_to_tree_height,
+        const double crown_length_to_tree_height,
+        const double crown_diameter_constant,
+        const double crown_length_constant,
         const spatial::distance_t &centroid_convergence_distance,
-        const int max_num_centroids_per_mode
+        const int max_iterations_per_point
     );
 
     /** \brief Calculates the mode of \p point within \p indexed_point_cloud.
      *
-     *  Same as calculate_a_single_mode but also returns the centroids.
+     *  Same as calculate_terminal_centroid but also returns the centroids.
      *
      *  \return A pair with the calculated mode at the first position and an
      *      array of the calculated centroids at the second position. If any
@@ -114,19 +116,21 @@ namespace ams3d
      *      NaN coordinate values paired with an empty centroid vector.
      */
     std::pair< spatial::point_3d_t, std::vector< spatial::point_3d_t > >
-    calculate_a_single_mode_plus_centroids (
+    calculate_all_centroids (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
         const double crown_diameter_to_tree_height,
-        const double crown_height_to_tree_height,
+        const double crown_length_to_tree_height,
+        const double crown_diameter_constant,
+        const double crown_length_constant,
         const spatial::distance_t &centroid_convergence_distance,
-        const int max_num_centroids_per_mode
+        const int max_iterations_per_point
     );
 
     /** \brief Calculates the mode of \p point within \p indexed_point_cloud.
      *
-     *  Same as calculate_a_single_mode but assumes absolute point heights and
+     *  Same as calculate_terminal_centroid but assumes absolute point heights and
      *      calculates local above ground heights using the
      *      \p ground_height_grid.
      *
@@ -138,20 +142,22 @@ namespace ams3d
      *      NaN ground height values are encountered during the calculation, the
      *      function returns a mode with NaN coordinate values.
      */
-    spatial::point_3d_t calculate_a_single_mode (
+    spatial::point_3d_t calculate_terminal_centroid (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
         const spatial::Raster< spatial::coordinate_t > &ground_height_grid,
         const double crown_diameter_to_tree_height,
-        const double crown_height_to_tree_height,
+        const double crown_length_to_tree_height,
+        const double crown_diameter_constant,
+        const double crown_length_constant,
         const spatial::distance_t &centroid_convergence_distance,
-        const int max_num_centroids_per_mode
+        const int max_iterations_per_point
     );
 
     /** \brief Calculates the mode of \p point within \p indexed_point_cloud.
      *
-     *  Same as calculate_a_single_mode_plus_centroids but assumes absolute
+     *  Same as calculate_all_centroids but assumes absolute
      *      point heights and calculates local above ground heights using the
      *      \p ground_height_grid.
      *
@@ -163,57 +169,61 @@ namespace ams3d
      *      with NaN coordinate values paired with an empty centroid vector.
      */
     std::pair< spatial::point_3d_t, std::vector< spatial::point_3d_t > >
-    calculate_a_single_mode_plus_centroids (
+    calculate_all_centroids (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
         const spatial::Raster< spatial::coordinate_t > &ground_height_grid,
         const double crown_diameter_to_tree_height,
-        const double crown_height_to_tree_height,
+        const double crown_length_to_tree_height,
+        const double crown_diameter_constant,
+        const double crown_length_constant,
         const spatial::distance_t &centroid_convergence_distance,
-        const int max_num_centroids_per_mode
+        const int max_iterations_per_point
     );
 
     /** \brief Calculates the mode of \p point within \p indexed_point_cloud.
      *
-     *  Same as calculate_a_single_mode for absolute point heights but also uses
-     *      a grid for the crown diameter and crown height to tree height
-     *      ratios.
+     *  Same as calculate_terminal_centroid for absolute point heights but also uses
+     *      a grid for crown_diameter_to_tree_height and
+     *      crown_length_to_tree_height.
      *
      *  \param crown_diameter_to_tree_height_grid A raster object expected to
-     *      hold crown diameter to tree height ratio values for the entire area
-     *      of the point cloud.
-     *  \param crown_height_to_tree_height_grid A raster object expected to hold
-     *      crown diameter to tree height ratio values for the entire area of
-     *      the point cloud.
+     *      hold crown diameter to tree height
+     *      values for the entire area of the point cloud.
+     *  \param crown_length_to_tree_height_grid A raster object expected to hold
+     *      crown length to tree height values for
+     *      the entire area of the point cloud.
      *
      *  \return The mode of \p point. If any coordinate value of \p point is
      *      non-finite, \p point lies below \p min_point_height_above_ground, or
      *      NaN ground height values are encountered during the calculation, the
      *      function returns a mode with NaN coordinate values.
      */
-    spatial::point_3d_t calculate_a_single_mode (
+    spatial::point_3d_t calculate_terminal_centroid (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
         const spatial::I_Raster< spatial::coordinate_t > &ground_height_grid,
         const spatial::I_Raster< double > &crown_diameter_to_tree_height_grid,
-        const spatial::I_Raster< double > &crown_height_to_tree_height_grid,
+        const spatial::I_Raster< double > &crown_length_to_tree_height_grid,
+        const double crown_diameter_constant,
+        const double crown_length_constant,
         const spatial::distance_t &centroid_convergence_distance,
-        const int max_num_centroids_per_mode
+        const int max_iterations_per_point
     );
 
     /** \brief Calculates the mode of \p point within \p indexed_point_cloud.
      *
-     *  Same as calculate_a_single_mode_plus_centroids for absolute point
-     *      heights but also uses a grid for the crown diameter and crown height
+     *  Same as calculate_all_centroids for absolute point
+     *      heights but also uses a grid for the crown diameter and crown length
      *      to tree height ratios.
      *
      *  \param crown_diameter_to_tree_height_grid A raster object expected to
-     *      hold crown diameter to tree height ratio values for the entire area
+     *      hold crown diameter to tree height values for the entire area
      *      of the point cloud.
-     *  \param crown_height_to_tree_height_grid A raster object expected to hold
-     *      crown diameter to tree height ratio values for the entire area of
+     *  \param crown_length_to_tree_height_grid A raster object expected to hold
+     *      crown length to tree height values for the entire area of
      *      the point cloud.
      *
      *  \return A pair with the calculated mode at the first position and an
@@ -224,15 +234,17 @@ namespace ams3d
      *      with NaN coordinate values paired with an empty centroid vector.
      */
     std::pair< spatial::point_3d_t, std::vector< spatial::point_3d_t > >
-    calculate_a_single_mode_plus_centroids (
+    calculate_all_centroids (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
         const spatial::I_Raster< spatial::coordinate_t > &ground_height_grid,
         const spatial::I_Raster< double > &crown_diameter_to_tree_height_grid,
-        const spatial::I_Raster< double > &crown_height_to_tree_height_grid,
+        const spatial::I_Raster< double > &crown_length_to_tree_height_grid,
+        const double crown_diameter_constant,
+        const double crown_length_constant,
         const spatial::distance_t &centroid_convergence_distance,
-        const int max_num_centroids_per_mode
+        const int max_iterations_per_point
     );
 
 
@@ -310,13 +322,15 @@ namespace ams3d
          *  @param center A three-dimensional point.
          *  @param crown_diameter_to_tree_height The estimated ratio of crown
          *      diameter and tree height.
-         *  @param crown_height_to_tree_height The estimated ratio of crown
+         *  @param crown_length_to_tree_height The estimated ratio of crown
          *      height and tree height.
          */
         _Kernel (
             const spatial::point_3d_t &center,
             const double crown_diameter_to_tree_height,
-            const double crown_height_to_tree_height
+            const double crown_length_to_tree_height,
+            const double crown_diameter_constant,
+            const double crown_length_constant
         );
 
         /** \brief Constructs an asymmetric kernel around \p center.
@@ -328,7 +342,9 @@ namespace ams3d
             const spatial::point_3d_t &center,
             const spatial::coordinate_t &ground_height_at_center,
             const double crown_diameter_to_tree_height,
-            const double crown_height_to_tree_height
+            const double crown_length_to_tree_height,
+            const double crown_diameter_constant,
+            const double crown_length_constant
         );
 
         /** Returns the kernel's weighted centroid given a point cloud. */
@@ -338,18 +354,22 @@ namespace ams3d
 
         /** Provides the above-ground height of a Kernel's bottom side given
          *      the height of the point around which the kernel should be
-         *      constructed and a crown height to tree height ratio.
+         *      constructed and a kernel height slope ratio.
          */
         static spatial::coordinate_t bottom_height_above_ground_with (
             const spatial::coordinate_t &point_height_above_ground,
-            const double crown_height_to_tree_height
+            const double crown_length_to_tree_height,
+            const double crown_length_constant
         ) {
             spatial::coordinate_t bottom_height_above_ground {
                 point_height_above_ground -
-                point_height_above_ground * crown_height_to_tree_height * 0.25
+                (point_height_above_ground
+                   * crown_length_to_tree_height
+                   + crown_length_constant)
+              * 0.25
             };
 
-            return (bottom_height_above_ground < 0)
+            return (bottom_height_above_ground < 0 )//-0.25 * crown_length_constant)
                         ? spatial::coordinate_t{ 0 }
                         : bottom_height_above_ground;
         }
@@ -357,31 +377,34 @@ namespace ams3d
         static std::unique_ptr< spatial::I_Raster < spatial::coordinate_t > >
         bottom_height_above_ground_grid_with (
             const spatial::coordinate_t &point_height_above_ground,
-            const spatial::I_Raster< double > &crown_height_to_tree_height_grid
+            const spatial::I_Raster< double > &crown_length_to_tree_height_grid,
+            const double crown_length_constant
         ) {
             std::vector< spatial::coordinate_t > bottom_heights{};
-            bottom_heights.reserve( crown_height_to_tree_height_grid.values().size() );
+            bottom_heights.reserve( crown_length_to_tree_height_grid.values().size() );
 
             std::transform (
-                crown_height_to_tree_height_grid.values().cbegin(),
-                crown_height_to_tree_height_grid.values().cend(),
+                crown_length_to_tree_height_grid.values().cbegin(),
+                crown_length_to_tree_height_grid.values().cend(),
                 std::back_inserter(bottom_heights),
                 // TODO use the above function here either inside of the lambda
                 // or (if possible) instead of the lambda.
-                [&](const double crown_height_to_tree_height)
+                [&](const double crown_length_to_tree_height)
                 {
                     spatial::coordinate_t bottom_height_above_ground {
                         point_height_above_ground -
-                        point_height_above_ground * crown_height_to_tree_height * 0.25
+                        (point_height_above_ground
+                           * crown_length_to_tree_height
+                           + crown_length_constant) * 0.25
                     };
 
-                    return (bottom_height_above_ground < 0)
+                    return (bottom_height_above_ground < 0)//-0.25 * crown_length_constant)
                                 ? spatial::coordinate_t{ 0 }
                                 : bottom_height_above_ground;
                 }
             );
 
-            return crown_height_to_tree_height_grid.copy_w_new_values( bottom_heights );
+            return crown_length_to_tree_height_grid.copy_w_new_values( bottom_heights );
         }
     };
 

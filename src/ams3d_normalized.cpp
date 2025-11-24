@@ -1,8 +1,8 @@
 // This file is part of crownsegmentr, an R package for identifying tree crowns
 // within 3D point clouds.
 //
-// Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
-// Contact: Leon.Steinmeier@posteo.net
+// Copyright (C) 2025 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+// Contact: timon.miesner@thuenen.de
 //
 // crownsegmentr is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,17 +25,19 @@
 
 namespace ams3d
 {
-    spatial::point_3d_t calculate_a_single_mode (
+    spatial::point_3d_t calculate_terminal_centroid (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
         const double crown_diameter_to_tree_height,
-        const double crown_height_to_tree_height,
+        const double crown_length_to_tree_height,
+        const double crown_diameter_constant,
+        const double crown_length_constant,
         const spatial::distance_t &centroid_convergence_distance,
-        const int max_num_centroids_per_mode
+        const int max_iterations_per_point
     ) {
         // If any coordinate value of point is non-finite or point lies below
-        // the minimum point height, return an NaN mode.
+        // the minimum point height, return NaN.
         if (spatial::has_non_finite_coordinate_value( point ) ||
             spatial::get_z( point ) < min_point_height_above_ground)
         {
@@ -54,7 +56,9 @@ namespace ams3d
             _Kernel kernel {
                 current_centroid,
                 crown_diameter_to_tree_height,
-                crown_height_to_tree_height
+                crown_length_to_tree_height,
+                crown_diameter_constant,
+                crown_length_constant
             };
 
             // Store the current centroid and calculate a new centroid with the
@@ -69,7 +73,7 @@ namespace ams3d
         while (
             spatial::distance( former_centroid, current_centroid ) >
                 centroid_convergence_distance
-            && num_calculated_centroids < max_num_centroids_per_mode
+            && num_calculated_centroids < max_iterations_per_point
         );
 
         return current_centroid;
@@ -77,17 +81,19 @@ namespace ams3d
 
 
     std::pair< spatial::point_3d_t, std::vector< spatial::point_3d_t > >
-    calculate_a_single_mode_plus_centroids (
+    calculate_all_centroids (
         const spatial::point_3d_t &point,
         const spatial::index_for_3d_points_t &indexed_point_cloud,
         const spatial::coordinate_t &min_point_height_above_ground,
         const double crown_diameter_to_tree_height,
-        const double crown_height_to_tree_height,
+        const double crown_length_to_tree_height,
+        const double crown_diameter_constant,
+        const double crown_length_constant,
         const spatial::distance_t &centroid_convergence_distance,
-        const int max_num_centroids_per_mode
+        const int max_iterations_per_point
     ) {
         // If any coordinate value of point is non-finite or point lies below
-        // the minimum point height, return an NaN mode.
+        // the minimum point height, return NaN.
         if (spatial::has_non_finite_coordinate_value( point ) ||
             spatial::get_z( point ) < min_point_height_above_ground)
         {
@@ -113,7 +119,9 @@ namespace ams3d
             _Kernel kernel {
                 current_centroid,
                 crown_diameter_to_tree_height,
-                crown_height_to_tree_height
+                crown_length_to_tree_height,
+                crown_diameter_constant,
+                crown_length_constant
             };
 
             // Store the current centroid and calculate a new centroid with the
@@ -131,10 +139,10 @@ namespace ams3d
         while (
             spatial::distance( former_centroid, current_centroid ) >
                 centroid_convergence_distance
-            && num_calculated_centroids < max_num_centroids_per_mode
+            && num_calculated_centroids < max_iterations_per_point
         );
 
-        // Return the last centroid as the mode plus all centroids in an array.
+        // Return the terminal centroid plus all prior centroids in an array.
         return std::pair{ current_centroid, centroids };
     }
 }

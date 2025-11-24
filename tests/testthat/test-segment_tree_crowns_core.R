@@ -1,8 +1,8 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
-# Contact: Leon.Steinmeier@posteo.net
+# Copyright (C) 2025 Leon Steinmeier, Timon Miesner, Nikolai Knapp
+# Contact: timon.miesner@thuenen.de
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,14 +42,16 @@ test_that("the core function works with 'normal' arguments", {
     ground_height = NULL,
     segment_crowns_only_above = 0,
     crown_diameter_to_tree_height = 0.3,
-    crown_height_to_tree_height = 0.5,
+    crown_length_to_tree_height = 0.5,
+    crown_diameter_constant = 1,
+    crown_length_constant = 1,
     verbose = TRUE,
-    also_return_modes = FALSE,
-    also_return_centroids = FALSE,
+    also_return_terminal_centroids = FALSE,
+    also_return_all_centroids = FALSE,
     centroid_convergence_distance = 0.02,
-    max_num_centroids_per_mode = 200,
+    max_iterations_per_point = 200,
     dbscan_neighborhood_radius = 0.3,
-    min_num_modes_per_neighborhood = 5
+    min_num_points_per_crown = 5
   )
   expect_length(test_output, 1)
   expect_named(test_output, expected = "crown_ids")
@@ -57,37 +59,39 @@ test_that("the core function works with 'normal' arguments", {
   expect_true(is.numeric(test_output$crown_ids))
   expect_length(test_output$crown_ids, lidR::npoints(test_point_cloud))
 
-  # Request modes
+  # Request terminal centroids
   test_output <- segment_tree_crowns_core(
     test_point_cloud@data,
     ground_height = NULL,
     segment_crowns_only_above = 0,
     crown_diameter_to_tree_height = 0.3,
-    crown_height_to_tree_height = 0.5,
+    crown_length_to_tree_height = 0.5,
+    crown_diameter_constant = 1,
+    crown_length_constant = 1,
     verbose = TRUE,
-    also_return_modes = TRUE,
-    also_return_centroids = FALSE,
+    also_return_terminal_centroids = TRUE,
+    also_return_all_centroids = FALSE,
     centroid_convergence_distance = 0.02,
-    max_num_centroids_per_mode = 200,
+    max_iterations_per_point = 200,
     dbscan_neighborhood_radius = 0.3,
-    min_num_modes_per_neighborhood = 5
+    min_num_points_per_crown = 5
   )
   expect_length(test_output, 2)
   expect_named(test_output,
-    expected = c("crown_ids", "mode_coordinates")
+    expected = c("crown_ids", "terminal_coordinates")
   )
   # test crown IDs
   expect_true(is.numeric(test_output$crown_ids))
-  # test modes
-  expect_s3_class(test_output$mode_coordinates,
+  # test terminal_centroids
+  expect_s3_class(test_output$terminal_coordinates,
     class = c("data.table", "data.frame"),
     exact = TRUE
   )
-  expect_length(test_output$mode_coordinates, 5)
-  expect_named(test_output$mode_coordinates,
+  expect_length(test_output$terminal_coordinates, 5)
+  expect_named(test_output$terminal_coordinates,
     expected = c("x", "y", "z", "crown_id", "point_index")
   )
-  expect_setequal(test_output$mode_coordinates$crown_id,
+  expect_setequal(test_output$terminal_coordinates$crown_id,
     expected = test_output$crown_ids
   )
 
@@ -97,14 +101,16 @@ test_that("the core function works with 'normal' arguments", {
     ground_height = NULL,
     segment_crowns_only_above = 0,
     crown_diameter_to_tree_height = 0.3,
-    crown_height_to_tree_height = 0.5,
+    crown_length_to_tree_height = 0.5,
+    crown_diameter_constant = 1,
+    crown_length_constant = 1,
     verbose = TRUE,
-    also_return_modes = FALSE,
-    also_return_centroids = TRUE,
+    also_return_terminal_centroids = FALSE,
+    also_return_all_centroids = TRUE,
     centroid_convergence_distance = 0.02,
-    max_num_centroids_per_mode = 200,
+    max_iterations_per_point = 200,
     dbscan_neighborhood_radius = 0.3,
-    min_num_modes_per_neighborhood = 5
+    min_num_points_per_crown = 5
   )
   expect_length(test_output, 2)
   expect_named(test_output,
@@ -129,37 +135,39 @@ test_that("the core function works with 'normal' arguments", {
     expected = nrow(test_point_cloud@data)
   )
 
-  # Request modes and centroids
+  # Request all centroids
   test_output <- segment_tree_crowns_core(
     test_point_cloud@data,
     ground_height = NULL,
     segment_crowns_only_above = 0,
     crown_diameter_to_tree_height = 0.3,
-    crown_height_to_tree_height = 0.5,
+    crown_length_to_tree_height = 0.5,
+    crown_diameter_constant = 1,
+    crown_length_constant = 1,
     verbose = TRUE,
-    also_return_modes = TRUE,
-    also_return_centroids = TRUE,
+    also_return_terminal_centroids = TRUE,
+    also_return_all_centroids = TRUE,
     centroid_convergence_distance = 0.02,
-    max_num_centroids_per_mode = 200,
+    max_iterations_per_point = 200,
     dbscan_neighborhood_radius = 0.3,
-    min_num_modes_per_neighborhood = 5
+    min_num_points_per_crown = 5
   )
   expect_length(test_output, 3)
   expect_named(test_output,
-    expected = c("crown_ids", "mode_coordinates", "centroid_coordinates")
+    expected = c("crown_ids", "terminal_coordinates", "centroid_coordinates")
   )
   # test crown IDs
   expect_true(is.numeric(test_output$crown_ids))
-  # test modes
-  expect_s3_class(test_output$mode_coordinates,
+  # test terminal centroids
+  expect_s3_class(test_output$terminal_coordinates,
     class = c("data.table", "data.frame"),
     exact = TRUE
   )
-  expect_length(test_output$mode_coordinates, 5)
-  expect_named(test_output$mode_coordinates,
+  expect_length(test_output$terminal_coordinates, 5)
+  expect_named(test_output$terminal_coordinates,
     expected = c("x", "y", "z", "crown_id", "point_index")
   )
-  expect_setequal(test_output$mode_coordinates$crown_id,
+  expect_setequal(test_output$terminal_coordinates$crown_id,
     expected = test_output$crown_ids
   )
   # test centroids
@@ -192,9 +200,9 @@ test_that("the core function works with 'normal' arguments", {
   #   colorPalette = random_crown_id_colors,
   #   size = 5
   # )
-  # # Plot the segmented mode coordinates
+  # # Plot the terminal centroids
   # lidR::plot(
-  #   lidR::LAS(test_output$mode_coordinates[, .(X = x, Y = y, Z = z, crown_id)]),
+  #   lidR::LAS(test_output$terminal_coordinates[, .(X = x, Y = y, Z = z, crown_id)]),
   #   color = "crown_id",
   #   colorPalette = random_crown_id_colors,
   #   size = 5

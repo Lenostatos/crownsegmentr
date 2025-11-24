@@ -1,8 +1,8 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
-# Contact: Leon.Steinmeier@posteo.net
+# Copyright (C) 2025 Leon Steinmeier, Timon Miesner, Nikolai Knapp
+# Contact: timon.miesner@thuenen.de
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -69,9 +69,6 @@ assert_that_raster_covers_las_point_cloud <- function(
   )
 }
 
-assert_that_raster_crs_matches_las_crs <- function(raster, las, message) {
-  assert_that(terra::crs(raster) == lidR::st_crs(las)$wkt, msg = message)
-}
 
 assert_that_raster_fits_point_cloud <- function(raster, point_cloud, raster_name) {
   if (inherits(point_cloud, "data.frame")) {
@@ -86,14 +83,6 @@ assert_that_raster_fits_point_cloud <- function(raster, point_cloud, raster_name
   } else if (methods::is(point_cloud, "LAS") ||
     methods::is(point_cloud, "LAScatalog")) {
     # if point_cloud is a LAS or LAScatalog object
-    assert_that_raster_crs_matches_las_crs(
-      raster = raster,
-      las = point_cloud,
-      message = paste(
-        "The CRS of the", raster_name, "raster does not match with the CRS of",
-        "the point cloud."
-      )
-    )
 
     assert_that_raster_covers_las_point_cloud(
       raster = raster,
@@ -152,109 +141,132 @@ validate_coordinate_table <- function(coordinate_table) {
   ))
 }
 
-validate_crown_diameter_to_tree_height <- function(
-    crown_diameter_to_tree_height,
-    point_cloud) {
-  # if crown_diameter_to_tree_height is a raster
-  if (methods::is(crown_diameter_to_tree_height, "SpatRaster")) {
-    if (terra::nlyr(crown_diameter_to_tree_height) > 1) {
-      warning(paste(
-        "crown_diameter_to_tree_height has more than one raster layer. Only",
-        "the first layer is considered."
-      ))
+validate_kernel_params <- function(
+    kernel_to_tree_height,
+    kernel_constant,
+    point_cloud,
+    which = "diameter") {
+  # intercept is numeric and not NA
+  assert_that(
+    assertthat::is.number(kernel_constant),
+    assertthat::noNA(kernel_constant)
+  )
+
+  assert_that(
+    kernel_constant >= 0,
+    msg = paste(
+      "Used a crown",
+      which,
+      "constant below 0 which doesn't work."
+    )
+  )
+
+
+  # if kernel_to_tree_height is a raster
+  if (methods::is(kernel_to_tree_height, "SpatRaster")) {
+    if (terra::nlyr(kernel_to_tree_height) > 1) {
+      warning(
+        paste0(
+          "crown_",
+          which,
+          "_to_tree_height has more than one raster layer. Only the first",
+          "layer is considered."
+        )
+      )
     }
 
     assert_that_raster_has_numeric_values(
-      raster = crown_diameter_to_tree_height,
-      raster_name = "crown_diameter_to_tree_height"
+      raster = kernel_to_tree_height,
+      raster_name = paste0("kernel_", which, "_slope")
     )
 
-    cd2th_minmax <- terra::minmax(crown_diameter_to_tree_height, compute = TRUE)[, 1]
+    raster_minmax <- terra::minmax(kernel_to_tree_height, compute = TRUE)[, 1]
 
-    assert_that(
-      cd2th_minmax["min"] > 0,
-      msg = paste(
-        "Used a crown diameter to tree height ratio equal to or less than",
-        "zero which doesn't work."
+    if (kernel_constant == 0) {
+      assert_that(
+        raster_minmax["min"] > 0,
+        msg = paste(
+          "Used a crown", which, " to tree height value equal to or less than",
+          "zero. This does not work when the constant is zero."
+        )
       )
-    )
+    } else { # if kernel intercept > 0
+      assert_that(
+        raster_minmax["min"] >= 0,
+        msg = paste(
+          "The crown", which, "to tree height raster contains values below",
+          "zero."
+        )
+      )
+    }
 
-    if (cd2th_minmax["max"] > 2) {
+
+    # warning for high values
+    if (raster_minmax["max"] > 2) {
       warning(paste0(
-        "A crown diameter to tree height ratio greater than 2 is likely too ",
-        "high (the largest of the ratios that you provide is ",
-        cd2th_minmax["max"], ")."
+        "A crown ", which, " to tree height value greater than 2 is likely",
+        " too high (the largest of the ratios that you provide is ",
+        raster_minmax["max"], ")."
       ))
     }
 
     assert_that_raster_fits_point_cloud(
-      raster = crown_diameter_to_tree_height,
+      raster = kernel_to_tree_height,
       point_cloud = point_cloud,
-      raster_name = "crown diameter to tree height"
+      raster_name = paste0("crown_", which, "_to_tree_height")
     )
-  } else {
-    # if crown_diameter_to_tree_height is not a raster object
-    assert_that(
-      assertthat::is.number(crown_diameter_to_tree_height),
-      assertthat::noNA(crown_diameter_to_tree_height)
-    )
+  } else if (methods::is(kernel_to_tree_height, "character")) {
+    assert_that(!inherits(point_cloud, "data.frame"), msg = paste(
+      "Passing an algorithm name for crown_diameter_to_tree_height is not",
+      "supported with data.frame(-like) point clouds."
+    ))
+    assert_that(!inherits(point_cloud, "LAScatalog"), msg = paste(
+      "Passing an algorithm name for crown_diameter_to_tree_height is not",
+      "supported with point clouds of type LAS Catalog."
+    ))
 
     assert_that(
-      crown_diameter_to_tree_height > 0,
+      which == "diameter",
+      msg = "crown_length_to_tree_height must be numeric or SpatRaster."
+    )
+
+    legitimate_arguments <- c("li", "li2012", "ws", "watershed")
+    assert_that(
+      (kernel_to_tree_height %in% legitimate_arguments),
       msg = paste(
-        "Used a crown diameter to tree height ratio equal to or less than",
-        "zero which doesn't work (your ratio: ", cd2th_minmax["max"], ")."
+        "crown_diameter_to_tree_height must be numeric, SpatRaster,",
+        "or one of the following strings: 'li2012' or 'watershed'"
       )
     )
+  } else { # if kernel_to_tree_height is neither raster nor character
+    assert_that(
+      assertthat::is.number(kernel_to_tree_height),
+      assertthat::noNA(kernel_to_tree_height)
+    )
 
-    if (crown_diameter_to_tree_height > 2) {
-      warning(paste0(
-        "A crown diameter to tree height ratio greater than 2 is likely too ",
-        "high (your ratio: ", cd2th_minmax["max"], ")."
+    if (kernel_constant == 0) {
+      assert_that(
+        kernel_to_tree_height > 0,
+        msg = paste(
+          "Used a crown", which, "to tree height value equal to or less than",
+          "zero. This does not work when the constant is zero."
+        )
+      )
+    } else { # if kernel intercept > 0
+      assert_that(
+        kernel_to_tree_height >= 0,
+        msg = paste("Used a crown", which, "to tree height value below zero.")
+      )
+    }
+    if (kernel_to_tree_height > 2) {
+      warning(paste(
+        "A crown", which,
+        "to tree height greater than 2 is likely too high."
       ))
     }
   }
 }
 
-validate_crown_height_to_tree_height <- function(
-    crown_height_to_tree_height,
-    point_cloud) {
-  # if crown_height_to_tree_height is a raster
-  if (methods::is(crown_height_to_tree_height, "SpatRaster")) {
-    if (terra::nlyr(crown_height_to_tree_height) > 1) {
-      warning(paste(
-        "crown_height_to_tree_height has more than one raster layer. Only the",
-        "first layer is considered."
-      ))
-    }
-
-    assert_that_raster_has_numeric_values(
-      raster = crown_height_to_tree_height,
-      raster_name = "crown_height_to_tree_height"
-    )
-
-    ch2th_minmax <- terra::minmax(crown_height_to_tree_height, compute = TRUE)[, 1]
-
-    assert_that(
-      ch2th_minmax["min"] > 0,
-      ch2th_minmax["max"] <= 1
-    )
-
-    assert_that_raster_fits_point_cloud(
-      raster = crown_height_to_tree_height,
-      point_cloud = point_cloud,
-      raster_name = "crown height to tree height"
-    )
-  } else {
-    # if crown_height_to_tree_height is not a raster object
-    assert_that(
-      assertthat::is.number(crown_height_to_tree_height),
-      assertthat::noNA(crown_height_to_tree_height),
-      crown_height_to_tree_height > 0,
-      crown_height_to_tree_height <= 1
-    )
-  }
-}
 
 validate_segment_crowns_only_above <- function(segment_crowns_only_above) {
   assert_that(
@@ -333,17 +345,17 @@ validate_verbose <- function(verbose) {
   )
 }
 
-validate_also_return_modes <- function(also_return_modes) {
+validate_also_return_terminal_centroids <- function(also_return_terminal_centroids) {
   assert_that(
-    assertthat::is.flag(also_return_modes),
-    assertthat::noNA(also_return_modes)
+    assertthat::is.flag(also_return_terminal_centroids),
+    assertthat::noNA(also_return_terminal_centroids)
   )
 }
 
-validate_also_return_centroids <- function(also_return_centroids) {
+validate_also_return_all_centroids <- function(also_return_all_centroids) {
   assert_that(
-    assertthat::is.flag(also_return_centroids),
-    assertthat::noNA(also_return_centroids)
+    assertthat::is.flag(also_return_all_centroids),
+    assertthat::noNA(also_return_all_centroids)
   )
 }
 
@@ -356,10 +368,10 @@ validate_centroid_convergence_distance <-
     )
   }
 
-validate_max_num_centroids_per_mode <- function(max_num_centroids_per_mode) {
+validate_max_iterations_per_point <- function(max_iterations_per_point) {
   assert_that(
-    assertthat::is.count(max_num_centroids_per_mode),
-    max_num_centroids_per_mode >= 1
+    assertthat::is.count(max_iterations_per_point),
+    max_iterations_per_point >= 1
   )
 }
 
@@ -371,11 +383,11 @@ validate_dbscan_neighborhood_radius <- function(dbscan_neighborhood_radius) {
   )
 }
 
-validate_min_num_modes_per_neighborhood <-
-  function(min_num_modes_per_neighborhood) {
+validate_min_num_points_per_crown <-
+  function(min_num_points_per_crown) {
     assert_that(
-      assertthat::is.count(min_num_modes_per_neighborhood),
-      min_num_modes_per_neighborhood >= 1
+      assertthat::is.count(min_num_points_per_crown),
+      min_num_points_per_crown >= 1
     )
   }
 
@@ -464,4 +476,31 @@ validate_scale_n_offset_are_consistent <- function(LAScatalog) {
       )
     }
   }
+}
+
+# Validation functions for diameter_raster
+
+validate_crown_diameter_constant <- function(intercept) {
+  assert_that(
+    assertthat::is.number(intercept),
+    assertthat::noNA(intercept),
+    intercept >= 0
+  )
+}
+
+validate_diameter_limits <- function(limits) {
+  assert_that(
+    is.vector(limits),
+    is.numeric(limits),
+    length(limits) > 1,
+    assertthat::noNA(limits)
+  )
+}
+
+validate_smoothing_radius <- function(smoothing_radius) {
+  assert_that(
+    assertthat::is.number(smoothing_radius),
+    assertthat::noNA(smoothing_radius),
+    smoothing_radius >= 0
+  )
 }

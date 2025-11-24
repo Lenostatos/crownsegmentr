@@ -11,9 +11,9 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// calculate_modes_flexible
-Rcpp::List calculate_modes_flexible(const Rcpp::DataFrame& coordinate_table, const spatial::coordinate_t& min_point_height_above_ground, const Rcpp::List& ground_height_data, const Rcpp::List& crown_diameter_to_tree_height_data, const Rcpp::List& crown_height_to_tree_height_data, const spatial::distance_t& centroid_convergence_distance, const int max_num_centroids_per_mode, const bool also_return_centroids, const bool show_progress_bar);
-RcppExport SEXP _crownsegmentr_calculate_modes_flexible(SEXP coordinate_tableSEXP, SEXP min_point_height_above_groundSEXP, SEXP ground_height_dataSEXP, SEXP crown_diameter_to_tree_height_dataSEXP, SEXP crown_height_to_tree_height_dataSEXP, SEXP centroid_convergence_distanceSEXP, SEXP max_num_centroids_per_modeSEXP, SEXP also_return_centroidsSEXP, SEXP show_progress_barSEXP) {
+// calculate_centroids_flexible
+Rcpp::List calculate_centroids_flexible(const Rcpp::DataFrame& coordinate_table, const spatial::coordinate_t& min_point_height_above_ground, const Rcpp::List& ground_height_data, const Rcpp::List& crown_diameter_to_tree_height_data, const Rcpp::List& crown_length_to_tree_height_data, const double crown_diameter_constant, const double crown_length_constant, const spatial::distance_t& centroid_convergence_distance, const int max_iterations_per_point, const bool also_return_all_centroids, const bool show_progress_bar);
+RcppExport SEXP _crownsegmentr_calculate_centroids_flexible(SEXP coordinate_tableSEXP, SEXP min_point_height_above_groundSEXP, SEXP ground_height_dataSEXP, SEXP crown_diameter_to_tree_height_dataSEXP, SEXP crown_length_to_tree_height_dataSEXP, SEXP crown_diameter_constantSEXP, SEXP crown_length_constantSEXP, SEXP centroid_convergence_distanceSEXP, SEXP max_iterations_per_pointSEXP, SEXP also_return_all_centroidsSEXP, SEXP show_progress_barSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -21,36 +21,40 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const spatial::coordinate_t& >::type min_point_height_above_ground(min_point_height_above_groundSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type ground_height_data(ground_height_dataSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type crown_diameter_to_tree_height_data(crown_diameter_to_tree_height_dataSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type crown_height_to_tree_height_data(crown_height_to_tree_height_dataSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type crown_length_to_tree_height_data(crown_length_to_tree_height_dataSEXP);
+    Rcpp::traits::input_parameter< const double >::type crown_diameter_constant(crown_diameter_constantSEXP);
+    Rcpp::traits::input_parameter< const double >::type crown_length_constant(crown_length_constantSEXP);
     Rcpp::traits::input_parameter< const spatial::distance_t& >::type centroid_convergence_distance(centroid_convergence_distanceSEXP);
-    Rcpp::traits::input_parameter< const int >::type max_num_centroids_per_mode(max_num_centroids_per_modeSEXP);
-    Rcpp::traits::input_parameter< const bool >::type also_return_centroids(also_return_centroidsSEXP);
+    Rcpp::traits::input_parameter< const int >::type max_iterations_per_point(max_iterations_per_pointSEXP);
+    Rcpp::traits::input_parameter< const bool >::type also_return_all_centroids(also_return_all_centroidsSEXP);
     Rcpp::traits::input_parameter< const bool >::type show_progress_bar(show_progress_barSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_modes_flexible(coordinate_table, min_point_height_above_ground, ground_height_data, crown_diameter_to_tree_height_data, crown_height_to_tree_height_data, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar));
+    rcpp_result_gen = Rcpp::wrap(calculate_centroids_flexible(coordinate_table, min_point_height_above_ground, ground_height_data, crown_diameter_to_tree_height_data, crown_length_to_tree_height_data, crown_diameter_constant, crown_length_constant, centroid_convergence_distance, max_iterations_per_point, also_return_all_centroids, show_progress_bar));
     return rcpp_result_gen;
 END_RCPP
 }
-// calculate_modes_normalized
-Rcpp::List calculate_modes_normalized(const Rcpp::DataFrame& coordinate_table, const spatial::coordinate_t& min_point_height_above_ground, const double crown_diameter_to_tree_height, const double crown_height_to_tree_height, const spatial::distance_t& centroid_convergence_distance, const int max_num_centroids_per_mode, const bool also_return_centroids, const bool show_progress_bar);
-RcppExport SEXP _crownsegmentr_calculate_modes_normalized(SEXP coordinate_tableSEXP, SEXP min_point_height_above_groundSEXP, SEXP crown_diameter_to_tree_heightSEXP, SEXP crown_height_to_tree_heightSEXP, SEXP centroid_convergence_distanceSEXP, SEXP max_num_centroids_per_modeSEXP, SEXP also_return_centroidsSEXP, SEXP show_progress_barSEXP) {
+// calculate_centroids_normalized
+Rcpp::List calculate_centroids_normalized(const Rcpp::DataFrame& coordinate_table, const spatial::coordinate_t& min_point_height_above_ground, const double crown_diameter_to_tree_height, const double crown_length_to_tree_height, const double crown_diameter_constant, const double crown_length_constant, const spatial::distance_t& centroid_convergence_distance, const int max_iterations_per_point, const bool also_return_all_centroids, const bool show_progress_bar);
+RcppExport SEXP _crownsegmentr_calculate_centroids_normalized(SEXP coordinate_tableSEXP, SEXP min_point_height_above_groundSEXP, SEXP crown_diameter_to_tree_heightSEXP, SEXP crown_length_to_tree_heightSEXP, SEXP crown_diameter_constantSEXP, SEXP crown_length_constantSEXP, SEXP centroid_convergence_distanceSEXP, SEXP max_iterations_per_pointSEXP, SEXP also_return_all_centroidsSEXP, SEXP show_progress_barSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::DataFrame& >::type coordinate_table(coordinate_tableSEXP);
     Rcpp::traits::input_parameter< const spatial::coordinate_t& >::type min_point_height_above_ground(min_point_height_above_groundSEXP);
     Rcpp::traits::input_parameter< const double >::type crown_diameter_to_tree_height(crown_diameter_to_tree_heightSEXP);
-    Rcpp::traits::input_parameter< const double >::type crown_height_to_tree_height(crown_height_to_tree_heightSEXP);
+    Rcpp::traits::input_parameter< const double >::type crown_length_to_tree_height(crown_length_to_tree_heightSEXP);
+    Rcpp::traits::input_parameter< const double >::type crown_diameter_constant(crown_diameter_constantSEXP);
+    Rcpp::traits::input_parameter< const double >::type crown_length_constant(crown_length_constantSEXP);
     Rcpp::traits::input_parameter< const spatial::distance_t& >::type centroid_convergence_distance(centroid_convergence_distanceSEXP);
-    Rcpp::traits::input_parameter< const int >::type max_num_centroids_per_mode(max_num_centroids_per_modeSEXP);
-    Rcpp::traits::input_parameter< const bool >::type also_return_centroids(also_return_centroidsSEXP);
+    Rcpp::traits::input_parameter< const int >::type max_iterations_per_point(max_iterations_per_pointSEXP);
+    Rcpp::traits::input_parameter< const bool >::type also_return_all_centroids(also_return_all_centroidsSEXP);
     Rcpp::traits::input_parameter< const bool >::type show_progress_bar(show_progress_barSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_modes_normalized(coordinate_table, min_point_height_above_ground, crown_diameter_to_tree_height, crown_height_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar));
+    rcpp_result_gen = Rcpp::wrap(calculate_centroids_normalized(coordinate_table, min_point_height_above_ground, crown_diameter_to_tree_height, crown_length_to_tree_height, crown_diameter_constant, crown_length_constant, centroid_convergence_distance, max_iterations_per_point, also_return_all_centroids, show_progress_bar));
     return rcpp_result_gen;
 END_RCPP
 }
-// calculate_modes_terraneous
-Rcpp::List calculate_modes_terraneous(const Rcpp::DataFrame& coordinate_table, const spatial::coordinate_t& min_point_height_above_ground, const Rcpp::List& ground_height_grid_data, const double crown_diameter_to_tree_height, const double crown_height_to_tree_height, const spatial::distance_t& centroid_convergence_distance, const int max_num_centroids_per_mode, const bool also_return_centroids, const bool show_progress_bar);
-RcppExport SEXP _crownsegmentr_calculate_modes_terraneous(SEXP coordinate_tableSEXP, SEXP min_point_height_above_groundSEXP, SEXP ground_height_grid_dataSEXP, SEXP crown_diameter_to_tree_heightSEXP, SEXP crown_height_to_tree_heightSEXP, SEXP centroid_convergence_distanceSEXP, SEXP max_num_centroids_per_modeSEXP, SEXP also_return_centroidsSEXP, SEXP show_progress_barSEXP) {
+// calculate_centroids_terraneous
+Rcpp::List calculate_centroids_terraneous(const Rcpp::DataFrame& coordinate_table, const spatial::coordinate_t& min_point_height_above_ground, const Rcpp::List& ground_height_grid_data, const double crown_diameter_to_tree_height, const double crown_length_to_tree_height, const double crown_diameter_constant, const double crown_length_constant, const spatial::distance_t& centroid_convergence_distance, const int max_iterations_per_point, const bool also_return_all_centroids, const bool show_progress_bar);
+RcppExport SEXP _crownsegmentr_calculate_centroids_terraneous(SEXP coordinate_tableSEXP, SEXP min_point_height_above_groundSEXP, SEXP ground_height_grid_dataSEXP, SEXP crown_diameter_to_tree_heightSEXP, SEXP crown_length_to_tree_heightSEXP, SEXP crown_diameter_constantSEXP, SEXP crown_length_constantSEXP, SEXP centroid_convergence_distanceSEXP, SEXP max_iterations_per_pointSEXP, SEXP also_return_all_centroidsSEXP, SEXP show_progress_barSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -58,20 +62,22 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const spatial::coordinate_t& >::type min_point_height_above_ground(min_point_height_above_groundSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type ground_height_grid_data(ground_height_grid_dataSEXP);
     Rcpp::traits::input_parameter< const double >::type crown_diameter_to_tree_height(crown_diameter_to_tree_heightSEXP);
-    Rcpp::traits::input_parameter< const double >::type crown_height_to_tree_height(crown_height_to_tree_heightSEXP);
+    Rcpp::traits::input_parameter< const double >::type crown_length_to_tree_height(crown_length_to_tree_heightSEXP);
+    Rcpp::traits::input_parameter< const double >::type crown_diameter_constant(crown_diameter_constantSEXP);
+    Rcpp::traits::input_parameter< const double >::type crown_length_constant(crown_length_constantSEXP);
     Rcpp::traits::input_parameter< const spatial::distance_t& >::type centroid_convergence_distance(centroid_convergence_distanceSEXP);
-    Rcpp::traits::input_parameter< const int >::type max_num_centroids_per_mode(max_num_centroids_per_modeSEXP);
-    Rcpp::traits::input_parameter< const bool >::type also_return_centroids(also_return_centroidsSEXP);
+    Rcpp::traits::input_parameter< const int >::type max_iterations_per_point(max_iterations_per_pointSEXP);
+    Rcpp::traits::input_parameter< const bool >::type also_return_all_centroids(also_return_all_centroidsSEXP);
     Rcpp::traits::input_parameter< const bool >::type show_progress_bar(show_progress_barSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_modes_terraneous(coordinate_table, min_point_height_above_ground, ground_height_grid_data, crown_diameter_to_tree_height, crown_height_to_tree_height, centroid_convergence_distance, max_num_centroids_per_mode, also_return_centroids, show_progress_bar));
+    rcpp_result_gen = Rcpp::wrap(calculate_centroids_terraneous(coordinate_table, min_point_height_above_ground, ground_height_grid_data, crown_diameter_to_tree_height, crown_length_to_tree_height, crown_diameter_constant, crown_length_constant, centroid_convergence_distance, max_iterations_per_point, also_return_all_centroids, show_progress_bar));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_crownsegmentr_calculate_modes_flexible", (DL_FUNC) &_crownsegmentr_calculate_modes_flexible, 9},
-    {"_crownsegmentr_calculate_modes_normalized", (DL_FUNC) &_crownsegmentr_calculate_modes_normalized, 8},
-    {"_crownsegmentr_calculate_modes_terraneous", (DL_FUNC) &_crownsegmentr_calculate_modes_terraneous, 9},
+    {"_crownsegmentr_calculate_centroids_flexible", (DL_FUNC) &_crownsegmentr_calculate_centroids_flexible, 11},
+    {"_crownsegmentr_calculate_centroids_normalized", (DL_FUNC) &_crownsegmentr_calculate_centroids_normalized, 10},
+    {"_crownsegmentr_calculate_centroids_terraneous", (DL_FUNC) &_crownsegmentr_calculate_centroids_terraneous, 11},
     {NULL, NULL, 0}
 };
 

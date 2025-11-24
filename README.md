@@ -5,8 +5,6 @@
 
 <!-- badges: start -->
 
-[![Lifecycle:
-experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/crownsegmentr)](https://CRAN.R-project.org/package=crownsegmentr)
 
@@ -19,16 +17,6 @@ the tree segmentation works, see the documentation of the
 [`segment_tree_crowns`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R)
 generic. Pseudo code of the AMS3D algorithm is listed
 [below](#pseudo-code-of-the-ams3d-algorithm).
-
-## Installation
-
-You can install the development version of crownsegmentr from
-[GitHub](https://github.com/Lenostatos/crownsegmentr) with:
-
-``` r
-# install.packages("pak")
-pak::pak("Lenostatos/crownsegmentr")
-```
 
 ## Example
 
@@ -65,28 +53,104 @@ lidR::plot(
 )
 ```
 
-## Code Structure
+## Usage
 
-The code base is split into an R “front-end” and a C++ “back-end”.
+The package provides four functions: The central function
+[`segment_tree_crowns()`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R),
+the preprocessing functions
+[`watershed_diameter_raster()`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/watershed_diameter_raster.R)
+and
+[`li_diameter_raster()`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/li_diameter_raster.R),
+and the postprocessing function
+[`remove_small_trees()`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/remove_small_trees.R).
 
-### R Front-End
+### segment_tree_crowns()
 
-The front-end exposes just one R function called
-[`segment_tree_crowns`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R).
-This function is an [S4
-generic](https://adv-r.hadley.nz/s4.html#s4-generics), i.e. it can be
-passed point cloud data stored in different data types and behaves
+This is the central function of the package, which implements the
+AMS3D-Algorithm. It takes a point cloud and returns the same point cloud
+with an additional attribute called “crown_id” (or differently,
+depending on user specification). In addition, the user must specify the
+two arguments crown_diameter_to_tree_height and
+crown_length_to_tree_height, to determine the size of the search kernel
+depending on the estimated shapes of the trees. Those values can either
+be given as single numbers, or as raster, which allows to account for
+different tree shapes in different parts of the point cloud. They can
+also be set to 0, if non-zero values are given for
+crown_diameter_constant and crown_length_constant, respectively. For
+details see the documentation of the function, or the [pseudo code of
+the algorithm](#pseudo-code-of-the-ams3d-algorithm).
+
+### li_diameter_raster() and watershed_diameter_raster()
+
+These two preprocessing functions do the same thing, but in different
+ways: They take a point cloud, and do a preliminary segmentation of tree
+crowns with a quick algorithm (\[lidR::li2012()\] or
+\[lidR::watershed()\]). Then, they return a raster of local
+crown_diameter_to_tree_height ratios, based on the preliminary
+segmentation. This raster can then be used as input for
+segment_tree_crowns. Usually, this improves the segmentation accuracy of
+the AMS3D algorithm. However, in cases where the preliminary
+segmentation performs poorly, it may be worse than specifying reasonable
+fixed numbers for crown_diameter_to_tree_height. The watershed variant
+requires the Bioconductor package
+[EBImage](https://github.com/aoles/EBImage). If you have it available,
+`watershed_diameter_raster()` is recommended. Otherwise,
+`li_diameter_raster()` offers a good alternative. Both functions can
+also be called from within `segment_tree_crowns()`, by specifying
+`crown_diameter_to_tree_height = “li2012”` or
+`crown_diameter_to_tree_height = “watershed”`. In these cases, the
+functions will be called with default parameters. In order to vary
+parameters, the function must be called manually.
+
+### remove_small_trees()
+
+The AMS3D-Algorithm often yields numerous smaller crown clusters in the
+lower part of the point cloud, especially if the point cloud is thin in
+its lower parts, or the constants for crown diameter and crown length
+are small. To reduce such over-segmentation, you can post-process the
+segmentation result with `remove_small_trees()`. Crown ID’s whose crowns
+have diameters or heights below user-defined thresholds will be set to
+NA.
+
+### Note: Density of input point clouds
+
+The AMS3D algorithm works best for airborne laser scanning (ALS) point
+clouds with densities between 5 and 20 points per m². Typically, point
+densities higher than this do not improve the accuracy of the
+segmentation, while substantially increasing the computation time: The
+processing time increases roughly quadratically with the density of the
+input point cloud. For high-density point clouds, we recommend thinning
+the point cloud before segmentation, or using other algorithms.
+
+## Code structure
+
+The code base of`segment_tree_crowns()` is split into an R “front-end”
+and a C++ “back-end”. The other three functions are less complex, and
+implemented in one R file each.
+
+#### Design principles
+
+The function `segment_tree_crowns` is an [S4
+generic](https://adv-r.hadley.nz/s4.html#s4-generics) , i.e. it can
+handle point cloud data stored in different data types and behave
 differently according to that type. More specifically, the generic
 function chooses one out of several so called “methods” based on the
-input data type. There currently are methods for
+input data type. There are methods for
 
 - `data.frame`s/`data.table`s,
 - [`lidR::LAS`](https://github.com/Jean-Romain/lidR/blob/HEAD/R/Class-LAS.R)
   objects, and
 - [`lidR::LAScatalog`](https://github.com/Jean-Romain/lidR/blob/HEAD/R/Class-LAScatalog.R)s.
 
-All of these methods just deal with specifics of their data type. The
-actual segmentation is done by the internal function
+While the other functions (`li_diameter_raster()`,
+`watershed_diameter_raster()` and `remove_small_trees()`) are also
+implemented as S4 generics, they can only take point clouds of type
+`lidR::LAS`.
+
+### segment_tree_crowns front-end
+
+The data type specific methods deal with specifics of their data type.
+The actual segmentation is done by the internal function
 [`segment_tree_crowns_core`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns_core.R),
 which is used by the `data.frame`/`data.table` and `lidR::LAS` methods.
 The `lidR::LAScatalog` method internally calls the `lidR::LAS` method.
@@ -94,29 +158,29 @@ The `lidR::LAScatalog` method internally calls the `lidR::LAS` method.
 #### segment_tree_crowns_core
 
 This function performs the segmentation by first calling the C++
-back-end to calculate modes and by then clustering these modes with the
-DBSCAN algorithm (as implemented in the
+back-end to calculate centroids and by then clustering the terminal
+centroids with the DBSCAN algorithm (as implemented in the
 [`dbscan::dbscan`](https://cran.r-project.org/package=dbscan) function).
 It takes point cloud data in the tabular form of a `data.frame` or
 `data.table` and returns a list with at most three elements. The first
 element always contains a vector of crown IDs with one ID for each point
 (i.e. row) in the input data. The second and third elements are optional
-and contain mode and centroid coordinates together with crown IDs and
-(row) indices of the points they belong to.
+and contain coordinates of terminal and prior centroids together with
+crown IDs and (row) indices of the points they belong to.
 
 #### data.frame/data.table Method
 
 This method just calls the core function and binds the returned crown
 IDs to the input table. It returns this extended table and, if
-requested, also the modes and/or centroids returned by the core
-function.
+requested, also the terminal centroids or all centroids returned by the
+core function.
 
 #### lidR::LAS Method
 
 Similar to the `data.frame`/`data.table` method in that it extends the
 input object with a crown ID attribute and, if requested, returns the
-modes and centroids as separate `lidR::LAS` objects. The mode and
-centroid objects are assigned the metadata of the input object.
+centroids as separate `lidR::LAS` objects. The centroid objects are
+assigned the metadata of the input object.
 
 #### lidR::LAScatalog Method
 
@@ -159,8 +223,8 @@ coordinates.
 The back-end is a small C++ library which implements the AMS3D
 algorithm. The core functionality can be found in:
 
-- `namespace ams3d`: Functionality for calculating a single mode with
-  the AMS3D algorithm
+- `namespace ams3d`: Functionality for calculating a point’s terminal
+  centroid with the AMS3D algorithm
   ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d.h)),
   and
 - `namespace spatial`: a facade to the [Boost
@@ -186,13 +250,13 @@ not contained in any namespace, since this is a requirement of the
 [`Rcpp`](https://cran.r-project.org/package=Rcpp) package which does the
 actual exposition to R. The functions are
 
-- `calculate_modes_normalized`
+- `calculate_centroids_normalized`
   ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_normalized.cpp))
   for processing normalized point clouds,
-- `calculate_modes_terraneous`
+- `calculate_centroids_terraneous`
   ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_terraneous.cpp))
   for processing non-normalized point clouds, and
-- `calculate_modes_flexible`
+- `calculate_centroids_flexible`
   ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_flexible.cpp))
   for processing both normalized and non-normalized while possibly also
   using rasters for the crown diameter and crown height to tree height
@@ -200,7 +264,7 @@ actual exposition to R. The functions are
 
 They are all doing basically the same thing, which is looping over
 points they get from R and call the functionality exposed by `ams3d` and
-`spatial` to calculate modes for these points.
+`spatial` to calculate terminal centroids for these points.
 
 In addition, there are also some helper functions in the
 `namespace ams3d_R_interface_util`
@@ -218,13 +282,13 @@ using R.
 This namespace only exposes two functions
 ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d.h)):
 
-- `calculate_a_single_mode`
-- `calculate_a_single_mode_plus_centroids`
+- `calculate_terminal_centroid`
+- `calculate_all_centroids`
 
-They do exactly the same thing, i.e. calculate the mode of a point,
-except that the `*_plus_centroids` variant also returns the centroids
-which were calculated during the process. Both functions are overloaded
-three times:
+They do exactly the same thing, i.e. calculate the centroids of a point,
+except that the `*_plus_centroids` variant also returns the prior
+centroids which were calculated during the process. Both functions are
+overloaded three times:
 
 1.  The most simple overload assumes a normalized point cloud with
     ground height at zero and takes single numbers for the
@@ -409,13 +473,13 @@ lists. The syntax of these initializer lists looks like this:
         # centroids converge
         do:
             former_centroid = current_centroid
-            current_centroid = calculate_centroid_of (
+            current_centroid = calculate_weighted_mean_of (
                 points_in_neighborhood_of( former_centroid )
             )
         while( distance_of( former_centroid, current_centroid ) > very_small 
                 AND number_of_iterations < too_many )
       
-        # the last centroid is returned as the original point's mode
+        # the terminal centroid is returned as approximation to the mode
         return( current_centroid )
         
 
@@ -425,25 +489,26 @@ lists. The syntax of these initializer lists looks like this:
         
         
     # the cylinder's size is calculated using its above-ground height and the
-    # two main parameters to the algorithm
+    # four main parameters to the algorithm
     vertical_cylinder_at( point ):
         cylinder = new cylinder (
-            height   = above_ground_height_of( point ) * ch_2_th
-            diameter = above_ground_height_of( point ) * cd_2_th
+            height   = above_ground_height_of( point ) * cl_2_th + cl_c
+            diameter = above_ground_height_of( point ) * cd_2_th + cd_c
         )
         
         return( upper_three_quarters_of( cylinder ) )
 
-        # ch_2_th and cd_2_th are available as parameters to the
-        # algorithm and stand for "crown height to tree height" and
-        # "crown diameter to tree height"
+        # The numbers "cl_2_th", "cd_2_th", "cl_c" and "cd_c" are parameters to the
+        # algorithm and stand for "crown length to tree height",
+        # "crown diameter to tree height", "crown length constant" and
+        # "crown diameter constant".
         
         
     points_in( cylinder ):
         <use a spatial index for finding the points in cylinder>
 
 
-    calculate_centroid_of( points ):
+    calculate_weithed_mean_of( points ):
         return( weighted_average_position_of (
             points, 
             weights_of( points )
@@ -461,6 +526,11 @@ lists. The syntax of these initializer lists looks like this:
 ## References
 
 <a name="ferraz2016"></a> Ferraz, A.; Saatchi, S.; Mallet, C. & Meyer,
-V., “Lidar detection of individual tree size in tropical forests”“, In:
-*Remote Sensing of Environment*, Elsevier BV, 2016, 183, 318-333, DOI:
+V., (2016) “Lidar detection of individual tree size in tropical
+forests”, In: *Remote Sensing of Environment*, 183, 318-333, DOI:
 [10.1016/j.rse.2016.05.028](https://doi.org/10.1016/j.rse.2016.05.028)
+<a name="ferraz2012"></a> Ferraz, A.; Bretar, F.; Jaquemond, S.;
+Gonçalves, G.; Pereira, L.;, Tomé, M. & Soares, P., “3-D mapping of a
+multi-layered Mediterranean forest using ALS data”, In: *Remote Sensing
+of Environment*, 121, 210-223, DOI:
+[10.1016/j.rse.2012.01.020](https://doi.org/10.1016/j.rse.2012.01.020)

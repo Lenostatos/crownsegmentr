@@ -1,8 +1,8 @@
 # This file is part of crownsegmentr, an R package for identifying tree crowns
 # within 3D point clouds.
 #
-# Copyright (C) 2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
-# Contact: Leon.Steinmeier@posteo.net
+# Copyright (C) 2025 Leon Steinmeier, Timon Miesner, Nikolai Knapp
+# Contact: timon.miesner@thuenen.de
 #
 # crownsegmentr is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,8 +42,8 @@
 #' @returns A list with at most three elements:
 #'   \describe{
 #'     \item{crown_ids}{A vector of IDs of segmented bodies.}
-#'     \item{mode_coordinates}{
-#'       If `also_return_modes` was set to `TRUE`, a
+#'     \item{terminal_coordinates}{
+#'       If `also_return_terminal_centroids` was set to `TRUE`, a
 #'       [data.table][data.table::data.table()] with mode coordinates as the
 #'       second list element.
 #'       The table has two additional columns: \describe{
@@ -57,7 +57,7 @@
 #'       }
 #'     }
 #'     \item{centroid_coordinates}{
-#'       If `also_return_centroids` was set to `TRUE`, a
+#'       If `also_return_all_centroids` was set to `TRUE`, a
 #'       [data.table][data.table::data.table()] with centroid coordinates as the
 #'       last list element.
 #'       The table has two additional columns:
@@ -77,14 +77,16 @@ segment_tree_crowns_core <- function(
     segment_crowns_only_above,
     ground_height,
     crown_diameter_to_tree_height,
-    crown_height_to_tree_height,
+    crown_length_to_tree_height,
+    crown_diameter_constant,
+    crown_length_constant,
     verbose,
     centroid_convergence_distance,
-    max_num_centroids_per_mode,
+    max_iterations_per_point,
     dbscan_neighborhood_radius,
-    min_num_modes_per_neighborhood,
-    also_return_modes,
-    also_return_centroids) {
+    min_num_points_per_crown,
+    also_return_terminal_centroids,
+    also_return_all_centroids) {
   coordinate_values <- extract_coordinate_values(coordinate_table)
 
   # Warn about likely not normalized point clouds
@@ -100,11 +102,11 @@ segment_tree_crowns_core <- function(
     ground_height <- create_cpp_list_from_raster(ground_height)
   }
 
-  # If either of the crown diameter or crown height to tree height ratios is a
+  # If either of the crown diameter or crown length to tree height ratios is a
   # raster, convert both of them and the ground height to lists for the C++
   # back-end.
   if (methods::is(crown_diameter_to_tree_height, "SpatRaster") ||
-    methods::is(crown_height_to_tree_height, "SpatRaster")) {
+    methods::is(crown_length_to_tree_height, "SpatRaster")) {
     if (methods::is(crown_diameter_to_tree_height, "SpatRaster")) {
       crown_diameter_to_tree_height <- crop_raster_with_coordinates_extent(
         crown_diameter_to_tree_height, coordinate_values
@@ -119,17 +121,17 @@ segment_tree_crowns_core <- function(
       )
     }
 
-    if (methods::is(crown_height_to_tree_height, "SpatRaster")) {
-      crown_height_to_tree_height <- crop_raster_with_coordinates_extent(
-        crown_height_to_tree_height, coordinate_values
+    if (methods::is(crown_length_to_tree_height, "SpatRaster")) {
+      crown_length_to_tree_height <- crop_raster_with_coordinates_extent(
+        crown_length_to_tree_height, coordinate_values
       )
 
-      crown_height_to_tree_height <- create_cpp_list_from_raster(
-        crown_height_to_tree_height
+      crown_length_to_tree_height <- create_cpp_list_from_raster(
+        crown_length_to_tree_height
       )
     } else {
-      crown_height_to_tree_height <- list(
-        value = crown_height_to_tree_height
+      crown_length_to_tree_height <- list(
+        value = crown_length_to_tree_height
       )
     }
 
@@ -143,65 +145,73 @@ segment_tree_crowns_core <- function(
 
   # If crown_diameter_to_tree_height is a list, call the "flexible" C++ back-end
   if (is.list(crown_diameter_to_tree_height)) {
-    modes_and_centroids <- calculate_modes_flexible(
+    all_centroids <- calculate_centroids_flexible(
       coordinate_values,
       min_point_height_above_ground = segment_crowns_only_above,
       ground_height,
       crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
+      crown_length_to_tree_height,
+      crown_diameter_constant,
+      crown_length_constant,
       centroid_convergence_distance,
-      max_num_centroids_per_mode,
-      also_return_centroids,
+      max_iterations_per_point,
+      also_return_all_centroids,
       show_progress_bar = verbose
     )
 
     # Call the C++ back-end for normalized point clouds
   } else if (is.null(ground_height)) {
-    modes_and_centroids <- calculate_modes_normalized(
+    all_centroids <- calculate_centroids_normalized(
       coordinate_values,
       min_point_height_above_ground = segment_crowns_only_above,
       crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
+      crown_length_to_tree_height,
+      crown_diameter_constant,
+      crown_length_constant,
       centroid_convergence_distance,
-      max_num_centroids_per_mode,
-      also_return_centroids,
+      max_iterations_per_point,
+      also_return_all_centroids,
       show_progress_bar = verbose
     )
 
     # Call the C++ back-end for not normalized point clouds
   } else {
-    modes_and_centroids <- calculate_modes_terraneous(
+    all_centroids <- calculate_centroids_terraneous(
       coordinate_values,
       min_point_height_above_ground = segment_crowns_only_above,
       ground_height,
       crown_diameter_to_tree_height,
-      crown_height_to_tree_height,
+      crown_length_to_tree_height,
+      crown_diameter_constant,
+      crown_length_constant,
       centroid_convergence_distance,
-      max_num_centroids_per_mode,
-      also_return_centroids,
+      max_iterations_per_point,
+      also_return_all_centroids,
       show_progress_bar = verbose
     )
   }
 
-  modes <- modes_and_centroids$mode_coordinates
+  terminal_centroids <- all_centroids$terminal_coordinates
 
-  # Find modes with NA coordinate values to exclude them from the DBSCAN
+  # Find terminal_centroids with NA coordinate values to exclude them from the DBSCAN
   # clustering and directly set their IDs to NA
-  is_na_mode_row <- is.na(modes$x) | is.na(modes$y) | is.na(modes$z)
+  is_na_mode_row <- is.na(terminal_centroids$x) |
+    is.na(terminal_centroids$y) |
+    is.na(terminal_centroids$z)
 
   if (verbose) message("  Finding mode clusters...", appendLF = FALSE)
 
   # Set up a vector for the crown IDs
-  crown_ids <- vector(mode = "integer", length = nrow(modes))
+  crown_ids <- vector(mode = "integer", length = nrow(terminal_centroids))
   # Set the crown IDs to NA wherever a mode coordinate value is NA
   crown_ids[is_na_mode_row] <- NA_integer_
 
   # Assign the cluster IDs found with DBSCAN as crown IDs to those indices
   # where there are no NA mode coordinate values
   crown_ids[!is_na_mode_row] <- dbscan::dbscan(
-    modes[!is_na_mode_row, ],
+    terminal_centroids[!is_na_mode_row, ],
     eps = dbscan_neighborhood_radius,
-    minPts = min_num_modes_per_neighborhood
+    minPts = min_num_points_per_crown
   )$cluster
 
   # Set all IDs == 0 to NA to indicate unsegmented points
@@ -212,14 +222,14 @@ segment_tree_crowns_core <- function(
   # neighboring clusters after having been initially identified with minPts
   # points.
   # In any case, treat all segmented bodies with less than
-  # min_num_modes_per_neighborhood points as noise by setting their points' IDs
+  # min_num_points_per_crown points as noise by setting their points' IDs
   # to NA.
 
   # count the number of points per ID
   num_points_per_id <- table(crown_ids)
   # select IDs with an insufficient number of points
   ids_with_too_few_points <- as.integer(names(
-    num_points_per_id[which(num_points_per_id < min_num_modes_per_neighborhood)]
+    num_points_per_id[which(num_points_per_id < min_num_points_per_crown)]
   ))
   # set these IDs to NA
   crown_ids[which(crown_ids %in% ids_with_too_few_points)] <- NA_integer_
@@ -230,19 +240,19 @@ segment_tree_crowns_core <- function(
   # Create the to-be-returned list
   res <- list("crown_ids" = crown_ids)
 
-  if (also_return_modes) {
+  if (also_return_terminal_centroids) {
     # set mode coordinates with crown IDs and point indices as the second list
     # element
-    res[["mode_coordinates"]] <- data.table::data.table(
-      modes,
+    res[["terminal_coordinates"]] <- data.table::data.table(
+      terminal_centroids,
       crown_id = crown_ids,
       point_index = seq_len(nrow(coordinate_table))
     )
     # remove rows with NA mode coordinates
-    res$mode_coordinates <- res$mode_coordinates[!is_na_mode_row]
+    res$terminal_coordinates <- res$terminal_coordinates[!is_na_mode_row]
   }
 
-  if (also_return_centroids) {
+  if (also_return_all_centroids) {
     crown_ids_w_point_indices <- data.table::data.table(
       crown_id = crown_ids,
       point_index = seq_len(nrow(coordinate_table))
@@ -254,12 +264,13 @@ segment_tree_crowns_core <- function(
     # Join the crown IDs to the centroid coordinates via the point index using
     # some data.table syntax.
     res[["centroid_coordinates"]] <- data.table::as.data.table(
-      modes_and_centroids$centroid_coordinates
+      all_centroids$centroid_coordinates
     )[
       crown_ids_w_point_indices,
       on = "point_index"
     ][ # join syntax
-      # make point_index the last column for consistency with the modes data
+      # make point_index the last column for consistency with the terminal
+      # centroids data
       , .(x, y, z, crown_id, point_index)
     ]
 

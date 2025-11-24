@@ -1,8 +1,8 @@
 // This file is part of crownsegmentr, an R package for identifying tree crowns
 // within 3D point clouds.
 //
-// Copyright (C) 2020-2021 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
-// Contact: Leon.Steinmeier@posteo.net
+// Copyright (C) 2025 Leon Steinmeier, Nikolai Knapp, UFZ Leipzig
+// Contact: timon.miesner@thuenen.de
 //
 // crownsegmentr is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ namespace ams3d_R_interface_util
         // https://github.com/r-lib/progress/blob/master/inst/include/RProgress.h
         return RProgress::RProgress {
             // format:
-            "  Calculating modes [:bar] :percent%  eta::eta  elapsed::elapsed",
+            "  Calculating centroids [:bar] :percent%  eta::eta  elapsed::elapsed",
             total, // total
             Rf_GetOptionWidth() - 2, // width
             '=', // complete_char
@@ -70,50 +70,50 @@ namespace ams3d_R_interface_util
     }
 
     Rcpp::List create_return_data (
-        const bool also_return_centroids,
-        const std::vector< spatial::point_3d_t > &modes,
-        const std::vector< spatial::point_3d_t > &centroids,
+        const bool also_return_all_centroids,
+        const std::vector< spatial::point_3d_t > &terminal_centroids,
+        const std::vector< spatial::point_3d_t > &prior_centroids,
         const std::vector< int > &point_indices
     ) {
 
         // Set up mode coordinate arrays.
-        Rcpp::NumericVector mode_x_coords( modes.size() );
-        Rcpp::NumericVector mode_y_coords( modes.size() );
-        Rcpp::NumericVector mode_z_coords( modes.size() );
+        Rcpp::NumericVector mode_x_coords( terminal_centroids.size() );
+        Rcpp::NumericVector mode_y_coords( terminal_centroids.size() );
+        Rcpp::NumericVector mode_z_coords( terminal_centroids.size() );
 
         // Fill the mode coordinate arrays.
-        for (std::size_t i{ 0 }; i < modes.size(); i++)
+        for (std::size_t i{ 0 }; i < terminal_centroids.size(); i++)
         {
-            mode_x_coords[i] = spatial::get_x( modes[i] );
-            mode_y_coords[i] = spatial::get_y( modes[i] );
-            mode_z_coords[i] = spatial::get_z( modes[i] );
+            mode_x_coords[i] = spatial::get_x( terminal_centroids[i] );
+            mode_y_coords[i] = spatial::get_y( terminal_centroids[i] );
+            mode_z_coords[i] = spatial::get_z( terminal_centroids[i] );
         }
 
         // Set up centroid coordinate arrays (This will do nothing if the
         // centroids array is empty).
-        Rcpp::NumericVector centroid_x_coords( centroids.size() );
-        Rcpp::NumericVector centroid_y_coords( centroids.size() );
-        Rcpp::NumericVector centroid_z_coords( centroids.size() );
+        Rcpp::NumericVector centroid_x_coords( prior_centroids.size() );
+        Rcpp::NumericVector centroid_y_coords( prior_centroids.size() );
+        Rcpp::NumericVector centroid_z_coords( prior_centroids.size() );
 
         // Fill the coordinate arrays (This will do nothing if the centroids
         // array is empty).
-        for (std::size_t i{ 0 }; i < centroids.size(); i++)
+        for (std::size_t i{ 0 }; i < prior_centroids.size(); i++)
         {
-            centroid_x_coords[i] = spatial::get_x( centroids[i] );
-            centroid_y_coords[i] = spatial::get_y( centroids[i] );
-            centroid_z_coords[i] = spatial::get_z( centroids[i] );
+            centroid_x_coords[i] = spatial::get_x( prior_centroids[i] );
+            centroid_y_coords[i] = spatial::get_y( prior_centroids[i] );
+            centroid_z_coords[i] = spatial::get_z( prior_centroids[i] );
         }
 
-        Rcpp::DataFrame mode_coordinates{ Rcpp::DataFrame::create (
+        Rcpp::DataFrame terminal_coordinates{ Rcpp::DataFrame::create (
             Rcpp::Named("x") = mode_x_coords,
             Rcpp::Named("y") = mode_y_coords,
             Rcpp::Named("z") = mode_z_coords
         ) };
 
-        if (also_return_centroids)
+        if (also_return_all_centroids)
         {
             return Rcpp::List::create (
-                Rcpp::Named("mode_coordinates") = mode_coordinates,
+                Rcpp::Named("terminal_coordinates") = terminal_coordinates,
                 Rcpp::Named("centroid_coordinates") = Rcpp::DataFrame::create (
                     Rcpp::Named("x") = centroid_x_coords,
                     Rcpp::Named("y") = centroid_y_coords,
@@ -125,7 +125,7 @@ namespace ams3d_R_interface_util
         else
         {
             return Rcpp::List::create (
-                Rcpp::Named("mode_coordinates") = mode_coordinates
+                Rcpp::Named("terminal_coordinates") = terminal_coordinates
             );
         }
     }
