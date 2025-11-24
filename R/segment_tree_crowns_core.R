@@ -152,7 +152,7 @@ segment_tree_crowns_core <- function(
       crown_diameter_to_tree_height,
       crown_length_to_tree_height,
       crown_diameter_constant,
-      crown_length_constant,      
+      crown_length_constant,
       centroid_convergence_distance,
       max_iterations_per_point,
       also_return_all_centroids,
@@ -195,8 +195,8 @@ segment_tree_crowns_core <- function(
 
   # Find terminal_centroids with NA coordinate values to exclude them from the DBSCAN
   # clustering and directly set their IDs to NA
-  is_na_mode_row <- is.na(terminal_centroids$x) | 
-    is.na(terminal_centroids$y) | 
+  is_na_mode_row <- is.na(terminal_centroids$x) |
+    is.na(terminal_centroids$y) |
     is.na(terminal_centroids$z)
 
   if (verbose) message("  Finding mode clusters...", appendLF = FALSE)

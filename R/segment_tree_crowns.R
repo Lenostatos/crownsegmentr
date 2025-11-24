@@ -49,7 +49,7 @@
 #'   value and the height above ground of the kernel center, and adding the
 #'   crown_length_constant. For details see "How the algorithm works". Points
 #'   will not be segmented wherever a raster contains `NA` values.
-#' @param crown_length_to_tree_height,crown_length_constant Single number >=0.
+#' @param crown_diameter_constant,crown_length_constant Single number >=0.
 #'    Used to determine the dimensions of the search kernel, together with the
 #'    respective ratios to tree height. For details see "How the algorithm
 #'    works".
@@ -289,6 +289,7 @@ methods::setMethod(
     validate_also_return_terminal_centroids(also_return_terminal_centroids)
     validate_also_return_all_centroids(also_return_all_centroids)
 
+
     # Segment the point cloud
     ids_terminal_centroids <- segment_tree_crowns_core(
       point_cloud,
@@ -438,6 +439,24 @@ methods::setMethod(
         args = c(las = point_cloud, ground_height)
       )
     }
+
+    # If crown_diameter_to_tree_height is an algorithm name, calculate a raster
+    if (is.character(crown_diameter_to_tree_height)) {
+      if (crown_diameter_to_tree_height %in% c("li", "li2012")) {
+        crown_diameter_to_tree_height <-
+          crownsegmentr::li_diameter_raster(point_cloud,
+            crown_diameter_constant,
+            ground_height = ground_height
+          )
+      } else if (crown_diameter_to_tree_height %in% c("ws", "watershed")) {
+        crown_diameter_to_tree_height <-
+          crownsegmentr::watershed_diameter_raster(point_cloud,
+            crown_diameter_constant,
+            ground_height = ground_height
+          )
+      }
+    }
+
 
     # Segment the point cloud
     ids_terminal_centroids <- segment_tree_crowns_core(

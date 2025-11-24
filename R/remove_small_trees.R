@@ -41,13 +41,13 @@
 #' without gaps
 #' @export
 methods::setGeneric("remove_small_trees",
-                    function(point_cloud,
-                             min_radius = 1,
-                             min_height = -Inf,
-                             crown_id_column_name = "crown_id") {
-                      standardGeneric("remove_small_trees")
-                    },
-                    signature = "point_cloud"
+  function(point_cloud,
+           min_radius = 1,
+           min_height = -Inf,
+           crown_id_column_name = "crown_id") {
+    standardGeneric("remove_small_trees")
+  },
+  signature = "point_cloud"
 )
 
 
@@ -64,26 +64,30 @@ methods::setMethod(
   function(point_cloud,
            min_radius,
            min_height,
-           crown_id_column_name){
-
+           crown_id_column_name) {
     # TODO: test if it contains a data column of the required name
 
     # create crowns with crown_metrics
-    metrics <- ~list(height = max(Z),
-                     npoints = length(Z))
+    metrics <- ~ list(
+      height = max(Z),
+      npoints = length(Z)
+    )
     crowns <- lidR::crown_metrics(lidR::LAS(point_cloud),
-                                  metrics,
-                                  attribute = crown_id_column_name,
-                                  geom = "convex")
+      metrics,
+      attribute = crown_id_column_name,
+      geom = "convex"
+    )
     # calculate radius
     crowns$area <- sf::st_area(crowns)
     crowns$radius <- sqrt(crowns$area) / 2
 
 
     # identify ids of crowns that are not too small
-    right_size_ids <- crowns[(crowns$radius >= min_radius) &
-                               (crowns$height >= min_height),
-                             crown_id_column_name][[1]]
+    right_size_ids <- crowns[
+      (crowns$radius >= min_radius) &
+        (crowns$height >= min_height),
+      crown_id_column_name
+    ][[1]]
 
     # identify for which points the crown is not too small
     crown_is_not_small <- point_cloud[[crown_id_column_name]] %in% right_size_ids
@@ -96,8 +100,8 @@ methods::setMethod(
       as.integer(as.factor(point_cloud[[crown_id_column_name]]))
 
     return(point_cloud)
-
-  })
+  }
+)
 
 
 
@@ -113,40 +117,44 @@ methods::setMethod(
   function(point_cloud,
            min_radius,
            min_height,
-           crown_id_column_name){
+           crown_id_column_name) {
+    # TODO: add crown_id_column_name as variable
+    # TODO: test if it contains a data column of the required name
 
-  # TODO: add crown_id_column_name as variable
-  # TODO: test if it contains a data column of the required name
+    # create crowns with crown_metrics
+    metrics <- ~ list(
+      height = max(Z),
+      npoints = length(Z)
+    )
+    crowns <- lidR::crown_metrics(point_cloud,
+      metrics,
+      attribute = crown_id_column_name,
+      geom = "convex"
+    )
+    # calculate radius
+    crowns$area <- as.numeric(sf::st_area(crowns))
+    crowns$radius <- sqrt(crowns$area) / 2
 
-  # create crowns with crown_metrics
-  metrics <- ~list(height = max(Z),
-                   npoints = length(Z))
-  crowns <- lidR::crown_metrics(point_cloud,
-                                metrics,
-                                attribute = crown_id_column_name,
-                                geom = "convex")
-  # calculate radius
-  crowns$area <- as.numeric(sf::st_area(crowns))
-  crowns$radius <- sqrt(crowns$area) / 2
+    # identify ids of crowns that are not too small
+    right_size_ids <- crowns[
+      (crowns$radius >= min_radius) &
+        (crowns$height >= min_height),
+      crown_id_column_name
+    ][[1]]
 
-  # identify ids of crowns that are not too small
-  right_size_ids <- crowns[(crowns$radius >= min_radius) &
-                             (crowns$height >= min_height),
-                           crown_id_column_name][[1]]
+    # identify for which points the crown is not too small
+    crown_is_not_small <- point_cloud@data[[crown_id_column_name]] %in% right_size_ids
 
-  # identify for which points the crown is not too small
-  crown_is_not_small <- point_cloud@data[[crown_id_column_name]] %in% right_size_ids
+    # set crown_id of small trees to NA
+    point_cloud@data[[crown_id_column_name]][!crown_is_not_small] <- NA
 
-  # set crown_id of small trees to NA
-  point_cloud@data[[crown_id_column_name]][!crown_is_not_small] <- NA
+    # create new ids in ascending order without gaps
+    point_cloud@data[[crown_id_column_name]] <-
+      as.integer(as.factor(point_cloud@data[[crown_id_column_name]]))
 
-  # create new ids in ascending order without gaps
-  point_cloud@data[[crown_id_column_name]] <-
-    as.integer(as.factor(point_cloud@data[[crown_id_column_name]]))
-
-  return(point_cloud)
-
-})
+    return(point_cloud)
+  }
+)
 
 
 # Method for LAScatalog (dummy) ----------------------------------
@@ -161,11 +169,11 @@ methods::setMethod(
   function(point_cloud,
            min_radius,
            min_height,
-           crown_id_column_name){
-    stop(paste("remove_small_trees is not (yet) implemented for point cloud of",
-               "type LasCatalog."), call. = FALSE)
+           crown_id_column_name) {
+    stop(paste(
+      "remove_small_trees is not (yet) implemented for point cloud of",
+      "type LasCatalog."
+    ), call. = FALSE)
     return(1)
   }
 )
-
-

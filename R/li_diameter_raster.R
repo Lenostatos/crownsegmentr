@@ -53,15 +53,15 @@
 #'
 #' @export
 methods::setGeneric("li_diameter_raster",
-                    function(point_cloud,
-                             crown_diameter_constant = 0,
-                             limits = c(0,1),
-                             ground_height = NULL,
-                             smoothing_radius = 5,
-                             ...) {
-                      standardGeneric("li_diameter_raster")
-                    },
-                    signature = "point_cloud"
+  function(point_cloud,
+           crown_diameter_constant = 0,
+           limits = c(0, 1),
+           ground_height = NULL,
+           smoothing_radius = 5,
+           ...) {
+    standardGeneric("li_diameter_raster")
+  },
+  signature = "point_cloud"
 )
 
 # li_diameter_raster for LAS ----------------------------------
@@ -77,111 +77,125 @@ methods::setMethod(
            limits,
            ground_height,
            smoothing_radius,
-           ...)
-    {
-
-  # validate input
-  validate_crown_diameter_constant(crown_diameter_constant)
-  validate_diameter_limits(limits)
-  validate_ground_height(ground_height, point_cloud)
+           ...) {
+    # validate input
+    validate_crown_diameter_constant(crown_diameter_constant)
+    validate_diameter_limits(limits)
+    validate_ground_height(ground_height, point_cloud)
 
 
-  # If ground_height is a list of arguments, pass them to
-  # lidR::rasterize_terrain
-  if (is.list(ground_height)) {
-    ground_height <- do.call(lidR::rasterize_terrain,
-                             args = c(las = point_cloud, ground_height)
+    # If ground_height is a list of arguments, pass them to
+    # lidR::rasterize_terrain
+    if (is.list(ground_height)) {
+      ground_height <- do.call(lidR::rasterize_terrain,
+        args = c(las = point_cloud, ground_height)
+      )
+    }
+
+    # if the limits vector is longer, only the min and max values will be taken
+    # into account
+    my_limits <- range(limits)
+
+    # normalize point cloud if applicable
+    if (!is.null(ground_height)) {
+      err.msg <- "Ground height raster does not cover the area of the point cloud."
+      assert_that_raster_covers_las_point_cloud(ground_height, point_cloud, err.msg)
+
+      point_cloud <- lidR::normalize_height(
+        las = point_cloud,
+        algorithm = lidR::kriging(),
+        dtm = ground_height
+      )
+    }
+
+    # define the resolution for the chm: if the point density is higher than 16
+    # in more than half of the relevant area, use 0.25m resolution. If point
+    # density is higher than 5, use 0.5 m resolution, otherwise 1 m.
+    dens <- lidR::rasterize_density(point_cloud, res = 1)
+    if (terra::global(dens, function(x) sum(x >= 16)) >=
+      0.5 * terra::global(dens, function(x) sum(x > 0))) {
+      chm.res <- 0.25
+    } else if (terra::global(dens, function(x) sum(x >= 5)) >=
+      0.5 * terra::global(dens, function(x) sum(x > 0))) {
+      chm.res <- 0.5
+    } else {
+      chm.res <- 1
+    }
+
+    # create canopy height model
+    chm <- lidR::rasterize_canopy(point_cloud,
+      res = chm.res,
+      algorithm = lidR::p2r(subcircle = 0.25)
     )
+
+    # fill in NA values with 0
+    chm[is.na(chm)] <- 0
+
+
+    # segment trees with Li2012 algorithm with default parameters
+    segm <- lidR::segment_trees(point_cloud, lidR::li2012(...))
+
+
+    # create crowns with crown_metrics
+    metrics <- ~ list(
+      height = max(Z),
+      npoints = length(Z)
+    )
+    crowns <- lidR::crown_metrics(segm,
+      metrics,
+      attribute = "treeID",
+      geom = "convex"
+    )
+    # calculate radius
+    crowns$area <- as.numeric(sf::st_area(crowns))
+    crowns$diameter <- sqrt(crowns$area)
+
+
+    # calculate cdr, and cap it with limits
+    crowns$diam.height.ratio <- pmin(
+      pmax(
+        (crowns$diameter - crown_diameter_constant) /
+          crowns$height,
+        limits[1]
+      ),
+      limits[2]
+    )
+
+    # build raster of average ratio
+    dhr.rast <- terra::rasterize(crowns,
+      chm,
+      field = "diam.height.ratio",
+      fun = mean
+    )
+    # smooth raster if applicable
+    if (smoothing_radius >= chm.res) {
+      window_size <- floor(smoothing_radius / chm.res) * 2 + 1
+      double_window_size <- floor(2 * smoothing_radius / chm.res) * 2 + 1
+      ratio.avg <- terra::focal(
+        x = dhr.rast,
+        w = window_size,
+        fun = "mean",
+        na.rm = T,
+        pad = T
+      )
+      # where there are NA values, fill with double smoothing radius average
+      ratio.avg[is.na(ratio.avg)] <- terra::focal(
+        x = dhr.rast,
+        w = double_window_size,
+        fun = "mean",
+        na.rm = T,
+        pad = T
+      )
+    } else { # if smoothing radius is too small to be meaningful
+      ratio.avg <- dhr.rast
+    }
+
+    # if there are still NA values, arbitrarily fill with 0.5
+    ratio.avg[is.na(ratio.avg)] <- 0.5
+
+    return(ratio.avg)
   }
-
-  # if the limits vector is longer, only the min and max values will be taken
-  # into account
-  my_limits <- range(limits)
-
-  # normalize point cloud if applicable
-  if(!is.null(ground_height)){
-    err.msg <- "Ground height raster does not cover the area of the point cloud."
-    assert_that_raster_covers_las_point_cloud(ground_height, point_cloud, err.msg)
-
-    point_cloud <- lidR::normalize_height(las = point_cloud,
-                                          algorithm = lidR::kriging(),
-                                          dtm = ground_height)
-  }
-
-  # define the resolution for the chm: if the point density is higher than 16
-  # in more than half of the relevant area, use 0.25m resolution. If point
-  # density is higher than 5, use 0.5 m resolution, otherwise 1 m.
-  dens <- lidR::rasterize_density(point_cloud, res = 1)
-  if(terra::global(dens, function(x) sum(x >= 16)) >=
-     0.5 * terra::global(dens, function(x) sum(x > 0))){
-    chm.res <- 0.25
-  } else if(terra::global(dens, function(x) sum(x >= 5)) >=
-            0.5 * terra::global(dens, function(x) sum(x > 0))){
-    chm.res <- 0.5
-  } else{
-    chm.res <- 1
-  }
-
-  # create canopy height model
-  chm <- lidR::rasterize_canopy(point_cloud,
-                                res = chm.res,
-                                algorithm = lidR::p2r(subcircle = 0.25))
-
-  # fill in NA values with 0
-  chm[is.na(chm)] <- 0
-
-
-  # segment trees with Li2012 algorithm with default parameters
-  segm <- lidR::segment_trees(point_cloud, lidR::li2012(...))
-
-
-  # create crowns with crown_metrics
-  metrics <- ~list(height = max(Z),
-                   npoints = length(Z))
-  crowns <- lidR::crown_metrics(segm,
-                                metrics,
-                                attribute = "treeID",
-                                geom = "convex")
-  # calculate radius
-  crowns$area <- as.numeric(sf::st_area(crowns))
-  crowns$diameter <- sqrt(crowns$area)
-
-
-  # calculate cdr, and cap it with limits
-  crowns$diam.height.ratio <- pmin(pmax((crowns$diameter - crown_diameter_constant) /
-                                          crowns$height,
-                                        limits[1]),
-                                   limits[2])
-
-  # build raster of average ratio
-  dhr.rast <- terra::rasterize(crowns,
-                               chm,
-                               field = "diam.height.ratio",
-                               fun = mean)
-  # smooth raster if applicable
-  if(smoothing_radius >= chm.res){
-    window_size <- floor(smoothing_radius / chm.res) * 2 + 1
-    double_window_size <- floor(2 * smoothing_radius / chm.res) * 2 + 1
-    ratio.avg <- terra::focal(x = dhr.rast,
-                              w = window_size,
-                              fun = "mean",
-                              na.rm = T,
-                              pad = T)
-    # where there are NA values, fill with double smoothing radius average
-    ratio.avg[is.na(ratio.avg)] <- terra::focal(x = dhr.rast,
-                                                w = double_window_size,
-                                                fun = "mean",
-                                                na.rm = T,
-                                                pad = T)
-  }else{ # if smoothing radius is too small to be meaningful
-    ratio.avg <- dhr.rast
-  }
-
-  # if there are still NA values, arbitrarily fill with 0.5
-  ratio.avg[is.na(ratio.avg)] <- 0.5
-
-  return(ratio.avg)
-})
+)
 
 # li_diameter_raster (dummy) for data.frame ------------------------------------
 #' @describeIn watershed_diameter_raster Calculate a raster of crown diameter
@@ -195,10 +209,13 @@ methods::setMethod(
            limits,
            ground_height,
            ...) {
-    stop(paste("li_diameter_raster is not (yet) implemented for point cloud",
-               "of type data.frame."), call. = FALSE)
+    stop(paste(
+      "li_diameter_raster is not (yet) implemented for point cloud",
+      "of type data.frame."
+    ), call. = FALSE)
     return(1)
-  })
+  }
+)
 
 # li_diameter_raster (dummy) for LAScatalog ------------------------------------
 #' @describeIn watershed_diameter_raster Calculate a raster of crown diameter
@@ -213,9 +230,10 @@ methods::setMethod(
            limits,
            ground_height,
            ...) {
-    stop(paste("li_diameter_raster is not (yet) implemented for point cloud",
-               "of type LasCatalog."), call. = FALSE)
+    stop(paste(
+      "li_diameter_raster is not (yet) implemented for point cloud",
+      "of type LasCatalog."
+    ), call. = FALSE)
     return(1)
-  })
-
-
+  }
+)

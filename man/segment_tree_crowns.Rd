@@ -90,12 +90,19 @@ columns by looking for the first numeric columns named "x"/"X", "y"/"Y", or
 "z"/"Z". For each instance where it can't find one of those it selects the
 next available numeric column in the table and issues a warning.}
 
-\item{crown_diameter_to_tree_height, crown_length_to_tree_height}{Single
-numbers or \link[terra:SpatRaster-class]{SpatRasters} covering the area of the
-\code{point_cloud}. The dimensions of the search kernel will be calculated from
-these values and the height above ground of the kernel center, plus the
-constants. For details see "How the algorithm works". Points will not be
-segmented wherever a raster contains \code{NA} values.}
+\item{crown_diameter_to_tree_height}{Single number or
+\link[terra:SpatRaster-class]{SpatRasters} covering the area of the \code{point_cloud}.
+The diameter of the search kernel will be calculated by multiplying this
+value and the height above ground of the kernel center, and adding the
+crown_diameter_constant. For details see "How the algorithm works". Points
+will not be segmented wherever a raster contains \code{NA} values.}
+
+\item{crown_length_to_tree_height}{Single number or
+\link[terra:SpatRaster-class]{SpatRasters} covering the area of the \code{point_cloud}.
+The height of the search kernel will be calculated by multiplying this
+value and the height above ground of the kernel center, and adding the
+crown_length_constant. For details see "How the algorithm works". Points
+will not be segmented wherever a raster contains \code{NA} values.}
 
 \item{crown_diameter_constant, crown_length_constant}{Single number >=0.
 Used to determine the dimensions of the search kernel, together with the
@@ -135,7 +142,7 @@ nearest mode. See "How the algorithm works" to learn about centroids and
 modes in the context of the AMS3D algorithm.}
 
 \item{max_iterations_per_point}{A single integer. Maximum number of
-centroids calculated before the search for the nearest mode is aborted. See
+centroids calculated before the search for the nearest mode stops. See
 "How the algorithm works" to learn about centroids and modes in the context
 of the AMS3D algorithm.}
 
@@ -196,9 +203,9 @@ The segmented point cloud which would have been returned directly if
 \code{also_return_terminal_centroids} and \code{also_return_all_centroids} had been set
 to \code{FALSE}.
 }
-\item{modes}{
+\item{terminal_centroids}{
 If \code{also_return_terminal_centroids} was set to \code{TRUE}, a point cloud of
-the same type as the input point cloud holding the modes calculated
+the same type as the input point cloud holding the terminal centroids calculated
 with the AMS3D algorithm and two additional columns/attributes. One of
 these columns/attributes holds IDs of the segmented bodies that the
 modes belong to and the other (named "point_index") holds indices to
@@ -235,7 +242,7 @@ in a \link[=data.frame]{data.frame} or \link[data.table:data.table]{data.table}.
 
 \item \code{segment_tree_crowns(LAScatalog)}: Segments the point cloud data of a
 \link[lidR:LAScatalog-class]{LAScatalog}. This method does not support
-additionally returning modes and/or centroids. Instead of the verbose
+additionally returning centroids. Instead of the verbose
 parameter use the LAScatalog's progress option (see the
 \link[lidR:LAScatalog-class]{LAScatalog documentation} -> "Processing options"
 -> "progress").
@@ -248,7 +255,7 @@ The basic assumption is that tree crowns form local maxima of point density
 and height within lidar point clouds. These local maxima are called
 \emph{modes}. The algorithm tries to find the nearest mode for each point. This
 is done by looking at the surrounding points and moving into the direction
-of the highest point density until the nearest mode is reached.
+of the highest point density until the nearest mode is (almost) reached.
 
 The surrounding points are found with a search kernel (a three-dimensional
 search window) which has the shape of a vertical cylinder. According to
@@ -265,26 +272,28 @@ The direction of the highest point density is found by calculating the
 average position of all points within the cylinder, the cylinder's so
 called \emph{centroid}. In order to move further into the direction of the
 highest point density, a new cylinder is placed on the centroid and a new
-centroid is calculated for that cylinder. This goes on until the cylinders
-"stop moving", i.e. until two subsequently calculated centroids are closer
-to each other than \code{centroid_convergence_distance}. At this point, the
-most recently calculated centroid, is taken as the original point's nearest
-mode.
+centroid is calculated for that cylinder. This continues on until the
+cylinders "stop moving", i.e. until two subsequently calculated centroids
+are closer to each other than \code{centroid_convergence_distance}. At this
+point, the most recently calculated centroid, hence called 'terminal
+centroid', is assumed to be close enough to the mode, so that the
+original point can be linked to the respective tree top.
 
 It sometimes happens that centroids converge only after a lot of
 iterations. In order to prevent situations where an excessive number of
 centroids is calculated for just one point, the parameter
-\code{max_iterations_per_point} is used to abort the centroid
+\code{max_iterations_per_point} is used to stop the centroid
 calculations after a certain number of them has been performed.
-Nonetheless, the last centroid found before the abortion is still taken as
+Nonetheless, the last centroid found before stopping is still taken as
 a good enough guess of the nearest mode's position.
 
-After the modes of the individual points have been calculated, it can be
-seen that modes of the same tree crown are positioned very close to each
-other, shortly below their crown's apex. These dense clusters of modes are
+After the terminal centroids of the individual points have been
+calculated, it can be seen that terminal centroids of points belonging to
+the same tree crown are positioned very close to each other, shortly below
+the crown's apex. These dense clusters of terminal centroids are
 identified with the DBSCAN algorithm which assigns a cluster ID to every
-mode. The cluster IDs are then finally connected back to the points of the
-point cloud and used as crown IDs.
+one of them. The cluster IDs are then finally connected back to the points
+of the point cloud and used as crown IDs.
 
 The DBSCAN clustering is explained nicely in
 \href{https://en.wikipedia.org/wiki/DBSCAN#Preliminary}{Wikipedia} but here
@@ -313,6 +322,8 @@ ID is assigned to each encountered point.
 }
 
 \examples{
+# Preparation ------------------------------------------------------------------
+
 # Load a point cloud of some trees included in the lidR package
 point_cloud <- lidR::readLAS(system.file(
   "extdata/MixedConifer.laz",
@@ -343,7 +354,7 @@ plot_segmented_point_cloud <- function(
 }
 
 
-# Segment Normalized Point Clouds ----------------------------------------
+# Simple case: Segment Normalized Point Clouds ---------------------------------
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
@@ -354,7 +365,51 @@ segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
 plot_segmented_point_cloud(segmented_point_cloud)
 
 
-# Exclude Points Below any Height on the Fly ------------------------------
+# Complete workflow with pre- and postprocessing -------------------------------
+
+diameter_raster <- crownsegmentr::li_diameter_raster(
+  point_cloud,
+  crown_diameter_constant = 2
+)
+# If you have the package EBImage, you can also use
+# watershed_diameter_raster similarly
+
+terra::plot(diameter_raster)
+
+segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
+  point_cloud,
+  crown_diameter_to_tree_height = diameter_raster,
+  crown_length_to_tree_height = 0.4,
+  crown_diameter_constant = 2,
+  crown_length_constant = 3
+)
+
+plot_segmented_point_cloud(segmented_point_cloud)
+
+processed_point_cloud <- crownsegmentr::remove_small_trees(
+  segmented_point_cloud,
+  min_radius = 1,
+  min_height = 5
+)
+
+plot_segmented_point_cloud(processed_point_cloud)
+
+# Call Preprocessing (diameter_raster) Function from Within the Main Function---
+
+segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
+  point_cloud,
+  crown_diameter_to_tree_height = "li2012",
+  crown_length_to_tree_height = 0.4,
+  crown_diameter_constant = 2,
+  crown_length_constant = 3
+)
+
+plot_segmented_point_cloud(segmented_point_cloud)
+
+# result is equivalent to the intermediate step above. Only for using all the
+# options of the diameter_raster functions it is necessary to call them manually.
+
+# Exclude Points Below Certain Height from Segmentation ----------------------------
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
@@ -425,9 +480,9 @@ segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
 plot_segmented_point_cloud(segmented_point_cloud)
 
 
-# Additionally Return Modes and/or Centroids ------------------------------
+# Additionally Return Centroids (terminal and/or prior) ------------------------------
 
-# You can also return the modes and centroids which were calculated during the
+# You can also return the centroids which were calculated during the
 # segmentation in order to get a more in-depth impression of what happened
 # internally.
 segmentation_results <- crownsegmentr::segment_tree_crowns(
@@ -439,7 +494,7 @@ segmentation_results <- crownsegmentr::segment_tree_crowns(
 )
 
 # Generate crown colors "manually" so that we can use the same colors for
-# points, modes, and centroids.
+# points, terminal centroids, and prior centroids.
 crown_colors <- lidR::random.colors(
   n = length(unique(
     segmentation_results$segmented_point_cloud@data[["crown_id"]]
@@ -450,9 +505,9 @@ crown_colors <- lidR::random.colors(
 plot_segmented_point_cloud(
   segmentation_results$segmented_point_cloud, crown_colors
 )
-# Plot the modes
+# Plot the terminal_centroids
 plot_segmented_point_cloud(
-  segmentation_results$modes, crown_colors
+  segmentation_results$terminal_centroids, crown_colors
 )
 # Plot the centroids
 plot_segmented_point_cloud(

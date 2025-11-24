@@ -22,5 +22,3 @@ options(
     License = "GPL (>= 3)"
   )
 )
-
-

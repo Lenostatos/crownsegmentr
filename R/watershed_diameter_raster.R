@@ -57,15 +57,15 @@
 #'
 #' @export
 methods::setGeneric("watershed_diameter_raster",
-                    function(point_cloud,
-                             crown_diameter_constant = 0,
-                             limits = c(0,1),
-                             ground_height = NULL,
-                             smoothing_radius = 5,
-                             ...) {
-                      standardGeneric("watershed_diameter_raster")
-                    },
-                    signature = "point_cloud"
+  function(point_cloud,
+           crown_diameter_constant = 0,
+           limits = c(0, 1),
+           ground_height = NULL,
+           smoothing_radius = 5,
+           ...) {
+    standardGeneric("watershed_diameter_raster")
+  },
+  signature = "point_cloud"
 )
 
 # Declare variables to aviod check notes for watershed_diameter_raster
@@ -85,7 +85,6 @@ methods::setMethod(
            ground_height,
            smoothing_radius,
            ...) {
-
     validate_crown_diameter_constant(crown_diameter_constant)
     validate_diameter_limits(limits)
     validate_ground_height(ground_height, point_cloud)
@@ -94,7 +93,7 @@ methods::setMethod(
     # lidR::rasterize_terrain
     if (is.list(ground_height)) {
       ground_height <- do.call(lidR::rasterize_terrain,
-                               args = c(las = point_cloud, ground_height)
+        args = c(las = point_cloud, ground_height)
       )
     }
 
@@ -103,13 +102,15 @@ methods::setMethod(
     my_limits <- range(limits)
 
     # normalize point cloud if applicable
-    if(!is.null(ground_height)){
+    if (!is.null(ground_height)) {
       err.msg <- "Ground height raster does not cover the area of the point cloud."
       assert_that_raster_covers_las_point_cloud(ground_height, point_cloud, err.msg)
 
-      norm.las <- lidR::normalize_height(las = point_cloud,
-                                         algorithm = lidR::kriging(),
-                                         dtm = ground_height)
+      norm.las <- lidR::normalize_height(
+        las = point_cloud,
+        algorithm = lidR::kriging(),
+        dtm = ground_height
+      )
     } else {
       norm.las <- point_cloud
     }
@@ -118,79 +119,92 @@ methods::setMethod(
     # in more than half of the relevant area, use 0.25m resolution. If point
     # density is higher than 5, use 0.5 m resolution, otherwise 1 m.
     dens <- lidR::rasterize_density(norm.las, res = 1)
-    if(terra::global(dens, function(x) sum(x >= 16)) >=
-       0.5 * terra::global(dens, function(x) sum(x > 0))){
+    if (terra::global(dens, function(x) sum(x >= 16)) >=
+      0.5 * terra::global(dens, function(x) sum(x > 0))) {
       chm.res <- 0.25
-    } else if(terra::global(dens, function(x) sum(x >= 5)) >=
-              0.5 * terra::global(dens, function(x) sum(x > 0))){
+    } else if (terra::global(dens, function(x) sum(x >= 5)) >=
+      0.5 * terra::global(dens, function(x) sum(x > 0))) {
       chm.res <- 0.5
-    } else{
+    } else {
       chm.res <- 1
     }
 
     # create canopy height model
     chm <- lidR::rasterize_canopy(norm.las,
-                                  res = chm.res,
-                                  algorithm = lidR::p2r(subcircle = 0.25))
+      res = chm.res,
+      algorithm = lidR::p2r(subcircle = 0.25)
+    )
 
     # fill in NA values with 0
     chm[is.na(chm)] <- 0
 
     # watershed delineation
-    wsh <- lidR::watershed(chm,...)()
+    wsh <- lidR::watershed(chm, ...)()
 
     # convert to polygon
     poly.wsh <- terra::as.polygons(wsh)
 
     # tree height as highest chm value
     height.points <- data.table::data.table(terra::extract(chm, poly.wsh))
-    trees <- height.points[,.(height = max(Z)), keyby=ID]
+    trees <- height.points[, .(height = max(Z)), keyby = ID]
 
     # calculate crown area
-    poly.wsh$area <- terra::expanse(poly.wsh, transform=F)
+    poly.wsh$area <- terra::expanse(poly.wsh, transform = F)
     # calculate crown diameter as square root of area
     poly.wsh$diam <- sqrt(poly.wsh$area)
 
     # calculate diameter to height ratio
     poly.wsh$height <- trees$height
-    poly.wsh$diam.height.ratio <- pmin(pmax((poly.wsh$diam - crown_diameter_constant)/
-                                              poly.wsh$height,
-                                            my_limits[1]),
-                                       my_limits[2])
+    poly.wsh$diam.height.ratio <- pmin(
+      pmax(
+        (poly.wsh$diam - crown_diameter_constant) /
+          poly.wsh$height,
+        my_limits[1]
+      ),
+      my_limits[2]
+    )
 
     # build raster of average ratio
     dhr.rast <- terra::rasterize(poly.wsh,
-                                 chm,
-                                 field = "diam.height.ratio")
+      chm,
+      field = "diam.height.ratio"
+    )
     # smooth raster if applicable
-    if(smoothing_radius >= chm.res){
+    if (smoothing_radius >= chm.res) {
       window_size <- floor(smoothing_radius / chm.res) * 2 + 1
       double_window_size <- floor(2 * smoothing_radius / chm.res) * 2 + 1
-      ratio.avg <- terra::focal(x = dhr.rast,
-                                w = window_size,
-                                fun = "mean",
-                                na.rm = T,
-                                pad = T)
+      ratio.avg <- terra::focal(
+        x = dhr.rast,
+        w = window_size,
+        fun = "mean",
+        na.rm = T,
+        pad = T
+      )
       # where there are NA values, fill with double smoothing radius average
-      ratio.avg[is.na(ratio.avg)] <- terra::focal(x = dhr.rast,
-                                                  w = double_window_size,
-                                                  fun = "mean",
-                                                  na.rm = T,
-                                                  pad = T)
-    }else{ # if smoothing radius is too small to be meaningful
+      ratio.avg[is.na(ratio.avg)] <- terra::focal(
+        x = dhr.rast,
+        w = double_window_size,
+        fun = "mean",
+        na.rm = T,
+        pad = T
+      )
+    } else { # if smoothing radius is too small to be meaningful
       ratio.avg <- dhr.rast
     }
 
     # where there are NA values, fill with 10m average
-    ratio.avg[is.na(ratio.avg)] <- terra::focal(x = dhr.rast,
-                                                fun = "mean",
-                                                na.rm = T,
-                                                pad=T)
+    ratio.avg[is.na(ratio.avg)] <- terra::focal(
+      x = dhr.rast,
+      fun = "mean",
+      na.rm = T,
+      pad = T
+    )
     # if there are still NA values, arbitrarily fill with 0.5
     ratio.avg[is.na(ratio.avg)] <- 0.5
 
     return(ratio.avg)
-  })
+  }
+)
 
 
 # watershed_diameter_raster (dummy) for data frame  ----------------------------
@@ -206,10 +220,13 @@ methods::setMethod(
            ground_height,
            smoothing_radius,
            ...) {
-    stop(paste("watershed_diameter_raster is not (yet) implemented for point cloud",
-               "of type data.frame."), call. = FALSE)
+    stop(paste(
+      "watershed_diameter_raster is not (yet) implemented for point cloud",
+      "of type data.frame."
+    ), call. = FALSE)
     return(1)
-  })
+  }
+)
 
 # watershed_diameter_raster (dummy) for LAScatalog -----------------------------
 #' @describeIn watershed_diameter_raster Calculate a raster of crown diameter
@@ -225,7 +242,10 @@ methods::setMethod(
            ground_height,
            smoothing_radius,
            ...) {
-    stop(paste("watershed_diameter_raster is not (yet) implemented for point cloud",
-               "of type LasCatalog."), call. = FALSE)
+    stop(paste(
+      "watershed_diameter_raster is not (yet) implemented for point cloud",
+      "of type LasCatalog."
+    ), call. = FALSE)
     return(1)
-  })
+  }
+)

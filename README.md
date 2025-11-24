@@ -18,16 +18,6 @@ the tree segmentation works, see the documentation of the
 generic. Pseudo code of the AMS3D algorithm is listed
 [below](#pseudo-code-of-the-ams3d-algorithm).
 
-## Installation
-
-You can install the development version of crownsegmentr from
-[GitHub](https://github.com/Lenostatos/crownsegmentr) with:
-
-``` r
-# install.packages("pak")
-pak::pak("Lenostatos/crownsegmentr")
-```
-
 ## Example
 
 This is a basic example which shows you how to segment a normalized
@@ -63,23 +53,84 @@ lidR::plot(
 )
 ```
 
-## Code Structure
+## Usage
 
 The package provides four functions: The central function
-[`segment_tree_crowns`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R),
+[`segment_tree_crowns()`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R),
 the preprocessing functions
-[`watershed_diameter_raster`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/diameter_raster.R)
+[`watershed_diameter_raster()`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/watershed_diameter_raster.R)
 and
-[`li_diameter_raster`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/diameter_raster.R),
+[`li_diameter_raster()`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/li_diameter_raster.R),
 and the postprocessing function
-[`remove_small_trees`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/remove_small_trees.R).
-While the latter three are implemented only in R, the code base of
-`segment_tree_crowns` is split into an R “front-end” and a C++
-“back-end”.
+[`remove_small_trees()`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/remove_small_trees.R).
+
+### segment_tree_crowns()
+
+This is the central function of the package, which implements the
+AMS3D-Algorithm. It takes a point cloud and returns the same point cloud
+with an additional attribute called “crown_id” (or differently,
+depending on user specification). In addition, the user must specify the
+two arguments crown_diameter_to_tree_height and
+crown_length_to_tree_height, to determine the size of the search kernel
+depending on the estimated shapes of the trees. Those values can either
+be given as single numbers, or as raster, which allows to account for
+different tree shapes in different parts of the point cloud. They can
+also be set to 0, if non-zero values are given for
+crown_diameter_constant and crown_length_constant, respectively. For
+details see the documentation of the function, or the [pseudo code of
+the algorithm](#pseudo-code-of-the-ams3d-algorithm).
+
+### li_diameter_raster() and watershed_diameter_raster()
+
+These two preprocessing functions do the same thing, but in different
+ways: They take a point cloud, and do a preliminary segmentation of tree
+crowns with a quick algorithm (\[lidR::li2012()\] or
+\[lidR::watershed()\]). Then, they return a raster of local
+crown_diameter_to_tree_height ratios, based on the preliminary
+segmentation. This raster can then be used as input for
+segment_tree_crowns. Usually, this improves the segmentation accuracy of
+the AMS3D algorithm. However, in cases where the preliminary
+segmentation performs poorly, it may be worse than specifying reasonable
+fixed numbers for crown_diameter_to_tree_height. The watershed variant
+requires the Bioconductor package
+[EBImage](https://github.com/aoles/EBImage). If you have it available,
+`watershed_diameter_raster()` is recommended. Otherwise,
+`li_diameter_raster()` offers a good alternative. Both functions can
+also be called from within `segment_tree_crowns()`, by specifying
+`crown_diameter_to_tree_height = “li2012”` or
+`crown_diameter_to_tree_height = “watershed”`. In these cases, the
+functions will be called with default parameters. In order to vary
+parameters, the function must be called manually.
+
+### remove_small_trees()
+
+The AMS3D-Algorithm often yields numerous smaller crown clusters in the
+lower part of the point cloud, especially if the point cloud is thin in
+its lower parts, or the constants for crown diameter and crown length
+are small. To reduce such over-segmentation, you can post-process the
+segmentation result with `remove_small_trees()`. Crown ID’s whose crowns
+have diameters or heights below user-defined thresholds will be set to
+NA.
+
+### Note: Density of input point clouds
+
+The AMS3D algorithm works best for airborne laser scanning (ALS) point
+clouds with densities between 5 and 20 points per m². Typically, point
+densities higher than this do not improve the accuracy of the
+segmentation, while substantially increasing the computation time: The
+processing time increases roughly quadratically with the density of the
+input point cloud. For high-density point clouds, we recommend thinning
+the point cloud before segmentation, or using other algorithms.
+
+## Code structure
+
+The code base of`segment_tree_crowns()` is split into an R “front-end”
+and a C++ “back-end”. The other three functions are less complex, and
+implemented in one R file each.
 
 #### Design principles
 
-The function `segment_tree_crowns` is a [S4
+The function `segment_tree_crowns` is an [S4
 generic](https://adv-r.hadley.nz/s4.html#s4-generics) , i.e. it can
 handle point cloud data stored in different data types and behave
 differently according to that type. More specifically, the generic
@@ -91,8 +142,8 @@ input data type. There are methods for
   objects, and
 - [`lidR::LAScatalog`](https://github.com/Jean-Romain/lidR/blob/HEAD/R/Class-LAScatalog.R)s.
 
-While the other functions (`li_diameter_raster`,
-`watershed_diameter_raster` and `remove_small_trees`) are also
+While the other functions (`li_diameter_raster()`,
+`watershed_diameter_raster()` and `remove_small_trees()`) are also
 implemented as S4 generics, they can only take point clouds of type
 `lidR::LAS`.
 
@@ -422,7 +473,7 @@ lists. The syntax of these initializer lists looks like this:
         # centroids converge
         do:
             former_centroid = current_centroid
-            current_centroid = calculate_centroid_of (
+            current_centroid = calculate_weighted_mean_of (
                 points_in_neighborhood_of( former_centroid )
             )
         while( distance_of( former_centroid, current_centroid ) > very_small 
@@ -457,7 +508,7 @@ lists. The syntax of these initializer lists looks like this:
         <use a spatial index for finding the points in cylinder>
 
 
-    calculate_centroid_of( points ):
+    calculate_weithed_mean_of( points ):
         return( weighted_average_position_of (
             points, 
             weights_of( points )

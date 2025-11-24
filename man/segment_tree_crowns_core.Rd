@@ -43,12 +43,19 @@ the area of the (not normalized) point cloud stored in
 \code{coordinate_table}.
 }}
 
-\item{crown_diameter_to_tree_height, crown_length_to_tree_height}{Single
-numbers or \link[terra:SpatRaster-class]{SpatRasters} covering the area of the
-\code{point_cloud}. The dimensions of the search kernel will be calculated from
-these values and the height above ground of the kernel center, plus the
-constants. For details see "How the algorithm works". Points will not be
-segmented wherever a raster contains \code{NA} values.}
+\item{crown_diameter_to_tree_height}{Single number or
+\link[terra:SpatRaster-class]{SpatRasters} covering the area of the \code{point_cloud}.
+The diameter of the search kernel will be calculated by multiplying this
+value and the height above ground of the kernel center, and adding the
+crown_diameter_constant. For details see "How the algorithm works". Points
+will not be segmented wherever a raster contains \code{NA} values.}
+
+\item{crown_length_to_tree_height}{Single number or
+\link[terra:SpatRaster-class]{SpatRasters} covering the area of the \code{point_cloud}.
+The height of the search kernel will be calculated by multiplying this
+value and the height above ground of the kernel center, and adding the
+crown_length_constant. For details see "How the algorithm works". Points
+will not be segmented wherever a raster contains \code{NA} values.}
 
 \item{crown_diameter_constant, crown_length_constant}{Single number >=0.
 Used to determine the dimensions of the search kernel, together with the
@@ -64,7 +71,7 @@ nearest mode. See "How the algorithm works" to learn about centroids and
 modes in the context of the AMS3D algorithm.}
 
 \item{max_iterations_per_point}{A single integer. Maximum number of
-centroids calculated before the search for the nearest mode is aborted. See
+centroids calculated before the search for the nearest mode stops. See
 "How the algorithm works" to learn about centroids and modes in the context
 of the AMS3D algorithm.}
 
@@ -132,7 +139,7 @@ The basic assumption is that tree crowns form local maxima of point density
 and height within lidar point clouds. These local maxima are called
 \emph{modes}. The algorithm tries to find the nearest mode for each point. This
 is done by looking at the surrounding points and moving into the direction
-of the highest point density until the nearest mode is reached.
+of the highest point density until the nearest mode is (almost) reached.
 
 The surrounding points are found with a search kernel (a three-dimensional
 search window) which has the shape of a vertical cylinder. According to
@@ -149,26 +156,28 @@ The direction of the highest point density is found by calculating the
 average position of all points within the cylinder, the cylinder's so
 called \emph{centroid}. In order to move further into the direction of the
 highest point density, a new cylinder is placed on the centroid and a new
-centroid is calculated for that cylinder. This goes on until the cylinders
-"stop moving", i.e. until two subsequently calculated centroids are closer
-to each other than \code{centroid_convergence_distance}. At this point, the
-most recently calculated centroid, is taken as the original point's nearest
-mode.
+centroid is calculated for that cylinder. This continues on until the
+cylinders "stop moving", i.e. until two subsequently calculated centroids
+are closer to each other than \code{centroid_convergence_distance}. At this
+point, the most recently calculated centroid, hence called 'terminal
+centroid', is assumed to be close enough to the mode, so that the
+original point can be linked to the respective tree top.
 
 It sometimes happens that centroids converge only after a lot of
 iterations. In order to prevent situations where an excessive number of
 centroids is calculated for just one point, the parameter
-\code{max_iterations_per_point} is used to abort the centroid
+\code{max_iterations_per_point} is used to stop the centroid
 calculations after a certain number of them has been performed.
-Nonetheless, the last centroid found before the abortion is still taken as
+Nonetheless, the last centroid found before stopping is still taken as
 a good enough guess of the nearest mode's position.
 
-After the modes of the individual points have been calculated, it can be
-seen that modes of the same tree crown are positioned very close to each
-other, shortly below their crown's apex. These dense clusters of modes are
+After the terminal centroids of the individual points have been
+calculated, it can be seen that terminal centroids of points belonging to
+the same tree crown are positioned very close to each other, shortly below
+the crown's apex. These dense clusters of terminal centroids are
 identified with the DBSCAN algorithm which assigns a cluster ID to every
-mode. The cluster IDs are then finally connected back to the points of the
-point cloud and used as crown IDs.
+one of them. The cluster IDs are then finally connected back to the points
+of the point cloud and used as crown IDs.
 
 The DBSCAN clustering is explained nicely in
 \href{https://en.wikipedia.org/wiki/DBSCAN#Preliminary}{Wikipedia} but here

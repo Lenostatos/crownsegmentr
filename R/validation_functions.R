@@ -146,19 +146,19 @@ validate_kernel_params <- function(
     kernel_constant,
     point_cloud,
     which = "diameter") {
-
   # intercept is numeric and not NA
   assert_that(
     assertthat::is.number(kernel_constant),
     assertthat::noNA(kernel_constant)
   )
 
-  # if intercept >= 0
   assert_that(
     kernel_constant >= 0,
-    msg = paste( "Used a crown",
-                 which,
-                 "constant below 0 which doesn't work.")
+    msg = paste(
+      "Used a crown",
+      which,
+      "constant below 0 which doesn't work."
+    )
   )
 
 
@@ -171,7 +171,8 @@ validate_kernel_params <- function(
           which,
           "_to_tree_height has more than one raster layer. Only the first",
           "layer is considered."
-      ))
+        )
+      )
     }
 
     assert_that_raster_has_numeric_values(
@@ -181,21 +182,21 @@ validate_kernel_params <- function(
 
     raster_minmax <- terra::minmax(kernel_to_tree_height, compute = TRUE)[, 1]
 
-    if(kernel_constant == 0){
+    if (kernel_constant == 0) {
       assert_that(
         raster_minmax["min"] > 0,
         msg = paste(
           "Used a crown", which, " to tree height value equal to or less than",
           "zero. This does not work when the constant is zero."
-          )
+        )
       )
-    }else{ # if kernel intercept > 0
+    } else { # if kernel intercept > 0
       assert_that(
-          raster_minmax["min"] >= 0,
-          msg = paste(
+        raster_minmax["min"] >= 0,
+        msg = paste(
           "The crown", which, "to tree height raster contains values below",
           "zero."
-          )
+        )
       )
     }
 
@@ -214,14 +215,36 @@ validate_kernel_params <- function(
       point_cloud = point_cloud,
       raster_name = paste0("crown_", which, "_to_tree_height")
     )
-  } else {
-    # if kernel_to_tree_height is not a raster object
+  } else if (methods::is(kernel_to_tree_height, "character")) {
+    assert_that(!inherits(point_cloud, "data.frame"), msg = paste(
+      "Passing an algorithm name for crown_diameter_to_tree_height is not",
+      "supported with data.frame(-like) point clouds."
+    ))
+    assert_that(!inherits(point_cloud, "LAScatalog"), msg = paste(
+      "Passing an algorithm name for crown_diameter_to_tree_height is not",
+      "supported with point clouds of type LAS Catalog."
+    ))
+
+    assert_that(
+      which == "diameter",
+      msg = "crown_length_to_tree_height must be numeric or SpatRaster."
+    )
+
+    legitimate_arguments <- c("li", "li2012", "ws", "watershed")
+    assert_that(
+      (kernel_to_tree_height %in% legitimate_arguments),
+      msg = paste(
+        "crown_diameter_to_tree_height must be numeric, SpatRaster,",
+        "or one of the following strings: 'li2012' or 'watershed'"
+      )
+    )
+  } else { # if kernel_to_tree_height is neither raster nor character
     assert_that(
       assertthat::is.number(kernel_to_tree_height),
       assertthat::noNA(kernel_to_tree_height)
     )
 
-    if(kernel_constant == 0){
+    if (kernel_constant == 0) {
       assert_that(
         kernel_to_tree_height > 0,
         msg = paste(
@@ -229,17 +252,17 @@ validate_kernel_params <- function(
           "zero. This does not work when the constant is zero."
         )
       )
-    }else{ # if kernel intercept > 0
+    } else { # if kernel intercept > 0
       assert_that(
-          kernel_to_tree_height >= 0,
-          msg = paste(
-          "Used a crown", which, "to tree height value below zero."
-        ))
+        kernel_to_tree_height >= 0,
+        msg = paste("Used a crown", which, "to tree height value below zero.")
+      )
     }
-
     if (kernel_to_tree_height > 2) {
-      warning(paste( "A crown", which,
-                     "to tree height greater than 2 is likely too high."))
+      warning(paste(
+        "A crown", which,
+        "to tree height greater than 2 is likely too high."
+      ))
     }
   }
 }
@@ -457,7 +480,7 @@ validate_scale_n_offset_are_consistent <- function(LAScatalog) {
 
 # Validation functions for diameter_raster
 
-validate_crown_diameter_constant <- function(intercept){
+validate_crown_diameter_constant <- function(intercept) {
   assert_that(
     assertthat::is.number(intercept),
     assertthat::noNA(intercept),
@@ -465,7 +488,7 @@ validate_crown_diameter_constant <- function(intercept){
   )
 }
 
-validate_diameter_limits <- function(limits){
+validate_diameter_limits <- function(limits) {
   assert_that(
     is.vector(limits),
     is.numeric(limits),
@@ -474,7 +497,7 @@ validate_diameter_limits <- function(limits){
   )
 }
 
-validate_smoothing_radius <- function(smoothing_radius){
+validate_smoothing_radius <- function(smoothing_radius) {
   assert_that(
     assertthat::is.number(smoothing_radius),
     assertthat::noNA(smoothing_radius),

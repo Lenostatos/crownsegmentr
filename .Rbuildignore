@@ -6,3 +6,5 @@
 ^README\.Rmd$
 ^cran-comments\.md$
 ^package_development_code\.R$
+^[.]?air[.]toml$
+^\.vscode$

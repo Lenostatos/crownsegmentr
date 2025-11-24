@@ -1,4 +1,4 @@
-test_that("watershed_diameter_raster works",{
+test_that("watershed_diameter_raster works", {
   skip_if_not_installed("EBImage")
 
   test_point_cloud_file_path <- system.file(
@@ -14,23 +14,34 @@ test_that("watershed_diameter_raster works",{
     ytop = test_point_cloud_header@PHB$`Min Y` + 50
   )
 
-  testthat::expect_no_failure({
-    watershed_raster <- watershed_diameter_raster(test_point_cloud)
+  testthat::expect_silent({
+    watershed_raster1 <- watershed_diameter_raster(test_point_cloud)
 
-    assert_that_raster_fits_point_cloud(watershed_raster,
-                                        test_point_cloud)
+    assert_that_raster_fits_point_cloud(
+      watershed_raster1,
+      test_point_cloud
+    )
   })
 
   # test with modified parameters
-  testthat::expect_no_failure({
-    watershed_kds <- watershed_diameter_raster(test_point_cloud,
-                                               crown_diameter_constant = 10,
-                                               limits = c(0.3,0.4),
-                                               smoothing_radius = 0)
+  testthat::expect_silent({
+    watershed_raster2 <- watershed_diameter_raster(test_point_cloud,
+      crown_diameter_constant = 10,
+      limits = c(0.3, 0.4),
+      smoothing_radius = 0
+    )
   })
+
+  # test if function can be called from within segment_tree_crowns
+  segmented_point_cloud1 <- segment_tree_crowns(
+    test_point_cloud,
+    "watershed",
+    0.4
+  )
+  segmented_point_cloud2 <- segment_tree_crowns(
+    test_point_cloud,
+    watershed_raster1,
+    0.4
+  )
+  testthat::expect_equal(segmented_point_cloud1, segmented_point_cloud2)
 })
-
-
-
-
-

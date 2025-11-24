@@ -4,7 +4,7 @@
 \alias{calculate_centroids_flexible}
 \alias{calculate_centroids_normalized}
 \alias{calculate_centroids_terraneous}
-\title{Calculate modes with the AMS3D algorithm for a lidar point cloud of a forest}
+\title{Searches modes with the AMS3D algorithm for a lidar point cloud of a forest}
 \usage{
 calculate_centroids_flexible(
   coordinate_table,
@@ -53,7 +53,8 @@ treated as the x-, y-, and z-coordinates of an airborne lidar point
 cloud.}
 
 \item{min_point_height_above_ground}{A single positive number. The minimum
-point height above ground at which the function will calculate modes.}
+point height above ground at which the function will calculate
+centroids.}
 
 \item{ground_height_data}{A list containing either a single ground height
 value (named "value") or a set of elements that make up a ground height
@@ -88,7 +89,7 @@ assumed that subsequently calculated centroids have converged to the
 nearest mode.}
 
 \item{max_iterations_per_point}{Integer Scalar. Maximum number of
-centroids calculated before the search for the nearest mode is aborted.}
+centroids calculated before the search for the nearest mode stops.}
 
 \item{also_return_all_centroids}{Boolean Scalar. Should all centroid coordinates be
 returned as well?}
@@ -112,16 +113,16 @@ The set has to consist of the named elements described in the section
 A list with either one or two elements:
 \itemize{
 \item The first element (named
-"terminal_coordinates") contains the modes for all points in the
-\code{coordinate_table}. The modes are stored in a \code{data.frame}
+"terminal_coordinates") contains the terminal centroids for all points in the
+\code{coordinate_table}. These are stored in a \code{data.frame}
 with three columns that hold the x-, y-, and z-coordinates and they are
 stored in the same order as their respective points in the
 \code{coordinate_table}.
 \item The second element (named "centroid_coordinates") is only present if
 \code{also_return_all_centroids} was set to \code{TRUE} and contains the
-centroids calculated during the mode finding process. The centroids are
+centroids calculated during the mode finding process. The prior centroids are
 stored in a \code{data.frame} with xyz-coordinate columns like the
-modes. To enable grouping of these centroids by the point they belong
+terminal centroids. To enable grouping of these centroids by the point they belong
 to, there is one additional column (named "point_index") which holds row
 indices of the corresponding points in the \code{coordinate_table}.
 }

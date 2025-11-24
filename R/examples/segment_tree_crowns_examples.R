@@ -43,10 +43,12 @@ plot_segmented_point_cloud(segmented_point_cloud)
 
 # Complete workflow with pre- and postprocessing -------------------------------
 
-diameter_raster <- crownsegmentr::watershed_diameter_raster(
+diameter_raster <- crownsegmentr::li_diameter_raster(
   point_cloud,
   crown_diameter_constant = 2
 )
+# If you have the package EBImage, you can also use
+# watershed_diameter_raster similarly
 
 terra::plot(diameter_raster)
 
@@ -68,7 +70,22 @@ processed_point_cloud <- crownsegmentr::remove_small_trees(
 
 plot_segmented_point_cloud(processed_point_cloud)
 
-# Exclude Points Below any Height on the Fly ------------------------------
+# Call Preprocessing (diameter_raster) Function from Within the Main Function---
+
+segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
+  point_cloud,
+  crown_diameter_to_tree_height = "li2012",
+  crown_length_to_tree_height = 0.4,
+  crown_diameter_constant = 2,
+  crown_length_constant = 3
+)
+
+plot_segmented_point_cloud(segmented_point_cloud)
+
+# result is equivalent to the intermediate step above. Only for using all the
+# options of the diameter_raster functions it is necessary to call them manually.
+
+# Exclude Points Below Certain Height from Segmentation ----------------------------
 
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
@@ -170,7 +187,7 @@ plot_segmented_point_cloud(
 )
 # Plot the centroids
 plot_segmented_point_cloud(
-  segmentation_results$prior_centroids,
+  segmentation_results$centroids,
   crown_colors,
   size = 1
 )
