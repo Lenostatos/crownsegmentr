@@ -14,8 +14,8 @@ crownsegmentr is an R package with a C++ implementation of the AMS3D
 algorithm [(Ferraz et. al, 2016)](#ferraz2016) for tree crown
 segmentation in airborne lidar data. For a general description of how
 the tree segmentation works, see the documentation of the
-[`segment_tree_crowns`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R)
-generic. Pseudo code of the AMS3D algorithm is listed
+[`segment_tree_crowns`](R/segment_tree_crowns.R) generic. Pseudo code of
+the AMS3D algorithm is listed
 [below](#pseudo-code-of-the-ams3d-algorithm).
 
 ## Example
@@ -56,13 +56,11 @@ lidR::plot(
 ## Usage
 
 The package provides four functions: The central function
-[`segment_tree_crowns()`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns.R),
-the preprocessing functions
-[`watershed_diameter_raster()`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/watershed_diameter_raster.R)
-and
-[`li_diameter_raster()`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/li_diameter_raster.R),
-and the postprocessing function
-[`remove_small_trees()`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/remove_small_trees.R).
+[`segment_tree_crowns()`](R/segment_tree_crowns.R), the preprocessing
+functions [`watershed_diameter_raster()`](R/watershed_diameter_raster.R)
+and [`li_diameter_raster()`](R/li_diameter_raster.R), and the
+postprocessing function
+[`remove_small_trees()`](R/remove_small_trees.R).
 
 ### segment_tree_crowns()
 
@@ -150,9 +148,9 @@ implemented as S4 generics, they can only take point clouds of type
 
 The data type specific methods deal with specifics of their data type.
 The actual segmentation is done by the internal function
-[`segment_tree_crowns_core`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/segment_tree_crowns_core.R),
-which is used by the `data.frame`/`data.table` and `lidR::LAS` methods.
-The `lidR::LAScatalog` method internally calls the `lidR::LAS` method.
+[`segment_tree_crowns_core`](R/segment_tree_crowns_core.R), which is
+used by the `data.frame`/`data.table` and `lidR::LAS` methods. The
+`lidR::LAScatalog` method internally calls the `lidR::LAS` method.
 
 #### segment_tree_crowns_core
 
@@ -207,14 +205,12 @@ coordinates.
 
 #### Other Internal Functionality
 
-- [validation
-  functions](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/validation_functions.R)
-  for method arguments
+- [validation functions](R/validation_functions.R) for method arguments
 - helper functions
-  [`extract_coordinate_values`](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/R/extract_coordinate_values.R)
-  and `collect_scale_n_offset_of_LAScatalog_files`
+  [`extract_coordinate_values`](R/extract_coordinate_values.R) and
+  `collect_scale_n_offset_of_LAScatalog_files`
 - [test
-  suite](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/tests/testthat)
+  suite](https://github.com/Lenostatos/crownsegmentr/tree/eec446620508ffc7c013f6855968fe246411c2ea/tests/testthat)
   for R functions/methods
 
 ### C++ Back-End
@@ -223,19 +219,16 @@ The back-end is a small C++ library which implements the AMS3D
 algorithm. The core functionality can be found in:
 
 - `namespace ams3d`: Functionality for calculating a point’s terminal
-  centroid with the AMS3D algorithm
-  ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d.h)),
+  centroid with the AMS3D algorithm ([header](inst/include/ams3d.h)),
   and
 - `namespace spatial`: a facade to the [Boost
   Geometry](https://www.boost.org/doc/libs/1_75_0/libs/geometry/doc/html/geometry/introduction.html)
   library which provides e.g. the spatial index used for finding points
-  inside cylinders
-  ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial.h)).
+  inside cylinders ([header](inst/include/spatial.h)).
 
 There is also some R interface code outside of any namespace called
 
-- `ams3d_R_interface`
-  ([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d_R_interface.h)).
+- `ams3d_R_interface` ([header](inst/include/ams3d_R_interface.h)).
 
 *Note*: The namespaces `ams3d` and `spatial` contain internal functions,
 classes, etc. which should not be used in other namespaces. These
@@ -250,16 +243,15 @@ not contained in any namespace, since this is a requirement of the
 actual exposition to R. The functions are
 
 - `calculate_centroids_normalized`
-  ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_normalized.cpp))
-  for processing normalized point clouds,
+  ([source](src/ams3d_R_interface_normalized.cpp)) for processing
+  normalized point clouds,
 - `calculate_centroids_terraneous`
-  ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_terraneous.cpp))
-  for processing non-normalized point clouds, and
+  ([source](src/ams3d_R_interface_terraneous.cpp)) for processing
+  non-normalized point clouds, and
 - `calculate_centroids_flexible`
-  ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_flexible.cpp))
-  for processing both normalized and non-normalized while possibly also
-  using rasters for the crown diameter and crown height to tree height
-  parameters.
+  ([source](src/ams3d_R_interface_flexible.cpp)) for processing both
+  normalized and non-normalized while possibly also using rasters for
+  the crown diameter and crown height to tree height parameters.
 
 They are all doing basically the same thing, which is looping over
 points they get from R and call the functionality exposed by `ams3d` and
@@ -267,7 +259,7 @@ points they get from R and call the functionality exposed by `ams3d` and
 
 In addition, there are also some helper functions in the
 `namespace ams3d_R_interface_util`
-([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_R_interface_util.cpp)).
+([source](src/ams3d_R_interface_util.cpp)).
 
 The `ams3d_R_interface` is the only part of the C++ code which calls
 R-specific functions (a.o. it manages a progress bar provided by the R
@@ -279,7 +271,7 @@ using R.
 #### namespace ams3d
 
 This namespace only exposes two functions
-([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/ams3d.h)):
+([header](inst/include/ams3d.h)):
 
 - `calculate_terminal_centroid`
 - `calculate_all_centroids`
@@ -292,22 +284,19 @@ overloaded three times:
 1.  The most simple overload assumes a normalized point cloud with
     ground height at zero and takes single numbers for the
     `crown_diameter_to_tree_height` and `crown_height_to_tree_height`
-    arguments
-    ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_normalized.cpp)).
+    arguments ([source](src/ams3d_normalized.cpp)).
 2.  The second overload can deal with not normalized point clouds by
     reading ground heights from a raster
-    ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_terraneous.cpp)).
+    ([source](src/ams3d_terraneous.cpp)).
 3.  The third overload reads both ground height and cylinder dimension
-    parameters from rasters
-    ([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_flexible.cpp)).
+    parameters from rasters ([source](src/ams3d_flexible.cpp)).
 
 There is also an internal `_Kernel` class
-([source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/ams3d_kernel.cpp))
-that models the cylinder used to find points in the neighborhood of a
-point or centroid. It also contains the logic to calculate the weighted
-centroid of all points inside the cylinder. A `_Kernel` object is
-instantiated with a point or centroid and the
-crown-diameter-to-tree-height and crown-height-to-tree-height
+([source](src/ams3d_kernel.cpp)) that models the cylinder used to find
+points in the neighborhood of a point or centroid. It also contains the
+logic to calculate the weighted centroid of all points inside the
+cylinder. A `_Kernel` object is instantiated with a point or centroid
+and the crown-diameter-to-tree-height and crown-height-to-tree-height
 parameters. It features only one public method:
 `calculate_centroid_in( point_cloud )`. Cylinder dimensions are
 calculated in the constructor and the centroid calculation logic is
@@ -324,18 +313,13 @@ This namespace mainly exposes functionality of and based on the C++
 library
 [`Boost Geometry`](https://www.boost.org/doc/libs/1_75_0/libs/geometry/doc/html/index.html)
 for dealing with point data. Most of this functionality consists of data
-types
-([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_types.h))
-but there are also some functions and one functor
-([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_util.h)
-and
-[source](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/src/spatial_util.cpp)).
-Additionally, there is some raster functionality
-([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_raster.h))
-and a few custom iterators
-([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_index_creation.h))
-for inserting points into the spatial index provided by the Boost
-Geometry library (an R\*-tree).
+types ([header](inst/include/spatial_types.h)) but there are also some
+functions and one functor ([header](inst/include/spatial_util.h) and
+[source](src/spatial_util.cpp)). Additionally, there is some raster
+functionality ([header](inst/include/spatial_raster.h)) and a few custom
+iterators ([header](inst/include/spatial_index_creation.h)) for
+inserting points into the spatial index provided by the Boost Geometry
+library (an R\*-tree).
 
 The data types are:
 
@@ -367,8 +351,7 @@ the R\*-tree index. Functors are function objects, i.e. objects with a
 `()`-operator, making it possible to use such an object like a function.
 
 For handling raster data in the C++ back-end, a small set of three
-raster classes was set up
-([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_raster.h)):
+raster classes was set up ([header](inst/include/spatial_raster.h)):
 
 - `I_Raster` an interface class which defines methods that every raster
   object should have.
@@ -395,8 +378,8 @@ order to use this feature, the index constructor needs to be passed all
 of the points it should use in the form of a begin and end iterator. In
 order to skip points with non-finite coordinate values and points below
 certain heights, custom iterators for `std::vector< point_3d_t >`
-([header](https://github.com/Lenostatos/crownsegmentr/blob/HEAD/inst/include/spatial_index_creation.h))
-are used by a few public functions to set up spatial indices:
+([header](inst/include/spatial_index_creation.h)) are used by a few
+public functions to set up spatial indices:
 
 - `create_index_of_finite( points, min_height )` skips points with
   non-finite coordinate values and points below `min_height`
