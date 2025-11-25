@@ -29,7 +29,8 @@ Imports:
 Suggests: 
     EBImage,
     future,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    raster
 LinkingTo: 
     BH (>= 1.75.0-0),
     progress,
