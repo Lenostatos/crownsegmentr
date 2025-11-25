@@ -27,9 +27,9 @@
 #'
 #' @param point_cloud a point cloud, either as data.frame/data.table, or as
 #' lidR::LAS object.
-#' @param min_radius (num) the threshold for crown radius, below which trees
+#' @param min_radius (Numeric >= 0) the threshold for crown radius, below which trees
 #' will be removed
-#' @param min_height (num) the threshold for crown height, below which trees
+#' @param min_height (Numeric) the threshold for crown height, below which trees
 #' will be removed. Works only if las is normalized.
 #' @param crown_id_column_name the name of the column in which the id of the
 #' crown is saved
@@ -39,6 +39,9 @@
 #' altered crown id's. Trees that are considered too small have their crown id
 #' set to NA, and all other crown id's are re-assigned so that they are
 #' without gaps
+#'
+#' @example R/examples/remove_small_trees_examples.R
+#'
 #' @export
 methods::setGeneric("remove_small_trees",
   function(point_cloud,

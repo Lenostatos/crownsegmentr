@@ -25,26 +25,25 @@
 #'
 #' The function calculates a raster with values for
 #' crown_diameter_to_tree_height as input for the AMS3D algorithm. It segments
-#' the tree crowns with the watershed algorithm from the EBImage package,
-#' calculates a ratio of crown diameter to tree height for each tree, and
-#' converts this into a raster.
+#' the tree crowns with the watershed algorithm from lidR, calculates a ratio of
+#' crown diameter to tree height for each tree, and converts this into a raster.
 #'
 #' @param point_cloud the input point cloud, either as LAS or as data.frame.
 #' @param crown_diameter_constant a fixed value for crown_diameter_constant, which
 #' reduces the crown diameters by the given value before calculating the ratio
 #' of crown diameter to tree height
-#' @param limits a numeric vector with minimum and maximum allowed values for
-#' the ratio
+#' @param limits a numeric vector with minimum and maximum values for
+#' the ratio, at which every tree's ratio will be capped
 #' @param ground_height (optional) either
-#' *NULL, indicating that the point cloud is normalized, or
-#' *a [SpatRaster][terra::SpatRaster] digital terrain model, or
-#' *a list of arguments to the
+#' * NULL, indicating that the point cloud is normalized, or
+#' * a [SpatRaster][terra::SpatRaster] digital terrain model, or
+#' * a list of arguments to the
 #' [lidR rasterize_terrain()][lidR::rasterize_terrain()] function to normalize
 #' the point cloud.
 #' @param smoothing_radius The radius of the filter used for smoothing the
 #' diameter-to-height ratio from individual trees.
 #' @param ... further parameters will be passed to the function
-#' [lidR::watershed]
+#' [lidR::watershed()]
 #' @return a terra SpatRaster
 #'
 #' @section Details:
@@ -52,8 +51,11 @@
 #' The output raster can serve as input for the parameter
 #' "crown_diameter_to_tree_height" for the function
 #' segment_tree_crowns.
-#' It averages the ratio of crown diameter to tree height for a 5 m radius,
+#' It averages the ratio of crown diameter to tree height for a given radius,
 #' for trees that were detected with watershed segmentation.
+#' The Bioconductor package "EBImage" is required to use this function.
+#'
+#' @example R/examples/watershed_diameter_raster_examples.R
 #'
 #' @export
 methods::setGeneric("watershed_diameter_raster",

@@ -20,20 +20,22 @@ li_diameter_raster(
 reduces the crown diameters by the given value before calculating the ratio
 of crown diameter to tree height}
 
-\item{limits}{a numeric vector with minimum and maximum allowed values for
-the ratio}
+\item{limits}{a numeric vector with minimum and maximum values for
+the ratio, at which every tree's ratio will be capped}
 
 \item{ground_height}{(optional) either
-*NULL, indicating that the point cloud is normalized, or
-*a \link[terra:SpatRaster-class]{SpatRaster} digital terrain model, or
-*a list of arguments to the
+\itemize{
+\item NULL, indicating that the point cloud is normalized, or
+\item a \link[terra:SpatRaster-class]{SpatRaster} digital terrain model, or
+\item a list of arguments to the
 \link[lidR:rasterize]{lidR rasterize_terrain()} function to normalize
-the point cloud.}
+the point cloud.
+}}
 
 \item{smoothing_radius}{The radius of the filter used for smoothing the
 diameter-to-height ratio from individual trees.}
 
-\item{...}{further parameters will be passed to the function \link[lidR:its_li2012]{lidR::li2012}}
+\item{...}{further parameters will be passed to the function \code{\link[lidR:its_li2012]{lidR::li2012()}}}
 }
 \value{
 terra SpatRaster
@@ -48,9 +50,74 @@ diameter to tree height for each tree, and converts this into a raster.
 
 
 The output raster can serve as input for the parameter
-"crown_diameter_to_tree_height" (hence  "kds") for the function
-segment_tree_crowns. It averages the ratio of crown diameter to tree height
-for a 5 m radius, for trees that were detected with the Li2012 tree
-segmentation algorithm.
+"crown_diameter_to_tree_height" for the function segment_tree_crowns.
+It averages the ratio of crown diameter to tree height for a given radius,
+for trees that were detected with the Li2012 tree segmentation algorithm.
 }
 
+\examples{
+# Simple case -------------------------------------------------------------
+
+# Load a point cloud of some trees included in the lidR package
+point_cloud <- lidR::readLAS(system.file(
+  "extdata/MixedConifer.laz",
+  package = "lidR"
+))
+
+# Calculate the diameter raster
+diameter_raster_1 <- li_diameter_raster(point_cloud)
+
+# Plot
+terra::plot(diameter_raster_1)
+
+# Use the raster as input for segment_tree_crowns
+segmented_point_cloud <- segment_tree_crowns(
+  point_cloud,
+  crown_diameter_to_tree_height = diameter_raster_1,
+  crown_length_to_tree_height = 0.5)
+
+
+# Vary some arguments ---------------------------------------------------------
+# Adding a crown diameter constant will reduce the raster values
+diameter_raster_2 <- li_diameter_raster(
+  point_cloud,
+  crown_diameter_constant = 3
+  )
+
+# Plot
+terra::plot(diameter_raster_2)
+
+
+# Limits will keep the raster values confined
+diameter_raster_3 <- li_diameter_raster(
+  point_cloud,
+  crown_diameter_constant = 3,
+  limits = c(0.2,0.4)
+)
+
+# Plot
+terra::plot(diameter_raster_3)
+
+
+# Increasing the smoothing radius will create a more homogeneous raster
+diameter_raster_4 <- li_diameter_raster(
+  point_cloud,
+  crown_diameter_constant = 3,
+  limits = c(0.2,0.4),
+  smoothing_radius = 20
+)
+
+# Plot
+terra::plot(diameter_raster_4)
+
+
+# Setting the smoothing radius to 0 will show the diameter to height ratio of
+# each segmented crown
+diameter_raster_5 <- li_diameter_raster(
+  point_cloud,
+  smoothing_radius = 0
+)
+
+# Plot
+terra::plot(diameter_raster_5)
+}
