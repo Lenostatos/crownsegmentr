@@ -18,7 +18,6 @@
 # along with crownsegmentr in a file called "COPYING". If not,
 # see <http://www.gnu.org/licenses/>.
 
-
 # data.frame/data.table method --------------------------------
 
 test_that("the data.frame/data.table method works", {
@@ -280,10 +279,11 @@ test_that("the LAS method works", {
   # )
 })
 
-
 # LAScatalog method -------------------------------------------
 
 test_that("the LAScatalog method works", {
+  skip_on_cran() # because it just takes quite long (ca. 20 s)
+
   # Parallelization to maximum 2 cores
   future::plan(strategy = future::multisession(workers = min(2, future::availableCores())))
 
@@ -326,10 +326,11 @@ test_that("the LAScatalog method works", {
   # )
 })
 
-
 # Uniqueness of LAScatalog crown IDs ------------------------------
 
 test_that("the calculation of unique crown IDs works for LAScatalog", {
+  skip_on_cran() # because it takes long (ca. 14 s)
+
   # TODO Stuff seems to work but I haven't found a way to systematically test it
   # yet.
 
@@ -380,10 +381,11 @@ test_that("the calculation of unique crown IDs works for LAScatalog", {
   # )
 })
 
-
 # Different C++ back-ends -------------------------------------------------
 
 test_that("The terraneous and flexible C++ back-ends work", {
+  skip_on_cran() # because it takes long (ca. 10 s)
+
   test_points <- lidR::readLAS(
     system.file("extdata/Topography.laz", package = "lidR")
   )
