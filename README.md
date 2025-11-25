@@ -84,15 +84,14 @@ the algorithm](#pseudo-code-of-the-ams3d-algorithm).
 
 These two preprocessing functions do the same thing, but in different
 ways: They take a point cloud, and do a preliminary segmentation of tree
-crowns with a quick algorithm (\[lidR::li2012()\] or
-\[lidR::watershed()\]). Then, they return a raster of local
-crown_diameter_to_tree_height ratios, based on the preliminary
-segmentation. This raster can then be used as input for
-segment_tree_crowns. Usually, this improves the segmentation accuracy of
-the AMS3D algorithm. However, in cases where the preliminary
-segmentation performs poorly, it may be worse than specifying reasonable
-fixed numbers for crown_diameter_to_tree_height. The watershed variant
-requires the Bioconductor package
+crowns with a quick algorithm (`lidR::li2012()` or `lidR::watershed()`).
+Then, they return a raster of local crown_diameter_to_tree_height
+ratios, based on the preliminary segmentation. This raster can then be
+used as input for segment_tree_crowns. Usually, this improves the
+segmentation accuracy of the AMS3D algorithm. However, in cases where
+the preliminary segmentation performs poorly, it may be worse than
+specifying reasonable fixed numbers for crown_diameter_to_tree_height.
+The watershed variant requires the Bioconductor package
 [EBImage](https://github.com/aoles/EBImage). If you have it available,
 `watershed_diameter_raster()` is recommended. Otherwise,
 `li_diameter_raster()` offers a good alternative. Both functions can
@@ -138,9 +137,9 @@ function chooses one out of several so called “methods” based on the
 input data type. There are methods for
 
 - `data.frame`s/`data.table`s,
-- [`lidR::LAS`](https://github.com/Jean-Romain/lidR/blob/HEAD/R/Class-LAS.R)
+- [`lidR::LAS`](https://github.com/r-lidar/lidR/blob/HEAD/R/Class-LAS.R)
   objects, and
-- [`lidR::LAScatalog`](https://github.com/Jean-Romain/lidR/blob/HEAD/R/Class-LAScatalog.R)s.
+- [`lidR::LAScatalog`](https://github.com/r-lidar/lidR/blob/HEAD/R/Class-LAScatalog.R)s.
 
 While the other functions (`li_diameter_raster()`,
 `watershed_diameter_raster()` and `remove_small_trees()`) are also

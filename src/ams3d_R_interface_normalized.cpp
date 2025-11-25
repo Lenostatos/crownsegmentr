@@ -35,12 +35,12 @@
 //'     treated as the x-, y-, and z-coordinates of an airborne lidar point
 //'     cloud.
 //' @param min_point_height_above_ground A single positive number. The minimum
-//'     point height above ground at which the function will calculate 
+//'     point height above ground at which the function will calculate
 //'     centroids.
 //' @param crown_diameter_to_tree_height,crown_length_to_tree_height Single
 //'     numbers. Determine the size of the search kernel (bandwidth) of the
-//'     algorithm, as a function of height above ground. The kernel should have 
-//'     roughly the size of the expected tree crowns. If the intercepts are 
+//'     algorithm, as a function of height above ground. The kernel should have
+//'     roughly the size of the expected tree crowns. If the intercepts are
 //'     zero, the slopes translate to ratios of crown diameter to tree height
 //'     or crown length to tree height, respectively.
 //' @param crown_diameter_constant Single number >=0. Intercept for the linear
@@ -79,7 +79,7 @@
 //' @references Ferraz, A., S. Saatchi, C. Mallet, and V. Meyer (2016)
 //'     \emph{Lidar detection of individual tree size in tropical forests}.
 //'     Remote Sensing of Environment 183:318–333.
-//'     \url{https://doi.org/10.1016/j.rse.2016.05.028}.
+//'     \doi{10.1016/j.rse.2016.05.028}.
 //'
 // [[Rcpp::export]]
 Rcpp::List calculate_centroids_normalized (

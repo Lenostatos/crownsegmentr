@@ -163,5 +163,5 @@ elements:
 Ferraz, A., S. Saatchi, C. Mallet, and V. Meyer (2016)
 \emph{Lidar detection of individual tree size in tropical forests}.
 Remote Sensing of Environment 183:318–333.
-\url{https://doi.org/10.1016/j.rse.2016.05.028}.
+\doi{10.1016/j.rse.2016.05.028}.
 }
