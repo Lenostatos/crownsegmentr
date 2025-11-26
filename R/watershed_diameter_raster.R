@@ -55,7 +55,7 @@
 #' for trees that were detected with watershed segmentation.
 #' The Bioconductor package "EBImage" is required to use this function.
 #'
-#' @example R/examples/watershed_diameter_raster_examples.R
+#' @example \donttest{R/examples/watershed_diameter_raster_examples.R}
 #'
 #' @export
 methods::setGeneric("watershed_diameter_raster",

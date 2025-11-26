@@ -12,6 +12,7 @@ diameter_raster_1 <- watershed_diameter_raster(point_cloud)
 # Plot
 terra::plot(diameter_raster_1)
 
+
 # Use the raster as input for segment_tree_crowns
 segmented_point_cloud <- segment_tree_crowns(
   point_cloud,
