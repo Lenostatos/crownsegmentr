@@ -397,7 +397,7 @@ plot_segmented_point_cloud(processed_point_cloud)
 # Additional examples ----------------------------------------------------------
 # The following examples will not be run in automated checks, because they take
 # too much time, but you can very well run them manually
-dontrun({
+dontCheck({
 # Call Preprocessing (diameter_raster) Function from Within the Main Function---
 
   segmented_point_cloud <- crownsegmentr::segment_tree_crowns(

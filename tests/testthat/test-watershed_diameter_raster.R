@@ -1,5 +1,7 @@
 test_that("watershed_diameter_raster works", {
   skip_if_not_installed("EBImage")
+  skip_if_not_installed("raster") # I don't know why it would needs raster,
+  # but apparently it fails otherwise in some test environments
 
   test_point_cloud_file_path <- system.file(
     "extdata", "MixedConifer.laz",
