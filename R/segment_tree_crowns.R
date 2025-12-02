@@ -211,7 +211,7 @@
 #'   \doi{10.1016/j.rse.2012.01.020}
 #'
 #'
-#' @example \dontrun{ R/examples/segment_tree_crowns_examples.R}
+#' @example \dontrun{R/examples/segment_tree_crowns_examples.R}
 #'
 #' @export
 methods::setGeneric("segment_tree_crowns",
