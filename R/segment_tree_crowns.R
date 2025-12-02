@@ -208,10 +208,10 @@
 #'   M. Tomé, and P. Soares (2012)
 #'   \emph{3-D mapping of a multi-layered Mediteranean forest using ALS data}.
 #'   Remote Sensing of Environment, 121:210-223.
-#'   <doi:10.1016/j.rse.2012.01.020>
+#'   \doi{10.1016/j.rse.2012.01.020}
 #'
 #'
-#' @example \donttest{ R/examples/segment_tree_crowns_examples.R}
+#' @example \dontrun{ R/examples/segment_tree_crowns_examples.R}
 #'
 #' @export
 methods::setGeneric("segment_tree_crowns",

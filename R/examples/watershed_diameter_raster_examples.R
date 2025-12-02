@@ -63,3 +63,4 @@ diameter_raster_5 <- watershed_diameter_raster(
 
 # Plot
 terra::plot(diameter_raster_5)
+

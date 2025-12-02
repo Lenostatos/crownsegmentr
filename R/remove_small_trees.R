@@ -40,7 +40,7 @@
 #' set to NA, and all other crown id's are re-assigned so that they are
 #' without gaps
 #'
-#' @example R/examples/remove_small_trees_examples.R
+#' @example \dontrun{R/examples/remove_small_trees_examples.R}
 #'
 #' @export
 methods::setGeneric("remove_small_trees",

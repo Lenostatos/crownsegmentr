@@ -50,7 +50,7 @@
 #' It averages the ratio of crown diameter to tree height for a given radius,
 #' for trees that were detected with the Li2012 tree segmentation algorithm.
 #'
-#' @example \donttest{ R/examples/li_diameter_raster_examples.R}
+#' @example \dontrun{R/examples/li_diameter_raster_examples.R}
 #'
 #' @export
 methods::setGeneric("li_diameter_raster",
