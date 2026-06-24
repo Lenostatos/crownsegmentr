@@ -144,6 +144,9 @@ methods::setMethod(
     wsh <- lidR::watershed(chm, ...)()
 
     # convert to polygon
+    if(!is(wsh, "SpatRaster")){
+      wsh <- terra::rast(wsh)
+    }                                                                           # I am a bit confused why this is necessary. It only occured since mid-2026. Most plausibly, it seems that watershed() sometimes returns a raster::raster, and sometimes a terra::spatRaster, depending on the number of workers available to future. (See convert_ondisk_spatraster_into_serializable_raster_if_necessary in lidR/R/utils_raster.R)    }
     poly.wsh <- terra::as.polygons(wsh)
 
     # tree height as highest chm value
