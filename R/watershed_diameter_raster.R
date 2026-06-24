@@ -144,7 +144,7 @@ methods::setMethod(
     wsh <- lidR::watershed(chm, ...)()
 
     # convert to polygon
-    poly.wsh <- terra::as.polygons(terra::rast(wsh))
+    poly.wsh <- terra::as.polygons(wsh)
 
     # tree height as highest chm value
     height.points <- data.table::data.table(terra::extract(chm, poly.wsh))

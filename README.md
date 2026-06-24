@@ -7,7 +7,7 @@
 
 [![CRAN
 status](https://www.r-pkg.org/badges/version/crownsegmentr)](https://CRAN.R-project.org/package=crownsegmentr)
-
+[![R-CMD-check](https://github.com/Lenostatos/crownsegmentr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Lenostatos/crownsegmentr/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 crownsegmentr is an R package with a C++ implementation of the AMS3D
@@ -511,6 +511,7 @@ lists. The syntax of these initializer lists looks like this:
 V., (2016) “Lidar detection of individual tree size in tropical
 forests”, In: *Remote Sensing of Environment*, 183, 318-333, DOI:
 [10.1016/j.rse.2016.05.028](https://doi.org/10.1016/j.rse.2016.05.028)
+
 <a name="ferraz2012"></a> Ferraz, A.; Bretar, F.; Jaquemond, S.;
 Gonçalves, G.; Pereira, L.;, Tomé, M. & Soares, P., “3-D mapping of a
 multi-layered Mediterranean forest using ALS data”, In: *Remote Sensing
