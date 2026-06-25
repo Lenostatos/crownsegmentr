@@ -9,7 +9,7 @@ bibentry(
     person("Nikolai", "Knapp", , "nikolai.knapp@thuenen.de", role = "aut",
            comment = "Initialized, motivated and managed the development of the package.")
   ),
-  year         = 2025,
-  note         = "Version 1.0.0",
+  year         = 2026,
+  note         = "Version 1.0.2",
   url          = "https://github.com/Lenostatos/crownsegmentr"
 )
