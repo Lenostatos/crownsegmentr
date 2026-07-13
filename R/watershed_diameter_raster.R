@@ -42,6 +42,9 @@
 #' the point cloud.
 #' @param smoothing_radius The radius of the filter used for smoothing the
 #' diameter-to-height ratio from individual trees.
+#' @param inflation_factor The diameters of the crowns will be multiplied
+#' (inflated) by this factor. (Research has shown that AMS3D performs best if
+#' the bandwidth is slightly larger than the size of the crowns.)
 #' @param ... further parameters will be passed to the function
 #' [lidR::watershed()]
 #' @return a terra SpatRaster
@@ -64,6 +67,7 @@ methods::setGeneric("watershed_diameter_raster",
            limits = c(0, 1),
            ground_height = NULL,
            smoothing_radius = 5,
+           inflation_factor = 1.2,
            ...) {
     standardGeneric("watershed_diameter_raster")
   },
@@ -86,6 +90,7 @@ methods::setMethod(
            limits,
            ground_height,
            smoothing_radius,
+           inflation_factor,
            ...) {
     validate_crown_diameter_constant(crown_diameter_constant)
     validate_diameter_limits(limits)
@@ -156,8 +161,8 @@ methods::setMethod(
     # calculate crown area
     poly.wsh$area <- terra::expanse(poly.wsh, transform = F)
     # calculate crown diameter as square root of area
-    poly.wsh$diam <- sqrt(poly.wsh$area)
-    # poly.wsh$diam <- 2*sqrt(poly.wsh$area/pi)
+    #poly.wsh$diam <- sqrt(poly.wsh$area)
+    poly.wsh$diam <- 2*sqrt(poly.wsh$area/pi)*inflation_factor
 
     # calculate diameter to height ratio
     poly.wsh$height <- trees$height
@@ -225,6 +230,7 @@ methods::setMethod(
            limits,
            ground_height,
            smoothing_radius,
+           inflation_factor,
            ...) {
     stop(paste(
       "watershed_diameter_raster is not (yet) implemented for point cloud",
@@ -247,6 +253,7 @@ methods::setMethod(
            limits,
            ground_height,
            smoothing_radius,
+           inflation_factor,
            ...) {
     stop(paste(
       "watershed_diameter_raster is not (yet) implemented for point cloud",

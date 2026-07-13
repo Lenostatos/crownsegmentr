@@ -41,6 +41,9 @@
 #' the point cloud.
 #' @param smoothing_radius The radius of the filter used for smoothing the
 #' diameter-to-height ratio from individual trees.
+#' @param inflation_factor The diameters of the crowns will be multiplied
+#' (inflated) by this factor. (Research has shown that AMS3D performs best if
+#' the bandwidth is slightly larger than the size of the crowns.)
 #' @param ... further parameters will be passed to the function [lidR::li2012()]
 #' @return terra SpatRaster
 #' @section Details:
@@ -59,6 +62,7 @@ methods::setGeneric("li_diameter_raster",
            limits = c(0, 1),
            ground_height = NULL,
            smoothing_radius = 5,
+           inflation_factor = 1.2,
            ...) {
     standardGeneric("li_diameter_raster")
   },
@@ -78,6 +82,7 @@ methods::setMethod(
            limits,
            ground_height,
            smoothing_radius,
+           inflation_factor,
            ...) {
     # validate input
     validate_crown_diameter_constant(crown_diameter_constant)
@@ -149,7 +154,7 @@ methods::setMethod(
     )
     # calculate radius
     crowns$area <- as.numeric(sf::st_area(crowns))
-    crowns$diameter <- sqrt(crowns$area)
+    crowns$diameter <- 2*sqrt(crowns$area/pi)*inflation_factor
 
 
     # calculate cdr, and cap it with limits
@@ -209,6 +214,8 @@ methods::setMethod(
            crown_diameter_constant,
            limits,
            ground_height,
+           smoothing_radius,
+           inflation_factor,
            ...) {
     stop(paste(
       "li_diameter_raster is not (yet) implemented for point cloud",
@@ -230,6 +237,8 @@ methods::setMethod(
            crown_diameter_constant,
            limits,
            ground_height,
+           smoothing_radius,
+           inflation_factor,
            ...) {
     stop(paste(
       "li_diameter_raster is not (yet) implemented for point cloud",
