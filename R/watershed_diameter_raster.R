@@ -157,6 +157,7 @@ methods::setMethod(
     poly.wsh$area <- terra::expanse(poly.wsh, transform = F)
     # calculate crown diameter as square root of area
     poly.wsh$diam <- sqrt(poly.wsh$area)
+    # poly.wsh$diam <- 2*sqrt(poly.wsh$area/pi)
 
     # calculate diameter to height ratio
     poly.wsh$height <- trees$height
