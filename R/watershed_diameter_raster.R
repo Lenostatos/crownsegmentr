@@ -224,8 +224,12 @@ methods::setMethod(
     )
     # if there are still NA values, arbitrarily fill with 0.5
     ratio.avg[is.na(ratio.avg)] <- 0.5
+    # crop to original size (to revert possible effects from padding)
+    ratio.avg.cropped <- terra::crop(x = ratio.avg,
+                                     y = dhr.ext,
+                                     snap = "out")
 
-    return(ratio.avg)
+    return(ratio.avg.cropped)
   }
 )
 
