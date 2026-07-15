@@ -62,7 +62,7 @@ methods::setGeneric("li_diameter_raster",
            limits = c(0, 1),
            ground_height = NULL,
            smoothing_radius = 5,
-           inflation_factor = 1.2,
+           inflation_factor = 1.0,
            ...) {
     standardGeneric("li_diameter_raster")
   },
