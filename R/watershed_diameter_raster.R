@@ -66,7 +66,7 @@ methods::setGeneric("watershed_diameter_raster",
            crown_diameter_constant = 0,
            limits = c(0, 1),
            ground_height = NULL,
-           smoothing_radius = 15,
+           smoothing_radius = 10,
            inflation_factor = 1.0,
            ...) {
     standardGeneric("watershed_diameter_raster")
@@ -180,25 +180,37 @@ methods::setMethod(
       chm,
       field = "diam.height.ratio"
     )
+
     # smooth raster if applicable
     if (smoothing_radius >= chm.res) {
+      # make sure dhr.rast is large enough that focal can be applied
+      dhr.ext <- terra::ext(dhr.rast)
+      min.extend <- terra::ext(dhr.ext[1],
+                               dhr.ext[1] + smoothing_radius*2 + chm.res,
+                               dhr.ext[3],
+                               dhr.ext[3] + smoothing_radius*2 +chm.res)
+      padded.dhr <- terra::extend(x = dhr.rast,
+                                  y = min.extend)
+      # apply smoothing
       window_size <- floor(smoothing_radius / chm.res) * 2 + 1
       double_window_size <- floor(2 * smoothing_radius / chm.res) * 2 + 1
       ratio.avg <- terra::focal(
-        x = dhr.rast,
+        x = padded.dhr,
         w = window_size,
         fun = "mean",
         na.rm = T,
         pad = T
       )
       # where there are NA values, fill with double smoothing radius average
-      ratio.avg[is.na(ratio.avg)] <- terra::focal(
-        x = dhr.rast,
-        w = double_window_size,
-        fun = "mean",
-        na.rm = T,
-        pad = T
-      )
+      if(sum(is.na(as.vector(ratio.avg)))>0){
+        ratio.avg[is.na(ratio.avg)] <- terra::focal(
+          x = padded.dhr,
+          w = double_window_size,
+          fun = "mean",
+          na.rm = T,
+          pad = T
+        )
+      }
     } else { # if smoothing radius is too small to be meaningful
       ratio.avg <- dhr.rast
     }

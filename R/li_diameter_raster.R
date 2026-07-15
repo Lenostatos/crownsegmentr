@@ -61,7 +61,7 @@ methods::setGeneric("li_diameter_raster",
            crown_diameter_constant = 0,
            limits = c(0, 1),
            ground_height = NULL,
-           smoothing_radius = 15,
+           smoothing_radius = 10,
            inflation_factor = 1.0,
            ...) {
     standardGeneric("li_diameter_raster")
@@ -185,13 +185,15 @@ methods::setMethod(
         pad = T
       )
       # where there are NA values, fill with double smoothing radius average
-      ratio.avg[is.na(ratio.avg)] <- terra::focal(
-        x = dhr.rast,
-        w = double_window_size,
-        fun = "mean",
-        na.rm = T,
-        pad = T
-      )
+      if(sum(is.na(as.vector(ratio.avg)))>0){
+        ratio.avg[is.na(ratio.avg)] <- terra::focal(
+          x = dhr.rast,
+          w = double_window_size,
+          fun = "mean",
+          na.rm = T,
+          pad = T
+        )
+      }
     } else { # if smoothing radius is too small to be meaningful
       ratio.avg <- dhr.rast
     }
