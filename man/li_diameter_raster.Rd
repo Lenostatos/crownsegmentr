@@ -10,6 +10,7 @@ li_diameter_raster(
   limits = c(0, 1),
   ground_height = NULL,
   smoothing_radius = 5,
+  inflation_factor = 1.2,
   ...
 )
 }
@@ -34,6 +35,10 @@ the point cloud.
 
 \item{smoothing_radius}{The radius of the filter used for smoothing the
 diameter-to-height ratio from individual trees.}
+
+\item{inflation_factor}{The diameters of the crowns will be multiplied
+(inflated) by this factor. (Research has shown that AMS3D performs best if
+the bandwidth is slightly larger than the size of the crowns.)}
 
 \item{...}{further parameters will be passed to the function \code{\link[lidR:its_li2012]{lidR::li2012()}}}
 }
