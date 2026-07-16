@@ -17,7 +17,7 @@ segmentation}
   crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
-  smoothing_radius = 5,
+  smoothing_radius = 10,
   ...
 )
 
@@ -26,7 +26,7 @@ segmentation}
   crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
-  smoothing_radius = 5,
+  smoothing_radius = 10,
   ...
 )
 
@@ -35,7 +35,7 @@ segmentation}
   crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
-  smoothing_radius = 5,
+  smoothing_radius = 10,
   ...
 )
 
@@ -44,7 +44,7 @@ watershed_diameter_raster(
   crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
-  smoothing_radius = 5,
+  smoothing_radius = 10,
   ...
 )
 
@@ -53,7 +53,7 @@ watershed_diameter_raster(
   crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
-  smoothing_radius = 5,
+  smoothing_radius = 10,
   ...
 )
 
@@ -62,7 +62,7 @@ watershed_diameter_raster(
   crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
-  smoothing_radius = 5,
+  smoothing_radius = 10,
   ...
 )
 
@@ -71,7 +71,7 @@ watershed_diameter_raster(
   crown_diameter_constant = 0,
   limits = c(0, 1),
   ground_height = NULL,
-  smoothing_radius = 5,
+  smoothing_radius = 10,
   ...
 )
 }

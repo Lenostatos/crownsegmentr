@@ -63,7 +63,7 @@ methods::setGeneric("watershed_diameter_raster",
            crown_diameter_constant = 0,
            limits = c(0, 1),
            ground_height = NULL,
-           smoothing_radius = 5,
+           smoothing_radius = 10,
            ...) {
     standardGeneric("watershed_diameter_raster")
   },
@@ -155,9 +155,8 @@ methods::setMethod(
 
     # calculate crown area
     poly.wsh$area <- terra::expanse(poly.wsh, transform = F)
-    # calculate crown diameter as square root of area
-    poly.wsh$diam <- sqrt(poly.wsh$area)
-    # poly.wsh$diam <- 2*sqrt(poly.wsh$area/pi)
+    # calculate crown diameter as for a circle
+    poly.wsh$diam <- 2*sqrt(poly.wsh$area/pi)
 
     # calculate diameter to height ratio
     poly.wsh$height <- trees$height
@@ -175,27 +174,47 @@ methods::setMethod(
       chm,
       field = "diam.height.ratio"
     )
+    # extract the extent
+    dhr.ext <- terra::ext(dhr.rast)
+
     # smooth raster if applicable
     if (smoothing_radius >= chm.res) {
+      # make sure dhr.rast is large enough that focal can be applied
+      min.extend <- terra::ext(dhr.ext[1],
+                               dhr.ext[1] + smoothing_radius * 2 + chm.res,
+                               dhr.ext[3],
+                               dhr.ext[3] + smoothing_radius * 2 - chm.res)
+      padded.dhr <- terra::extend(x = dhr.rast,
+                                  y = min.extend)
+      # apply smoothing
       window_size <- floor(smoothing_radius / chm.res) * 2 + 1
       double_window_size <- floor(2 * smoothing_radius / chm.res) * 2 + 1
       ratio.avg <- terra::focal(
-        x = dhr.rast,
+        x = padded.dhr,
         w = window_size,
         fun = "mean",
         na.rm = T,
         pad = T
       )
-      # where there are NA values, fill with double smoothing radius average
-      ratio.avg[is.na(ratio.avg)] <- terra::focal(
-        x = dhr.rast,
-        w = double_window_size,
-        fun = "mean",
-        na.rm = T,
-        pad = T
-      )
+      # if there are NA values, fill with double smoothing radius average
+      if(sum(is.na(as.vector(ratio.avg)))>0){
+        ratio.avg[is.na(ratio.avg)] <- terra::focal(
+          x = padded.dhr,
+          w = double_window_size,
+          fun = "mean",
+          na.rm = T,
+          pad = T
+        )
+      }
     } else { # if smoothing radius is too small to be meaningful
       ratio.avg <- dhr.rast
+    }
+
+    # crop to original size (to revert possible effects from padding)
+    if(smoothing_radius >= chm.res){
+      ratio.avg <- terra::crop(x = ratio.avg,
+                               y = dhr.ext,
+                               snap = "out")
     }
 
     # where there are NA values, fill with 10m average
