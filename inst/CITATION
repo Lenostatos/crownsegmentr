@@ -10,6 +10,6 @@ bibentry(
            comment = "Initialized, motivated and managed the development of the package.")
   ),
   year         = 2026,
-  note         = "Version 1.0.2",
+  note         = "Version 1.1.0",
   url          = "https://github.com/Lenostatos/crownsegmentr"
 )
