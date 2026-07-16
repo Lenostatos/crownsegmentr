@@ -66,7 +66,7 @@ methods::setGeneric("watershed_diameter_raster",
            crown_diameter_constant = 0,
            limits = c(0, 1),
            ground_height = NULL,
-           smoothing_radius = 10,
+           smoothing_radius = 15,
            inflation_factor = 1.0,
            ...) {
     standardGeneric("watershed_diameter_raster")
@@ -180,15 +180,16 @@ methods::setMethod(
       chm,
       field = "diam.height.ratio"
     )
+    # extract the extent
+    dhr.ext <- terra::ext(dhr.rast)
 
     # smooth raster if applicable
     if (smoothing_radius >= chm.res) {
       # make sure dhr.rast is large enough that focal can be applied
-      dhr.ext <- terra::ext(dhr.rast)
       min.extend <- terra::ext(dhr.ext[1],
                                dhr.ext[1] + smoothing_radius*2 + chm.res,
                                dhr.ext[3],
-                               dhr.ext[3] + smoothing_radius*2 +chm.res)
+                               dhr.ext[3] + smoothing_radius*2 + chm.res)
       padded.dhr <- terra::extend(x = dhr.rast,
                                   y = min.extend)
       # apply smoothing
@@ -215,6 +216,13 @@ methods::setMethod(
       ratio.avg <- dhr.rast
     }
 
+    # crop to original size (to revert possible effects from padding)
+    if(smoothing_radius >= chm.res){
+      ratio.avg <- terra::crop(x = ratio.avg,
+                               y = dhr.ext,
+                               snap = "out")
+    }
+
     # where there are NA values, fill with 10m average
     ratio.avg[is.na(ratio.avg)] <- terra::focal(
       x = dhr.rast,
@@ -224,12 +232,9 @@ methods::setMethod(
     )
     # if there are still NA values, arbitrarily fill with 0.5
     ratio.avg[is.na(ratio.avg)] <- 0.5
-    # crop to original size (to revert possible effects from padding)
-    ratio.avg.cropped <- terra::crop(x = ratio.avg,
-                                     y = dhr.ext,
-                                     snap = "out")
 
-    return(ratio.avg.cropped)
+
+    return(ratio.avg)
   }
 )
 
