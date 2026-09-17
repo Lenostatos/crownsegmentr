@@ -136,7 +136,7 @@ methods::setMethod(
     )
     # calculate radius
     crowns$area <- as.numeric(sf::st_area(crowns))
-    crowns$radius <- sqrt(crowns$area) / 2
+    crowns$radius <- sqrt(crowns$area / pi)
 
     # identify ids of crowns that are not too small
     right_size_ids <- crowns[

@@ -23,6 +23,13 @@ knitr::opts_chunk$set(
 
 crownsegmentr is an R package with a C++ implementation of the AMS3D algorithm [(Ferraz et. al, 2016)](#ferraz2016) for tree crown segmentation in airborne lidar data. For a general description of how the tree segmentation works, see the documentation of the [`segment_tree_crowns`](R/segment_tree_crowns.R) generic. Pseudo code of the AMS3D algorithm is listed [below](#pseudo-code-of-the-ams3d-algorithm).
 
+## Installation
+
+Crownsegmentr can be installed from CRAN via 
+```{r example, eval=FALSE}
+install.packages("crownsegmentr")
+```
+or it can be installed from github.
 
 ## Example
 
@@ -39,7 +46,7 @@ point_cloud <- lidR::readLAS(system.file(
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
   crown_diameter_to_tree_height = 0.25,
-  crown_height_to_tree_height = 0.5
+  crown_length_to_tree_height = 0.5
 )
 
 # Generate random crown colors
