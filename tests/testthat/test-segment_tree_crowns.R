@@ -22,7 +22,7 @@
 
 test_that("the data.frame/data.table method works", {
   # Pseudo point cloud with just one point
-  pseudo_point_cloud <- data.table::data.table(X = 1, Y = 1, Z = 1)
+  pseudo_point_cloud <- data.table::data.table(X = 1, Y = 1, Z = 8)
   # Also load real point cloud data
   test_point_cloud_file_path <- system.file(
     "extdata", "MixedConifer.laz",
@@ -41,7 +41,8 @@ test_that("the data.frame/data.table method works", {
   segmented_points <- segment_tree_crowns(
     point_cloud = as.data.frame(pseudo_point_cloud),
     crown_diameter_to_tree_height = 0.25,
-    crown_length_to_tree_height = 0.5
+    crown_length_to_tree_height = 0.5,
+    min_num_points_per_crown = 5
   )
   expect_s3_class(segmented_points, class = "data.frame", exact = TRUE)
   expect_named(segmented_points,
@@ -155,7 +156,7 @@ test_that("the LAS method works", {
     ytop = test_point_cloud_header@PHB$`Min Y` + 50
   )
   # Sample a few points for a very small "pseudo" point cloud
-  test_points <- lidR::filter_poi(test_point_cloud, gpstime < 150747)
+  test_points <- lidR::filter_poi(test_point_cloud, gpstime < 150747.1)
 
   # test the most simple form
   segmented_points <- segment_tree_crowns(

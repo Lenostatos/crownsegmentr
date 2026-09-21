@@ -13,13 +13,13 @@ segment_tree_crowns(
   crown_length_to_tree_height,
   crown_diameter_constant = 0,
   crown_length_constant = 0,
-  segment_crowns_only_above = 0,
+  segment_crowns_only_above = 2,
   ground_height = NULL,
   crown_id_column_name = "crown_id",
-  centroid_convergence_distance = 0.01,
-  max_iterations_per_point = 500,
-  dbscan_neighborhood_radius = 0.3,
-  min_num_points_per_crown = 5,
+  centroid_convergence_distance = 0.1,
+  max_iterations_per_point = 100,
+  dbscan_neighborhood_radius = 0.5,
+  min_num_points_per_crown = 20,
   ...
 )
 
@@ -80,25 +80,25 @@ segment_tree_crowns(
 }
 \arguments{
 \item{point_cloud}{A data set containing xyz-coordinates. Can be passed as
-either a \link[=data.frame]{data.frame}, a
+either a \link{data.frame}, a
 \link[data.table:data.table]{data.table}, a \link[lidR:LAS-class]{LAS object} or
 a \link[lidR:LAScatalog-class]{LAScatalog}.
 
-If it's a \link[=data.frame]{data.frame} or a
+If it's a \link{data.frame} or a
 \link[data.table:data.table]{data.table} the function searches for coordinate
 columns by looking for the first numeric columns named "x"/"X", "y"/"Y", or
 "z"/"Z". For each instance where it can't find one of those it selects the
 next available numeric column in the table and issues a warning.}
 
 \item{crown_diameter_to_tree_height}{Single number or
-\link[terra:SpatRaster-class]{SpatRasters} covering the area of the \code{point_cloud}.
+\link[terra:SpatRaster]{SpatRasters} covering the area of the \code{point_cloud}.
 The diameter of the search kernel will be calculated by multiplying this
 value and the height above ground of the kernel center, and adding the
 crown_diameter_constant. For details see "How the algorithm works". Points
 will not be segmented wherever a raster contains \code{NA} values.}
 
 \item{crown_length_to_tree_height}{Single number or
-\link[terra:SpatRaster-class]{SpatRasters} covering the area of the \code{point_cloud}.
+\link[terra:SpatRaster]{SpatRasters} covering the area of the \code{point_cloud}.
 The height of the search kernel will be calculated by multiplying this
 value and the height above ground of the kernel center, and adding the
 crown_length_constant. For details see "How the algorithm works". Points
@@ -121,14 +121,14 @@ algorithm works" to learn about the search kernels.}
 \itemize{
 \item \code{NULL}, indicating that \code{point_cloud} is normalized with ground height at
 zero.
-\item A \link[terra:SpatRaster-class]{SpatRaster} providing ground heights for the area
+\item A \link[terra:SpatRaster]{SpatRaster} providing ground heights for the area
 of the (not normalized) \code{point_cloud}.
 \item A list of (ideally named) arguments to the
-\link[lidR:rasterize]{lidR rasterize_terrain()} function, which
+\link[lidR:rasterize_terrain]{lidR rasterize_terrain()} function, which
 will be used to generate a ground height grid from \code{point_cloud}.
 Currently not supported with point clouds stored in
 \link[=data.frame]{data.frames}. The list should not contain an argument to
-the "las" parameter of \link[lidR:rasterize]{rasterize_terrain()}.
+the "las" parameter of \link[lidR:rasterize_terrain]{rasterize_terrain()}.
 }
 
 Points will not be segmented wherever ground heights are NA.}
@@ -172,7 +172,7 @@ input point cloud.}
 \item{write_crown_id_also_to_file}{\code{TRUE} or \code{FALSE}. When writing
 the returned LAS object to disk, should the IDs of segmented bodies be
 written into that file as well? See the
-\link[lidR:add_attribute]{lidR function add_lasattribute()} for additional
+\link[lidR:add_lasattribute]{lidR function add_lasattribute()} for additional
 details. Will also be used for all attributes of the
 \link[lidR:LAS-class]{LAS object(s)} which are returned if \code{also_return_terminal_centroids}
 and/or \code{also_return_all_centroids} were set to \code{TRUE}.
@@ -186,7 +186,7 @@ IDs of segmented bodies will always be written to these files as well.}
 \code{write_crown_id_also_to_file} is set to \code{TRUE} this will be used
 as an additional description of the IDs of segmented bodies when the LAS
 object is written to disk. See the "desc" parameter of the
-\link[lidR:add_attribute]{lidR function add_lasattribute()} for additional
+\link[lidR:add_lasattribute]{lidR function add_lasattribute()} for additional
 details.}
 }
 \value{
@@ -235,7 +235,7 @@ data.
 \section{Functions}{
 \itemize{
 \item \code{segment_tree_crowns(data.frame)}: Segments coordinates stored as three columns
-in a \link[=data.frame]{data.frame} or \link[data.table:data.table]{data.table}.
+in a \link{data.frame} or \link[data.table:data.table]{data.table}.
 
 \item \code{segment_tree_crowns(LAS)}: Segments the point cloud data of a
 \link[lidR:LAS-class]{LAS object}.

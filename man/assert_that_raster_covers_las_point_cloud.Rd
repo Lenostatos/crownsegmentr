@@ -7,9 +7,9 @@
 assert_that_raster_covers_las_point_cloud(raster, las_point_cloud, message)
 }
 \arguments{
-\item{raster}{A \link[terra:SpatRaster-class]{SpatRaster}.}
+\item{raster}{A \link[terra:SpatRaster]{SpatRaster}.}
 
-\item{las_point_cloud}{Point cloud data in \link[lidR:LAS-class]{lidR::LAS} format.}
+\item{las_point_cloud}{Point cloud data in \link[lidR:LAS]{lidR::LAS} format.}
 
 \item{message}{Length-one character vector. Message to be used on assertion
 failure.}

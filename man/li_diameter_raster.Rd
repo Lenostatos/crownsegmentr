@@ -26,16 +26,16 @@ the ratio, at which every tree's ratio will be capped}
 \item{ground_height}{(optional) either
 \itemize{
 \item NULL, indicating that the point cloud is normalized, or
-\item a \link[terra:SpatRaster-class]{SpatRaster} digital terrain model, or
+\item a \link[terra:SpatRaster]{SpatRaster} digital terrain model, or
 \item a list of arguments to the
-\link[lidR:rasterize]{lidR rasterize_terrain()} function to normalize
+\link[lidR:rasterize_terrain]{lidR rasterize_terrain()} function to normalize
 the point cloud.
 }}
 
 \item{smoothing_radius}{The radius of the filter used for smoothing the
 diameter-to-height ratio from individual trees.}
 
-\item{...}{further parameters will be passed to the function \code{\link[lidR:its_li2012]{lidR::li2012()}}}
+\item{...}{further parameters will be passed to the function \code{\link[lidR:li2012]{lidR::li2012()}}}
 }
 \value{
 terra SpatRaster

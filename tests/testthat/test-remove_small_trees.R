@@ -64,8 +64,10 @@ test_that("Function works with real-world LAS file", {
   segmented_las <- segment_tree_crowns(test_point_cloud,
     crown_diameter_to_tree_height = 0.2,
     crown_length_to_tree_height = 0.6,
-    crown_diameter_constant = 2,
-    crown_length_constant = 1
+    crown_diameter_constant = 0,
+    crown_length_constant = 1,
+    segment_crowns_only_above = 0,
+    min_num_points_per_crown = 3
   )
 
   processed_las <- remove_small_trees(segmented_las)

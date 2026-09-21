@@ -38,20 +38,20 @@ algorithm works" to learn about the search kernels.}
 \itemize{
 \item \code{NULL}, indicating that the point cloud stored in
 \code{coordinate_table} is normalized with ground height at zero.
-\item A \link[terra:SpatRaster-class]{SpatRaster} providing ground heights for
+\item A \link[terra:SpatRaster]{SpatRaster} providing ground heights for
 the area of the (not normalized) point cloud stored in
 \code{coordinate_table}.
 }}
 
 \item{crown_diameter_to_tree_height}{Single number or
-\link[terra:SpatRaster-class]{SpatRasters} covering the area of the \code{point_cloud}.
+\link[terra:SpatRaster]{SpatRasters} covering the area of the \code{point_cloud}.
 The diameter of the search kernel will be calculated by multiplying this
 value and the height above ground of the kernel center, and adding the
 crown_diameter_constant. For details see "How the algorithm works". Points
 will not be segmented wherever a raster contains \code{NA} values.}
 
 \item{crown_length_to_tree_height}{Single number or
-\link[terra:SpatRaster-class]{SpatRasters} covering the area of the \code{point_cloud}.
+\link[terra:SpatRaster]{SpatRasters} covering the area of the \code{point_cloud}.
 The height of the search kernel will be calculated by multiplying this
 value and the height above ground of the kernel center, and adding the
 crown_length_constant. For details see "How the algorithm works". Points

@@ -11,7 +11,7 @@ assert_that_raster_covers_data_frame_point_cloud(
 )
 }
 \arguments{
-\item{raster}{A \link[terra:SpatRaster-class]{SpatRaster}.}
+\item{raster}{A \link[terra:SpatRaster]{SpatRaster}.}
 
 \item{data_frame_point_cloud}{Point cloud data in \code{\link[=data.frame]{data.frame()}} format.}
 
