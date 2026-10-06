@@ -26,7 +26,7 @@ crownsegmentr is an R package with a C++ implementation of the AMS3D algorithm [
 ## Installation
 
 Crownsegmentr can be installed from CRAN via 
-```{r example, eval=FALSE}
+```{r example1, eval=FALSE}
 install.packages("crownsegmentr")
 ```
 or it can be installed from github.
@@ -35,7 +35,7 @@ or it can be installed from github.
 
 This is a basic example which shows you how to segment a normalized point cloud and visualize the result:
 
-```{r example, eval=FALSE}
+```{r example2, eval=FALSE}
 # Load a point cloud of some trees included in the lidR package
 point_cloud <- lidR::readLAS(system.file(
   "extdata/MixedConifer.laz",

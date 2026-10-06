@@ -18,6 +18,16 @@ the tree segmentation works, see the documentation of the
 the AMS3D algorithm is listed
 [below](#pseudo-code-of-the-ams3d-algorithm).
 
+## Installation
+
+Crownsegmentr can be installed from CRAN via
+
+``` r
+install.packages("crownsegmentr")
+```
+
+or it can be installed from github.
+
 ## Example
 
 This is a basic example which shows you how to segment a normalized
@@ -34,7 +44,7 @@ point_cloud <- lidR::readLAS(system.file(
 segmented_point_cloud <- crownsegmentr::segment_tree_crowns(
   point_cloud,
   crown_diameter_to_tree_height = 0.25,
-  crown_height_to_tree_height = 0.5
+  crown_length_to_tree_height = 0.5
 )
 
 # Generate random crown colors
