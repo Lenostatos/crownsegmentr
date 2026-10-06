@@ -1,3 +1,5 @@
+# crownsegmentr 1.1.2
+
 # crownsegmentr 1.1.1
 * Default values for several parameters in segment_tree_crowns were changed, due to results from a large sensitivity analysis experiment. This applies to these parameters:
 segment_crowns_only_above, 
