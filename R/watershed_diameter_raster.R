@@ -194,7 +194,7 @@ methods::setMethod(
         w = window_size,
         fun = "mean",
         na.rm = T,
-        pad = T
+        expand = T
       )
       # if there are NA values, fill with double smoothing radius average
       if(sum(is.na(as.vector(ratio.avg)))>0){
@@ -203,7 +203,7 @@ methods::setMethod(
           w = double_window_size,
           fun = "mean",
           na.rm = T,
-          pad = T
+          expand = T
         )
       }
     } else { # if smoothing radius is too small to be meaningful
@@ -222,7 +222,7 @@ methods::setMethod(
       x = dhr.rast,
       fun = "mean",
       na.rm = T,
-      pad = T
+      expand = T
     )
     # if there are still NA values, arbitrarily fill with 0.5
     ratio.avg[is.na(ratio.avg)] <- 0.5
