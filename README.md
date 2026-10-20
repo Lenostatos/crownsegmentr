@@ -293,7 +293,7 @@ overloaded three times:
 
 1.  The most simple overload assumes a normalized point cloud with
     ground height at zero and takes single numbers for the
-    `crown_diameter_to_tree_height` and `crown_height_to_tree_height`
+    `crown_diameter_to_tree_height` and `crown_length_to_tree_height`
     arguments ([source](src/ams3d_normalized.cpp)).
 2.  The second overload can deal with not normalized point clouds by
     reading ground heights from a raster
@@ -376,7 +376,7 @@ The raster classes were set up like this to make it possible to pass
 either a single value or an actual raster to the same function argument.
 Without this it would be necessary to code every combination of function
 parameters where the ground height and the
-`crown_diameter_to_tree_height` and `crown_height_to_tree_height`
+`crown_diameter_to_tree_height` and `crown_length_to_tree_height`
 parameters can be either a single value or a raster of values. With the
 `I_Raster` class it is possible to pass either
 `Single_value_pseudo_raster` or `Raster` objects to the same function

@@ -191,7 +191,7 @@ This namespace only exposes two functions ([header](inst/include/ams3d.h)):
 
 They do exactly the same thing, i.e. calculate the centroids of a point, except that the `*_plus_centroids` variant also returns the prior centroids which were calculated during the process. Both functions are overloaded three times:
 
-1.  The most simple overload assumes a normalized point cloud with ground height at zero and takes single numbers for the `crown_diameter_to_tree_height` and `crown_height_to_tree_height` arguments ([source](src/ams3d_normalized.cpp)).
+1.  The most simple overload assumes a normalized point cloud with ground height at zero and takes single numbers for the `crown_diameter_to_tree_height` and `crown_length_to_tree_height` arguments ([source](src/ams3d_normalized.cpp)).
 2.  The second overload can deal with not normalized point clouds by reading ground heights from a raster ([source](src/ams3d_terraneous.cpp)).
 3.  The third overload reads both ground height and cylinder dimension parameters from rasters ([source](src/ams3d_flexible.cpp)).
 
@@ -230,7 +230,7 @@ For handling raster data in the C++ back-end, a small set of three raster classe
 -   `Raster` a normal raster class which implements the methods demanded by `I_Raster`.
 -   `Single_value_pseudo_raster` also implements the methods demanded by `I_Raster` but internally stores just one value. It can return this value faster than a `Raster` object could if it was used for storing just one value.
 
-The raster classes were set up like this to make it possible to pass either a single value or an actual raster to the same function argument. Without this it would be necessary to code every combination of function parameters where the ground height and the `crown_diameter_to_tree_height` and `crown_height_to_tree_height` parameters can be either a single value or a raster of values. With the `I_Raster` class it is possible to pass either `Single_value_pseudo_raster` or `Raster` objects to the same function parameter of type `I_Raster`.
+The raster classes were set up like this to make it possible to pass either a single value or an actual raster to the same function argument. Without this it would be necessary to code every combination of function parameters where the ground height and the `crown_diameter_to_tree_height` and `crown_length_to_tree_height` parameters can be either a single value or a raster of values. With the `I_Raster` class it is possible to pass either `Single_value_pseudo_raster` or `Raster` objects to the same function parameter of type `I_Raster`.
 
 The spatial index provided by the Boost Geometry library can be constructed with a packing algorithm that results in faster queries. In order to use this feature, the index constructor needs to be passed all of the points it should use in the form of a begin and end iterator. In order to skip points with non-finite coordinate values and points below certain heights, custom iterators for `std::vector< point_3d_t >` ([header](inst/include/spatial_index_creation.h)) are used by a few public functions to set up spatial indices:
 
