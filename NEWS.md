@@ -1,5 +1,5 @@
 # crownsegmentr 1.1.3
-* bugfix in watershed_diameter_raster
+* bugfix in watershed_diameter_raster and tests
 
 # crownsegmentr 1.1.2
 * Fixes in Readme

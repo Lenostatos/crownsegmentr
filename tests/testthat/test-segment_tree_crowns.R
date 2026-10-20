@@ -22,7 +22,9 @@
 
 test_that("the data.frame/data.table method works", {
   # Pseudo point cloud with just one point
-  pseudo_point_cloud <- data.table::data.table(X = 1, Y = 1, Z = 8)
+  pseudo_point_cloud <- data.table::data.table(X = c(1,1),
+                                               Y = c(1,1),
+                                               Z = c(0,8))
   # Also load real point cloud data
   test_point_cloud_file_path <- system.file(
     "extdata", "MixedConifer.laz",

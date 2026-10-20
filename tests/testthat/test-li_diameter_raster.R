@@ -13,14 +13,16 @@ test_that("li_diameter_raster works", {
   )
   range(test_point_cloud@data$Z)
 
-  testthat::expect_silent({
-    li_raster1 <- li_diameter_raster(test_point_cloud)
+  testthat::expect_silent(
+    suppressPackageStartupMessages({
+      li_raster1 <- li_diameter_raster(test_point_cloud)
 
-    assert_that_raster_fits_point_cloud(
-      li_raster1,
-      test_point_cloud
-    )
-  })
+      assert_that_raster_fits_point_cloud(
+        li_raster1,
+        test_point_cloud
+        )
+      })
+  )
 
   # test with modified parameters
   testthat::expect_silent({
